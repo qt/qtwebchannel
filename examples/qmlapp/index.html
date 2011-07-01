@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <script src="../src/qwebchannel.js"></script>
+        <script>
+            function load() {
+                navigator.webChannel.init();
+                navigator.webChannel.exec({a:1}, function(response) {
+                    document.body.innerHTML = response.b;
+                });
+            }
+        </script>
+    </head>
+    <body onload="load()">
+        <div>444</div>
+    </body>
+</html>

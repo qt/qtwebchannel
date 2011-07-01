@@ -1,0 +1,324 @@
+/****************************************************************************
+**
+** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
+** All rights reserved.
+** Contact: Nokia Corporation (qt-info@nokia.com)
+**
+** This file is part of the QWebChannel module on Qt labs.
+**
+** $QT_BEGIN_LICENSE:LGPL$
+** No Commercial Usage
+** This file contains pre-release code and may not be distributed.
+** You may use this file in accordance with the terms and conditions
+** contained in the Technology Preview License Agreement accompanying
+** this package.
+**
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Nokia gives you certain additional
+** rights.  These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
+**
+**
+**
+**
+**
+**
+**
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+#include "qwebchannel.h"
+
+#include <QtDeclarative/qdeclarative.h>
+#include <QFile>
+#include <QPointer>
+#include <QStringList>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QThread>
+#include <QTimer>
+#include <QUuid>
+
+class QWebChannelResponder : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QString contentType READ contentType WRITE setContentType)
+
+public:
+    QWebChannelResponder(QTcpSocket* s, int id)
+        : QObject(s)
+        , socket(s)
+        , uid(id)
+        , ctype("text/javascript")
+    { }
+
+    void setContentType(const QString& ct) { ctype = ct; }
+    QString contentType() const { return ctype; }
+
+public slots:
+    void send(const QString& response)
+    {
+        if (!socket)
+            return;
+        QString data = QString("navigator.webChannel.callback(%1, %2)").arg(uid).arg(response);
+        socket->write(QString(
+                                "HTTP/1.1 200 OK\r\n"
+                                "Content-Type: %1\r\n"
+                                "Content-Length: %2\r\n"
+                                "Connection: Close\r\n"
+                                "\r\n%3").arg(ctype).arg(data.size()).arg(data).toUtf8());
+        connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
+        deleteLater();
+        socket->close();
+    }
+
+private:
+    QPointer<QTcpSocket> socket;
+    int uid;
+    QString ctype;
+};
+
+class QWebChannelPrivate : public QObject {
+    Q_OBJECT
+public:
+    bool useSecret;
+    int port;
+    int minPort;
+    int maxPort;
+    QUrl baseUrl;
+    QThread* thread;
+    QTcpServer* server;
+    QString secret;
+    QStringList allowedOrigins;
+    bool starting;
+
+    QWebChannelPrivate(QObject* parent)
+        : QObject(0)
+        , useSecret(true)
+        , port(-1)
+        , minPort(49158)
+        , maxPort(65535)
+        , thread(new QThread(parent))
+        , server(new QTcpServer(this))
+        , secret("42")
+        , starting(false)
+    {
+        moveToThread(thread);
+        thread->start();
+        connect(server, SIGNAL(newConnection()), this, SLOT(service()));
+    }
+
+    void initLater()
+    {
+        if (starting)
+            return;
+        metaObject()->invokeMethod(this, "init", Qt::QueuedConnection);
+        starting = true;
+    }
+
+public slots:
+    void init();
+    void postMessage(const QString&);
+    void service();
+
+signals:
+    void request(const QString&, QObject*);
+    void initialized();
+    void noPortAvailable();
+};
+
+static QString contentTypeforFilename(const QString& f)
+{
+    if (f.endsWith(".js"))
+        return "text/javascript";
+    if (f.endsWith(".html"))
+        return "text/html";
+    return "text/plain";
+}
+
+
+void QWebChannelPrivate::service()
+{
+    if (!server->hasPendingConnections())
+        return;
+    QTcpSocket* connection = server->nextPendingConnection();
+    connection->waitForReadyRead();
+    QString firstLine = connection->readLine();
+    QStringList firstLineValues = firstLine.split(' ');
+    QString method = firstLineValues[0];
+    QString path = firstLineValues[1];
+    QString query;
+    QString hash;
+    int indexOfQM = path.indexOf('?');
+    if (indexOfQM > 0) {
+        query = path.mid(indexOfQM + 1);
+        path = path.left(indexOfQM);
+        int indexOfHash = query.indexOf('#');
+        if (indexOfHash > 0) {
+            qWarning() << indexOfHash << query;
+            hash = query.mid(indexOfHash + 1);
+            query = query.left(indexOfHash);
+        }
+    } else {
+        int indexOfHash = path.indexOf('#');
+        if (indexOfHash > 0) {
+            hash = path.mid(indexOfHash + 1);
+            path = path.left(indexOfHash);
+        }
+    }
+
+    QStringList queryVars = query.split('&');
+    QMap<QString, QString> queryMap;
+    foreach (QString q, queryVars) {
+        int idx = q.indexOf("=");
+        queryMap[q.left(idx)] = q.mid(idx + 1);
+    }
+
+    QString requestString = connection->readAll();
+    QStringList headersAndContent = requestString.split("\r\n\r\n");
+    QStringList headerList = headersAndContent[0].split("\r\n");
+    QMap<QString, QString> headerMap;
+    foreach (QString h, headerList) {
+        int idx = h.indexOf(": ");
+        headerMap[h.left(idx)] = h.mid(idx + 2);
+    }
+
+    QStringList pathElements = path.split('/');
+    pathElements.removeFirst();
+
+    if (pathElements.length() < 3 || (useSecret && pathElements[0] != secret)) {
+        connection->write(
+                            "HTTP/1.1 401 Wrong Path\r\n"
+                            "Content-Type: text/html\r\n"
+                            "\r\n"
+                            "<html><body><h1>Wrong Path</h1></body></html>"
+                    );
+        connection->close();
+        return;
+    }
+
+    if (method == "GET") {
+        int id = pathElements[1].toInt();
+        QString message = QStringList(pathElements.mid(2)).join("/");
+        qWarning() << QUrl::fromPercentEncoding(message.toUtf8());
+        QWebChannelResponder* responder = new QWebChannelResponder(connection, id);
+        emit request(QUrl::fromPercentEncoding(message.toUtf8()), responder);
+    }
+    QTimer::singleShot(0, this, SLOT(service()));
+}
+
+void QWebChannelPrivate::init()
+{
+    starting = false;
+    if (useSecret) {
+        secret = QUuid::createUuid().toString();
+        secret = secret.mid(1, secret.size() - 2);
+    }
+
+    bool found = false;
+    for (port = minPort; port <= maxPort; ++port) {
+        if (!server->listen(QHostAddress::LocalHost, port))
+            continue;
+        found = true;
+        break;
+    }
+
+    if (!found) {
+        port = -1;
+        emit noPortAvailable();
+        return;
+    }
+
+    baseUrl = QString("http://localhost:%1/%2").arg(port).arg(secret);
+    emit initialized();
+}
+
+QStringList QWebChannel::allowedOrigins() const
+{
+    return d->allowedOrigins;
+}
+void QWebChannel::setAllowedOrigins(const QStringList& s)
+{
+    d->allowedOrigins = s;
+}
+
+QWebChannel::QWebChannel(QDeclarativeItem *parent):
+        QDeclarativeItem(parent)
+{
+    d = new QWebChannelPrivate(this);
+    connect(d, SIGNAL(request(QString,QObject*)), this, SIGNAL(request(QString, QObject*)));
+    connect(d, SIGNAL(initialized()), this, SLOT(onInitialized()));
+    connect(d, SIGNAL(noPortAvailable()), this, SIGNAL(noPortAvailable()));
+    d->initLater();
+}
+
+QWebChannel::~QWebChannel()
+{
+}
+
+QUrl QWebChannel::baseUrl() const
+{
+    return d->baseUrl;
+}
+void QWebChannel::setUseSecret(bool s)
+{
+    if (d->useSecret == s)
+        return;
+    d->useSecret = s;
+    d->initLater();
+}
+bool QWebChannel::useSecret() const
+{
+    return d->useSecret;
+}
+
+int QWebChannel::port() const
+{
+    return d->port;
+}
+
+int QWebChannel::minPort() const
+{
+    return d->minPort;
+}
+
+int QWebChannel::maxPort() const
+{
+    return d->maxPort;
+}
+
+void QWebChannel::setMinPort(int p)
+{
+    if (d->minPort == p)
+        return;
+    d->minPort = p;
+    d->initLater();
+}
+
+void QWebChannel::setMaxPort(int p)
+{
+    if (d->maxPort == p)
+        return;
+    d->maxPort = p;
+    d->initLater();
+}
+
+void QWebChannel::onInitialized()
+{    
+    emit baseUrlChanged(d->baseUrl);
+    emit scriptUrlChanged(scriptUrl());
+}
+
+
+#include <qwebchannel.moc>
