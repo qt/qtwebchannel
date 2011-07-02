@@ -6,11 +6,11 @@ Rectangle {
     width: 1000
     height: 360
     WebChannel {
-        id: webus
+        id: webChannel
         useSecret: false
         onRequest: {
             var data = JSON.parse(request);
-            response.send(JSON.stringify({b:'goodbye ' + data.a}));
+            response.send(JSON.stringify({b:'This is a response from QML'}));
         }
     }
 
@@ -19,7 +19,7 @@ Rectangle {
         anchors.top: parent.top
         settings.localContentCanAccessRemoteUrls: true
         settings.developerExtrasEnabled: true
-        url: "index.html?baseUrl=" + webus.baseUrl
+        url: "index.html?baseUrl=" + webChannel.baseUrl
     }
 
     Text {

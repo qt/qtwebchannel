@@ -4,7 +4,7 @@
         <script>
             function load() {
                 navigator.webChannel.init();
-                navigator.webChannel.exec({a:1}, function(response) {
+                navigator.webChannel.exec({a:"This is a request from HTML"}, function(response) {
                     document.body.innerHTML = response.b;
                 });
             }
