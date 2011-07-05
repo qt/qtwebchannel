@@ -55,7 +55,7 @@ navigator.webChannel = {
         var id = (this.id++);
         element.async = true;
         element.type = "text/javascript";
-        element.src = this.queryVariables.baseUrl + "/"+ id + "/" + JSON.stringify(message);
+        element.src = this.queryVariables.baseUrl + "/"+ id + "/    " + JSON.stringify(message);
         document.body.innerHTML = element.src;
         this.requests[id] = { element: element, onSuccess: onSuccess, onFailure: onFailure };
         document.head.appendChild(element);

@@ -1,6 +1,6 @@
 import QtQuick 1.0
 import Qt.labs.WebChannel 1.0
-import QtWebKit 2.0
+import QtWebKit 1.0
 
 Rectangle {
     width: 1000

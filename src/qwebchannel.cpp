@@ -53,40 +53,55 @@
 
 class QWebChannelResponder : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QString contentType READ contentType WRITE setContentType)
 
 public:
     QWebChannelResponder(QTcpSocket* s, int id)
-        : QObject(s)
+        : QObject(0)
         , socket(s)
         , uid(id)
-        , ctype("text/javascript")
-    { }
-
-    void setContentType(const QString& ct) { ctype = ct; }
-    QString contentType() const { return ctype; }
+    {
+        connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
+    }
 
 public slots:
-    void send(const QString& response)
+    void open()
+    {
+        if (!socket || !socket->isOpen())
+            return;
+        socket->write(QString("HTTP/1.1 200 OK\r\n"
+                      "Content-Type: text/javascript\r\n"
+                      "socket: Close\r\n"
+                      "\r\n"
+                      "navigator.webChannel.callback(%1,").arg(uid).toUtf8());
+    }
+
+    void write(const QString& data)
+    {
+        if (!socket || !socket->isOpen())
+            return;
+        qWarning() << __func__;
+        socket->write(data.toUtf8());
+    }
+
+    void close()
     {
         if (!socket)
             return;
-        QString data = QString("navigator.webChannel.callback(%1, %2)").arg(uid).arg(response);
-        socket->write(QString(
-                                "HTTP/1.1 200 OK\r\n"
-                                "Content-Type: %1\r\n"
-                                "Content-Length: %2\r\n"
-                                "Connection: Close\r\n"
-                                "\r\n%3").arg(ctype).arg(data.size()).arg(data).toUtf8());
-        connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
+        socket->write(")");
         deleteLater();
         socket->close();
+    }
+
+    void send(const QString& data)
+    {
+        open();
+        write(data);
+        close();
     }
 
 private:
     QPointer<QTcpSocket> socket;
     int uid;
-    QString ctype;
 };
 
 class QWebChannelPrivate : public QObject {
@@ -114,7 +129,7 @@ public:
         , secret("42")
         , starting(false)
     {
-        moveToThread(thread);
+        server->moveToThread(thread);
         thread->start();
         connect(server, SIGNAL(newConnection()), this, SLOT(service()));
     }
@@ -123,7 +138,7 @@ public:
     {
         if (starting)
             return;
-        metaObject()->invokeMethod(this, "init", Qt::QueuedConnection);
+        metaObject()->invokeMethod(this, "init", Qt::QueuedConnection   );
         starting = true;
     }
 
@@ -138,23 +153,14 @@ signals:
     void noPortAvailable();
 };
 
-static QString contentTypeforFilename(const QString& f)
-{
-    if (f.endsWith(".js"))
-        return "text/javascript";
-    if (f.endsWith(".html"))
-        return "text/html";
-    return "text/plain";
-}
-
-
 void QWebChannelPrivate::service()
 {
     if (!server->hasPendingConnections())
         return;
-    QTcpSocket* connection = server->nextPendingConnection();
-    connection->waitForReadyRead();
-    QString firstLine = connection->readLine();
+    qWarning() << __func__;
+    QTcpSocket* socket = server->nextPendingConnection();
+    socket->waitForReadyRead();
+    QString firstLine = socket->readLine();
     QStringList firstLineValues = firstLine.split(' ');
     QString method = firstLineValues[0];
     QString path = firstLineValues[1];
@@ -185,7 +191,7 @@ void QWebChannelPrivate::service()
         queryMap[q.left(idx)] = q.mid(idx + 1);
     }
 
-    QString requestString = connection->readAll();
+    QString requestString = socket->readAll();
     QStringList headersAndContent = requestString.split("\r\n\r\n");
     QStringList headerList = headersAndContent[0].split("\r\n");
     QMap<QString, QString> headerMap;
@@ -198,13 +204,13 @@ void QWebChannelPrivate::service()
     pathElements.removeFirst();
 
     if (pathElements.length() < 3 || (useSecret && pathElements[0] != secret)) {
-        connection->write(
+        socket->write(
                             "HTTP/1.1 401 Wrong Path\r\n"
                             "Content-Type: text/html\r\n"
                             "\r\n"
                             "<html><body><h1>Wrong Path</h1></body></html>"
                     );
-        connection->close();
+        socket->close();
         return;
     }
 
@@ -212,7 +218,8 @@ void QWebChannelPrivate::service()
         int id = pathElements[1].toInt();
         QString message = QStringList(pathElements.mid(2)).join("/");
         qWarning() << QUrl::fromPercentEncoding(message.toUtf8());
-        QWebChannelResponder* responder = new QWebChannelResponder(connection, id);
+        QWebChannelResponder* responder = new QWebChannelResponder(socket, id);
+        responder->moveToThread(thread);
         emit request(QUrl::fromPercentEncoding(message.toUtf8()), responder);
     }
     QTimer::singleShot(0, this, SLOT(service()));
@@ -241,6 +248,7 @@ void QWebChannelPrivate::init()
     }
 
     baseUrl = QString("http://localhost:%1/%2").arg(port).arg(secret);
+    qWarning() << baseUrl;
     emit initialized();
 }
 
@@ -316,8 +324,8 @@ void QWebChannel::setMaxPort(int p)
 
 void QWebChannel::onInitialized()
 {
+    qWarning() << __func__;
     emit baseUrlChanged(d->baseUrl);
-    emit scriptUrlChanged(scriptUrl());
 }
 
 

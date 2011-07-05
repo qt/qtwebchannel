@@ -51,7 +51,6 @@ class QWebChannel : public QDeclarativeItem
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
     Q_PROPERTY(QUrl baseUrl READ baseUrl NOTIFY baseUrlChanged)
-    Q_PROPERTY(QUrl scriptUrl READ scriptUrl NOTIFY scriptUrlChanged)
     Q_PROPERTY(int port READ port)
     Q_PROPERTY(int maxPort READ maxPort WRITE setMaxPort)
     Q_PROPERTY(int minPort READ minPort WRITE setMinPort)
@@ -69,7 +68,6 @@ public:
     void setMinPort(int);
     void setMaxPort(int);
     QStringList allowedOrigins() const;
-    QUrl scriptUrl() const { return baseUrl().toString() + QString("/resource/QWebChannel.js"); }
     void setAllowedOrigins(const QStringList&);
     ~QWebChannel();
 
