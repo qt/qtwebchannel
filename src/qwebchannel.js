@@ -41,7 +41,7 @@
 
 navigator.webChannel = {
     requests: {},
-    id: 1000,
+    id: "",
     init: function() {
         this.queryVariables = {};
         var search = location.search.substr(1).split("&");
@@ -52,10 +52,16 @@ navigator.webChannel = {
     },
     exec: function(message, onSuccess, onFailure) {
         var element = document.createElement("script");
-        var id = (this.id++);
+        function S4() {
+           return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        }
+        function guid() {
+           return (S4()+S4()+"."+S4()+"."+S4()+"."+S4()+"."+S4()+S4()+S4());
+        }
+
+        var id = guid();
         element.async = true;
-        element.type = "text/javascript";
-        element.src = this.queryVariables.baseUrl + "/"+ id + "/    " + JSON.stringify(message);
+        element.src = this.queryVariables.baseUrl + "/"+ id + "/" + JSON.stringify(message);
         document.body.innerHTML = element.src;
         this.requests[id] = { element: element, onSuccess: onSuccess, onFailure: onFailure };
         document.head.appendChild(element);

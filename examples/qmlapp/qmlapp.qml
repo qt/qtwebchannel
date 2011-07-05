@@ -10,13 +10,15 @@ Rectangle {
         useSecret: false
         onRequest: {
             var data = JSON.parse(request);
+            txt.text = data.a;
             response.send(JSON.stringify({b:'This is a response from QML'}));
         }
     }
 
     WebView {
         id: webView
-        anchors.top: parent.top
+        anchors.top: txt.bottom
+        height: 200
         settings.localContentCanAccessRemoteUrls: true
         settings.developerExtrasEnabled: true
         url: "index.html?baseUrl=" + webChannel.baseUrl
@@ -24,6 +26,6 @@ Rectangle {
 
     Text {
         id: txt
-        anchors.top: webView.bottom
+        anchors.top: parent.top
     }
 }

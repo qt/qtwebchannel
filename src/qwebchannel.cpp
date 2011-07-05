@@ -55,7 +55,7 @@ class QWebChannelResponder : public QObject {
     Q_OBJECT
 
 public:
-    QWebChannelResponder(QTcpSocket* s, int id)
+    QWebChannelResponder(QTcpSocket* s, const QString& id)
         : QObject(0)
         , socket(s)
         , uid(id)
@@ -72,14 +72,13 @@ public slots:
                       "Content-Type: text/javascript\r\n"
                       "socket: Close\r\n"
                       "\r\n"
-                      "navigator.webChannel.callback(%1,").arg(uid).toUtf8());
+                      "navigator.webChannel.callback('%1',").arg(uid).toUtf8());
     }
 
     void write(const QString& data)
     {
         if (!socket || !socket->isOpen())
             return;
-        qWarning() << __func__;
         socket->write(data.toUtf8());
     }
 
@@ -101,7 +100,7 @@ public slots:
 
 private:
     QPointer<QTcpSocket> socket;
-    int uid;
+    QString uid;
 };
 
 class QWebChannelPrivate : public QObject {
@@ -129,7 +128,6 @@ public:
         , secret("42")
         , starting(false)
     {
-        server->moveToThread(thread);
         thread->start();
         connect(server, SIGNAL(newConnection()), this, SLOT(service()));
     }
@@ -157,7 +155,6 @@ void QWebChannelPrivate::service()
 {
     if (!server->hasPendingConnections())
         return;
-    qWarning() << __func__;
     QTcpSocket* socket = server->nextPendingConnection();
     socket->waitForReadyRead();
     QString firstLine = socket->readLine();
@@ -172,7 +169,6 @@ void QWebChannelPrivate::service()
         path = path.left(indexOfQM);
         int indexOfHash = query.indexOf('#');
         if (indexOfHash > 0) {
-            qWarning() << indexOfHash << query;
             hash = query.mid(indexOfHash + 1);
             query = query.left(indexOfHash);
         }
@@ -215,10 +211,8 @@ void QWebChannelPrivate::service()
     }
 
     if (method == "GET") {
-        int id = pathElements[1].toInt();
         QString message = QStringList(pathElements.mid(2)).join("/");
-        qWarning() << QUrl::fromPercentEncoding(message.toUtf8());
-        QWebChannelResponder* responder = new QWebChannelResponder(socket, id);
+        QWebChannelResponder* responder = new QWebChannelResponder(socket, pathElements[1]);
         responder->moveToThread(thread);
         emit request(QUrl::fromPercentEncoding(message.toUtf8()), responder);
     }
@@ -248,7 +242,6 @@ void QWebChannelPrivate::init()
     }
 
     baseUrl = QString("http://localhost:%1/%2").arg(port).arg(secret);
-    qWarning() << baseUrl;
     emit initialized();
 }
 
@@ -324,7 +317,6 @@ void QWebChannel::setMaxPort(int p)
 
 void QWebChannel::onInitialized()
 {
-    qWarning() << __func__;
     emit baseUrlChanged(d->baseUrl);
 }
 
