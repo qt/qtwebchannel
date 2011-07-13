@@ -39,39 +39,74 @@
 **
 ****************************************************************************/
 
-navigator.webChannel = {
-    requests: {},
-    id: "",
-    init: function() {
-        this.queryVariables = {};
-        var search = location.search.substr(1).split("&");
-        for (var i = 0; i < search.length; ++i) {
-            var s = search[i].split("=");
-            this.queryVariables[s[0]] = s[1];
-        }
-    },
-    exec: function(message, onSuccess, onFailure) {
-        var element = document.createElement("script");
-        function S4() {
-           return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-        }
-        function guid() {
-           return (S4()+S4()+"."+S4()+"."+S4()+"."+S4()+"."+S4()+S4()+S4());
-        }
+function debug(x) {
+  document.body.innerHTML = document.body.innerHTML  + "<p>" + x + "</p>";
+}
 
-        var id = guid();
-        element.async = true;
-        element.src = this.queryVariables.baseUrl + "/"+ id + "/" + JSON.stringify(message);
-        document.body.innerHTML = element.src;
-        this.requests[id] = { element: element, onSuccess: onSuccess, onFailure: onFailure };
-        document.head.appendChild(element);
-    },
 
-    callback: function(id, message) {
-        var req = this.requests[id];
-        (req.onSuccess)(message);
-        var element = req.element;
-        setTimeout(function() { document.head.removeChild(element); }, 0);
-        delete this.requests[id];
+(function(){
+
+var queryVariables = {};
+var requests = {};
+var subscribers = {};
+var baseUrl = "";
+var initialized = false;
+function S4() {
+   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+}
+function guid() {
+   return (S4()+S4()+"."+S4()+"."+S4()+"."+S4()+"."+S4()+S4()+S4());
+}
+
+
+function sendRequest(url, onSuccess, onFailure)
+{
+    var req = new XMLHttpRequest();
+    req.open("GET", url, true);
+    req.onreadystatechange = function() {
+        if (req.readyState != 4)
+            return;
+        if (req.status != 200 && req.status != 304) {
+            onFailure();
+            return;
+        }
+        onSuccess(JSON.parse(req.responseText));
+    };
+    req.send(null);
+}
+
+function poll(url, callback)
+{
+    setTimeout(function() {
+    sendRequest(url + "/" + guid(),
+        function(object) {
+            poll(url, callback);
+            callback(object);
+        }, function() { poll(url, callback); });
+    }, 0);
+}
+
+function init() {
+    if (initialized)
+        return;
+    initialized = true;
+    var search = location.search.substr(1).split("&");
+    for (var i = 0; i < search.length; ++i) {
+        var s = search[i].split("=");
+        queryVariables[s[0]] = s[1];
     }
+    baseUrl = queryVariables.webchannel_baseUrl;
+}
+
+navigator.webChannel = {
+    exec: function(message, onSuccess, onFailure) {
+        init();
+        sendRequest(baseUrl + "/exec/"+ JSON.stringify(message), onSuccess, onFailure);
+    },
+
+    subscribe: function(id, callback) {
+        init();
+        poll(baseUrl + "/subscribe/" + id, callback);
+    },
 };
+})();

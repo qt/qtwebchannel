@@ -51,57 +51,46 @@
 #include <QTimer>
 #include <QUuid>
 
-class QWebChannelResponder : public QObject {
-    Q_OBJECT
+QWebChannelResponder::QWebChannelResponder(QTcpSocket* s)
+    : QObject(0)
+    , socket(s)
+{
+    connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
+}
 
-public:
-    QWebChannelResponder(QTcpSocket* s, const QString& id)
-        : QObject(0)
-        , socket(s)
-        , uid(id)
-    {
-        connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
-    }
+void QWebChannelResponder::open()
+{
+    if (!socket || !socket->isOpen())
+        return;
 
-public slots:
-    void open()
-    {
-        if (!socket || !socket->isOpen())
-            return;
-        socket->write(QString("HTTP/1.1 200 OK\r\n"
-                      "Content-Type: text/javascript\r\n"
-                      "socket: Close\r\n"
-                      "\r\n"
-                      "navigator.webChannel.callback('%1',").arg(uid).toUtf8());
-    }
+    socket->write("HTTP/1.1 200 OK\r\n"
+                  "Content-Type: text/json\r\n"
+                  "\r\n");
+}
 
-    void write(const QString& data)
-    {
-        if (!socket || !socket->isOpen())
-            return;
-        socket->write(data.toUtf8());
-    }
+void QWebChannelResponder::write(const QString& data)
+{
+    if (!socket || !socket->isOpen())
+        return;
+    socket->write(data.toUtf8());
+}
 
-    void close()
-    {
-        if (!socket)
-            return;
-        socket->write(")");
-        deleteLater();
-        socket->close();
-    }
+void QWebChannelResponder::close()
+{
+    if (!socket)
+        return;
+    deleteLater();
+    socket->close();
+}
 
-    void send(const QString& data)
-    {
-        open();
-        write(data);
-        close();
-    }
+void QWebChannelResponder::send(const QString& data)
+{
+    qWarning() << __func__ << data;
+    open();
+    write(data);
+    close();
+}
 
-private:
-    QPointer<QTcpSocket> socket;
-    QString uid;
-};
 
 class QWebChannelPrivate : public QObject {
     Q_OBJECT
@@ -115,6 +104,8 @@ public:
     QTcpServer* server;
     QString secret;
     QStringList allowedOrigins;
+    typedef QMultiMap<QString, QPointer<QTcpSocket> > SubscriberMap;
+    SubscriberMap subscribers;
     bool starting;
 
     QWebChannelPrivate(QObject* parent)
@@ -142,8 +133,9 @@ public:
 
 public slots:
     void init();
-    void postMessage(const QString&);
+    void broadcast(const QString&, const QString&);
     void service();
+    void onSocketDelete(QObject*);
 
 signals:
     void request(const QString&, QObject*);
@@ -151,12 +143,44 @@ signals:
     void noPortAvailable();
 };
 
+void QWebChannelPrivate::onSocketDelete(QObject * o)
+{
+    for (SubscriberMap::iterator it = subscribers.begin(); it != subscribers.end(); ++it) {
+        if (it.value() != o)
+            continue;
+        subscribers.erase(it);
+        return;
+    }
+}
+
+void QWebChannelPrivate::broadcast(const QString& id, const QString& message)
+{
+    QList<QPointer<QTcpSocket> > sockets = subscribers.values(id);
+
+    foreach(QPointer<QTcpSocket> socket, sockets) {
+        if (!socket)
+            continue;
+        socket->write("HTTP/1.1 200 OK\r\n"
+                      "Content-Type: text/json\r\n"
+                      "Connection: Close\r\n"
+                      "Cache-Control: No-Cache\r\n"
+                      "\r\n");
+        socket->write(message.toUtf8());
+        socket->close();
+    }
+}
+
 void QWebChannelPrivate::service()
 {
     if (!server->hasPendingConnections())
         return;
+
     QTcpSocket* socket = server->nextPendingConnection();
-    socket->waitForReadyRead();
+    if (!socket->canReadLine())
+        if (!socket->waitForReadyRead(1000))
+            return;
+
+
     QString firstLine = socket->readLine();
     QStringList firstLineValues = firstLine.split(' ');
     QString method = firstLineValues[0];
@@ -187,7 +211,10 @@ void QWebChannelPrivate::service()
         queryMap[q.left(idx)] = q.mid(idx + 1);
     }
 
+    while (!socket->canReadLine())
+        socket->waitForReadyRead();
     QString requestString = socket->readAll();
+    qWarning() << requestString;
     QStringList headersAndContent = requestString.split("\r\n\r\n");
     QStringList headerList = headersAndContent[0].split("\r\n");
     QMap<QString, QString> headerMap;
@@ -199,7 +226,7 @@ void QWebChannelPrivate::service()
     QStringList pathElements = path.split('/');
     pathElements.removeFirst();
 
-    if (pathElements.length() < 3 || (useSecret && pathElements[0] != secret)) {
+    if (pathElements.length() < 2 || (useSecret && pathElements[0] != secret)) {
         socket->write(
                             "HTTP/1.1 401 Wrong Path\r\n"
                             "Content-Type: text/html\r\n"
@@ -211,12 +238,22 @@ void QWebChannelPrivate::service()
     }
 
     if (method == "GET") {
-        QString message = QStringList(pathElements.mid(2)).join("/");
-        QWebChannelResponder* responder = new QWebChannelResponder(socket, pathElements[1]);
-        responder->moveToThread(thread);
-        emit request(QUrl::fromPercentEncoding(message.toUtf8()), responder);
+        QString type = pathElements[1];
+        if (type == "exec") {
+            QString message = QStringList(pathElements.mid(2)).join("/");
+            QWebChannelResponder* responder = new QWebChannelResponder(socket);
+            responder->moveToThread(thread);
+            QString msg = QUrl::fromPercentEncoding(message.toUtf8());
+            qWarning() << __func__ << __LINE__ << msg << responder;
+
+            emit request(msg, responder);
+        } else if (type == "subscribe") {
+            QString id = pathElements[2];
+            connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+            connect(socket, SIGNAL(destroyed(QObject*)), this, SLOT(onSocketDelete(QObject*)));
+            subscribers.insert(id, socket);
+        }
     }
-    QTimer::singleShot(0, this, SLOT(service()));
 }
 
 void QWebChannelPrivate::init()
@@ -318,6 +355,11 @@ void QWebChannel::setMaxPort(int p)
 void QWebChannel::onInitialized()
 {
     emit baseUrlChanged(d->baseUrl);
+}
+
+void QWebChannel::broadcast(const QString& id, const QString& data)
+{
+    d->broadcast(id, data);
 }
 
 

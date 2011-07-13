@@ -1,11 +1,13 @@
 <html>
     <head>
-        <script src="../../src/qwebchannel.js"></script>
+    <script src="../../src/qwebchannel.js"></script>
         <script>
             function load() {
-                navigator.webChannel.init();
+                navigator.webChannel.subscribe("incoming-call",
+                    function(message) { debug(message); }
+                );
                 navigator.webChannel.exec({a:"This is a request from HTML"}, function(response) {
-                    document.body.innerHTML = response.b;
+                    debug(response.b);
                 });
             }
         </script>

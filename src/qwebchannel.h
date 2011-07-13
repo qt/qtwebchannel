@@ -43,8 +43,25 @@
 #define QWEBCHANNEL_H
 
 #include <QtDeclarative/QDeclarativeItem>
+#include <QTcpSocket>
+#include <QPointer>
 
 class QWebChannelPrivate;
+
+class QWebChannelResponder : public QObject {
+    Q_OBJECT
+
+public:
+    QWebChannelResponder(QTcpSocket* s);
+
+public slots:
+    void open();
+    void write(const QString& data);
+    void close();
+    void send(const QString& data);
+private:
+    QPointer<QTcpSocket> socket;
+};
 
 class QWebChannel : public QDeclarativeItem
 {
@@ -74,8 +91,12 @@ public:
 signals:
     void baseUrlChanged(const QUrl &);
     void scriptUrlChanged(const QUrl &);
-    void request(const QString& request, QObject* response);
+    void request(const QString& requestData, QObject* response);
     void noPortAvailable();
+
+public slots:
+    void broadcast(const QString& id, const QString& data);
+    void writeResponseData(const QString& responseID, const QString& data);
 
 private slots:
     void onInitialized();

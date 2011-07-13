@@ -12,7 +12,9 @@ TARGET = $$qtLibraryTarget($$TARGET)
 SOURCES += qwebchannel_plugin.cpp
 HEADERS += qwebchannel_plugin.h
 
-OTHER_FILES = qmldir
+OTHER_FILES = qmldir \
+    qwebchannel.js \
+    script-communicator.js
 
 !equals(_PRO_FILE_PWD_, $$OUT_PWD) {
     copy_qmldir.target = $$OUT_PWD/qmldir

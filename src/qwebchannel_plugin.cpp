@@ -44,6 +44,7 @@
 #include "qwebchannel.h"
 
 QML_DECLARE_TYPE(QWebChannel)
+QML_DECLARE_TYPE(QWebChannelResponder)
 
 #include "qwebchannel_plugin.h"
 

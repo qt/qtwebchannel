@@ -8,8 +8,9 @@ Rectangle {
     WebChannel {
         id: webChannel
         useSecret: false
+
         onRequest: {
-            var data = JSON.parse(request);
+            var data = JSON.parse(requestData);
             txt.text = data.a;
             response.send(JSON.stringify({b:'This is a response from QML'}));
         }
@@ -21,11 +22,24 @@ Rectangle {
         height: 200
         settings.localContentCanAccessRemoteUrls: true
         settings.developerExtrasEnabled: true
-        url: "index.html?baseUrl=" + webChannel.baseUrl
+        url: "index.html?webchannel_baseUrl=" + webChannel.baseUrl
     }
 
+    TextEdit {
+        width: 1000
+        height: 100
+        id: editor
+        anchors.top: parent.top
+    }
     Text {
         id: txt
-        anchors.top: parent.top
+        anchors.top: editor.bottom
+        text: "BLA"
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                webChannel.broadcast("incoming-call", JSON.stringify(editor.text));
+            }
+        }
     }
 }
