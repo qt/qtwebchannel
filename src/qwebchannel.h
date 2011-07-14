@@ -97,7 +97,7 @@ public:
 signals:
     void baseUrlChanged(const QUrl &);
     void scriptUrlChanged(const QUrl &);
-    void request(const QString& requestData, QObject* response);
+    void execute(const QString& requestData, QObject* response);
     void noPortAvailable();
 
 public slots:

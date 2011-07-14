@@ -125,7 +125,7 @@ public slots:
     void onSocketDelete(QObject*);
 
 signals:
-    void request(const QString&, QObject*);
+    void execute(const QString&, QObject*);
     void initialized();
     void noPortAvailable();
 };
@@ -228,7 +228,7 @@ void QWebChannelPrivate::service()
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
             QString msg = QUrl::fromPercentEncoding(message.toUtf8());
 
-            emit request(msg, responder);
+            emit execute(msg, responder);
         } else if (type == "s") {
             QString id = pathElements[2];
             connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
@@ -277,7 +277,7 @@ QWebChannel::QWebChannel(QDeclarativeItem *parent):
         QDeclarativeItem(parent)
 {
     d = new QWebChannelPrivate(this);
-    connect(d, SIGNAL(request(QString,QObject*)), this, SIGNAL(request(QString, QObject*)));
+    connect(d, SIGNAL(execute(QString,QObject*)), this, SIGNAL(execute(QString, QObject*)));
     connect(d, SIGNAL(initialized()), this, SLOT(onInitialized()));
     connect(d, SIGNAL(noPortAvailable()), this, SIGNAL(noPortAvailable()));
     d->initLater();

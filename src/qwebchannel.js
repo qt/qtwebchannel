@@ -39,16 +39,8 @@
 **
 ****************************************************************************/
 
-function debug(x) {
-  document.body.innerHTML = document.body.innerHTML  + "<p>" + x + "</p>";
-}
-
-
 (function(){
 
-var queryVariables = {};
-var requests = {};
-var subscribers = {};
 var baseUrl = "";
 var initialized = false;
 var uniqueIndex = 1000;
@@ -57,7 +49,7 @@ function sendRequest(url, onSuccess, onFailure)
 {
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
-    req.onreadystatechange = function() {
+    req.onreadystatechange = function requestStateChanged() {
         if (req.readyState != 4)
             return;
         if (req.status != 200 && req.status != 304) {
@@ -71,13 +63,15 @@ function sendRequest(url, onSuccess, onFailure)
 
 function poll(url, callback)
 {
-    setTimeout(function() {
     sendRequest(url + "/" + (++uniqueIndex),
-        function(object) {
+        function pollSucceeded(object) {
             poll(url, callback);
             callback(object);
-        }, function() { poll(url, callback); });
-    }, 0);
+        },
+        function pollFailed() {
+            poll(url, callback);
+        }
+   );
 }
 
 function init() {
@@ -87,18 +81,20 @@ function init() {
     var search = location.search.substr(1).split("&");
     for (var i = 0; i < search.length; ++i) {
         var s = search[i].split("=");
-        queryVariables[s[0]] = s[1];
+        if (s[0] != "webchannel_baseUrl")
+            continue;
+        baseUrl = s[1];
+        return;
     }
-    baseUrl = queryVariables.webchannel_baseUrl;
 }
 
 navigator.webChannel = {
-    exec: function(message, onSuccess, onFailure) {
+    execute: function webChannelExec(message, onSuccess, onFailure) {
         init();
         sendRequest(baseUrl + "/e/"+ JSON.stringify(message), onSuccess, onFailure);
     },
 
-    subscribe: function(id, callback) {
+    subscribe: function webChannelSubscribe(id, callback) {
         init();
         poll(baseUrl + "/s/" + id, callback);
     },
