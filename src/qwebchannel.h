@@ -78,7 +78,6 @@ class QWebChannel : public QDeclarativeItem
     Q_PROPERTY(int maxPort READ maxPort WRITE setMaxPort)
     Q_PROPERTY(int minPort READ minPort WRITE setMinPort)
     Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
-    Q_PROPERTY(QStringList allowedOrigins READ allowedOrigins WRITE setAllowedOrigins)
 
 public:
     QWebChannel(QDeclarativeItem *parent = 0);
@@ -90,8 +89,6 @@ public:
     int maxPort() const;
     void setMinPort(int);
     void setMaxPort(int);
-    QStringList allowedOrigins() const;
-    void setAllowedOrigins(const QStringList&);
     ~QWebChannel();
 
 signals:

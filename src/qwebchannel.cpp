@@ -92,7 +92,6 @@ public:
     QUrl baseUrl;
     QTcpServer* server;
     QString secret;
-    QStringList allowedOrigins;
     typedef QMultiMap<QString, QPointer<QTcpSocket> > SubscriberMap;
     SubscriberMap subscribers;
     bool starting;
@@ -274,15 +273,6 @@ void QWebChannelPrivate::init()
 
     baseUrl = QString("http://localhost:%1/%2").arg(port).arg(secret);
     emit initialized();
-}
-
-QStringList QWebChannel::allowedOrigins() const
-{
-    return d->allowedOrigins;
-}
-void QWebChannel::setAllowedOrigins(const QStringList& s)
-{
-    d->allowedOrigins = s;
 }
 
 QWebChannel::QWebChannel(QDeclarativeItem *parent):
