@@ -51,13 +51,7 @@ var requests = {};
 var subscribers = {};
 var baseUrl = "";
 var initialized = false;
-function S4() {
-   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-}
-function guid() {
-   return (S4()+S4()+"."+S4()+"."+S4()+"."+S4()+"."+S4()+S4()+S4());
-}
-
+var uniqueIndex = 1000;
 
 function sendRequest(url, onSuccess, onFailure)
 {
@@ -78,7 +72,7 @@ function sendRequest(url, onSuccess, onFailure)
 function poll(url, callback)
 {
     setTimeout(function() {
-    sendRequest(url + "/" + guid(),
+    sendRequest(url + "/" + (++uniqueIndex),
         function(object) {
             poll(url, callback);
             callback(object);
@@ -101,12 +95,12 @@ function init() {
 navigator.webChannel = {
     exec: function(message, onSuccess, onFailure) {
         init();
-        sendRequest(baseUrl + "/exec/"+ JSON.stringify(message), onSuccess, onFailure);
+        sendRequest(baseUrl + "/e/"+ JSON.stringify(message), onSuccess, onFailure);
     },
 
     subscribe: function(id, callback) {
         init();
-        poll(baseUrl + "/subscribe/" + id, callback);
+        poll(baseUrl + "/s/" + id, callback);
     },
 };
 })();

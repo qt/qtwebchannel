@@ -47,12 +47,11 @@
 #include <QStringList>
 #include <QTcpServer>
 #include <QTcpSocket>
-#include <QThread>
 #include <QTimer>
 #include <QUuid>
 
 QWebChannelResponder::QWebChannelResponder(QTcpSocket* s)
-    : QObject(0)
+    : QObject(s)
     , socket(s)
 {
     connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
@@ -83,15 +82,6 @@ void QWebChannelResponder::close()
     socket->close();
 }
 
-void QWebChannelResponder::send(const QString& data)
-{
-    qWarning() << __func__ << data;
-    open();
-    write(data);
-    close();
-}
-
-
 class QWebChannelPrivate : public QObject {
     Q_OBJECT
 public:
@@ -100,7 +90,6 @@ public:
     int minPort;
     int maxPort;
     QUrl baseUrl;
-    QThread* thread;
     QTcpServer* server;
     QString secret;
     QStringList allowedOrigins;
@@ -114,12 +103,10 @@ public:
         , port(-1)
         , minPort(49158)
         , maxPort(65535)
-        , thread(new QThread(parent))
         , server(new QTcpServer(this))
         , secret("42")
         , starting(false)
     {
-        thread->start();
         connect(server, SIGNAL(newConnection()), this, SLOT(service()));
     }
 
@@ -162,8 +149,6 @@ void QWebChannelPrivate::broadcast(const QString& id, const QString& message)
             continue;
         socket->write("HTTP/1.1 200 OK\r\n"
                       "Content-Type: text/json\r\n"
-                      "Connection: Close\r\n"
-                      "Cache-Control: No-Cache\r\n"
                       "\r\n");
         socket->write(message.toUtf8());
         socket->close();
@@ -214,7 +199,6 @@ void QWebChannelPrivate::service()
     while (!socket->canReadLine())
         socket->waitForReadyRead();
     QString requestString = socket->readAll();
-    qWarning() << requestString;
     QStringList headersAndContent = requestString.split("\r\n\r\n");
     QStringList headerList = headersAndContent[0].split("\r\n");
     QMap<QString, QString> headerMap;
@@ -239,15 +223,13 @@ void QWebChannelPrivate::service()
 
     if (method == "GET") {
         QString type = pathElements[1];
-        if (type == "exec") {
+        if (type == "e") {
             QString message = QStringList(pathElements.mid(2)).join("/");
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
-            responder->moveToThread(thread);
             QString msg = QUrl::fromPercentEncoding(message.toUtf8());
-            qWarning() << __func__ << __LINE__ << msg << responder;
 
             emit request(msg, responder);
-        } else if (type == "subscribe") {
+        } else if (type == "s") {
             QString id = pathElements[2];
             connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
             connect(socket, SIGNAL(destroyed(QObject*)), this, SLOT(onSocketDelete(QObject*)));

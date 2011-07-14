@@ -58,7 +58,13 @@ public slots:
     void open();
     void write(const QString& data);
     void close();
-    void send(const QString& data);
+    void send(const QString& data)
+    {
+        open();
+        write(data);
+        close();
+    }
+
 private:
     QPointer<QTcpSocket> socket;
 };
