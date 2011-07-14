@@ -97,12 +97,12 @@ public:
 signals:
     void baseUrlChanged(const QUrl &);
     void scriptUrlChanged(const QUrl &);
+    // To be able to access the object from QML, it has to be an explicit QObject* and not a subclass.
     void execute(const QString& requestData, QObject* response);
     void noPortAvailable();
 
 public slots:
     void broadcast(const QString& id, const QString& data);
-    void writeResponseData(const QString& responseID, const QString& data);
 
 private slots:
     void onInitialized();

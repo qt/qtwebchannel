@@ -49,7 +49,7 @@ function sendRequest(url, onSuccess, onFailure)
 {
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
-    req.onreadystatechange = function requestStateChanged() {
+    req.onreadystatechange = function() {
         if (req.readyState != 4)
             return;
         if (req.status != 200 && req.status != 304) {
@@ -63,15 +63,13 @@ function sendRequest(url, onSuccess, onFailure)
 
 function poll(url, callback)
 {
+    setTimeout(function() {
     sendRequest(url + "/" + (++uniqueIndex),
-        function pollSucceeded(object) {
+        function(object) {
             poll(url, callback);
             callback(object);
-        },
-        function pollFailed() {
-            poll(url, callback);
-        }
-   );
+        }, function() { poll(url, callback); });
+    }, 0);
 }
 
 function init() {
@@ -89,12 +87,12 @@ function init() {
 }
 
 navigator.webChannel = {
-    execute: function webChannelExec(message, onSuccess, onFailure) {
+    execute: function(message, onSuccess, onFailure) {
         init();
         sendRequest(baseUrl + "/e/"+ JSON.stringify(message), onSuccess, onFailure);
     },
 
-    subscribe: function webChannelSubscribe(id, callback) {
+    subscribe: function(id, callback) {
         init();
         poll(baseUrl + "/s/" + id, callback);
     },

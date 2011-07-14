@@ -4,20 +4,20 @@
         <script>
             window.onload = function() {
                 var textArea = document.querySelector("textarea");
-                function debug(x) {
+                function output(x) {
                     textArea.value = textArea.value + x + "\n";
                 }
 
                 navigator.webChannel.subscribe(
                     "incoming-call",
                     function(message) {
-                        debug(message);
+                        output(message);
                     }
                 );
                 navigator.webChannel.execute(
                     {a:"This is a request from HTML"},
                     function(response) {
-                        debug(response.b);
+                        output(response.b);
                     }
                 );
             };

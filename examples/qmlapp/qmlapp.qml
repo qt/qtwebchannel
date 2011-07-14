@@ -9,7 +9,7 @@ Rectangle {
         id: webChannel
 
         onExecute: {
-            var data = JSON.parse(requestData   );
+            var data = JSON.parse(requestData);
             txt.text = data.a;
             response.send(JSON.stringify({b:'This is a response from QML'}));
         }
