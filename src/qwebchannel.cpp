@@ -210,10 +210,10 @@ void QWebChannelPrivate::service()
     QStringList pathElements = path.split('/');
     pathElements.removeFirst();
 
-    if (pathElements.length() < 2 || (useSecret && pathElements[0] != secret)) {
+    if ((useSecret && pathElements[0] != secret)) {
         socket->write(
                             "HTTP/1.1 401 Wrong Path\r\n"
-                            "Content-Type: text/html\r\n"
+                            "Content-Type: text/json\r\n"
                             "\r\n"
                             "<html><body><h1>Wrong Path</h1></body></html>"
                     );
@@ -222,13 +222,25 @@ void QWebChannelPrivate::service()
     }
 
     if (method == "GET") {
-        QString type = pathElements[1];
+        QString type = pathElements.size() == 1 ? "j" : pathElements[1];
         if (type == "e") {
             QString message = QStringList(pathElements.mid(2)).join("/");
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
             QString msg = QUrl::fromPercentEncoding(message.toUtf8());
 
             emit execute(msg, responder);
+        } else if (type == "j") {
+            QFile file(":/webchannel.js");
+            file.open(QIODevice::ReadOnly);
+            socket->write("HTTP/1.1 200 OK\r\n"
+                          "Content-Type: text/javascript\r\n"
+                          "\r\n");
+            socket->write("(function() {");
+            socket->write(QString("baseUrl = '%1';").arg(baseUrl.toString()).toUtf8());
+            socket->write(file.readAll());
+            socket->write("})();");
+            socket->close();
+            file.close();
         } else if (type == "s") {
             QString id = pathElements[2];
             connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));

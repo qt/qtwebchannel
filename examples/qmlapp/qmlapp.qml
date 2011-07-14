@@ -21,7 +21,7 @@ Rectangle {
         height: 200
         settings.localContentCanAccessRemoteUrls: true
         settings.developerExtrasEnabled: true
-        url: "index.html?webchannel_baseUrl=" + webChannel.baseUrl
+        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl
     }
 
     TextEdit {

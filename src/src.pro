@@ -13,8 +13,7 @@ SOURCES += qwebchannel_plugin.cpp
 HEADERS += qwebchannel_plugin.h
 
 OTHER_FILES = qmldir \
-    qwebchannel.js \
-    script-communicator.js
+    qwebchannel.js
 
 !equals(_PRO_FILE_PWD_, $$OUT_PWD) {
     copy_qmldir.target = $$OUT_PWD/qmldir
@@ -30,3 +29,6 @@ qmldir.files += $$PWD/qmldir
 qmldir.path +=  $$[QT_INSTALL_IMPORTS]/$$TARGETPATH
 
 INSTALLS += target qmldir
+
+RESOURCES += \
+    resources.qrc

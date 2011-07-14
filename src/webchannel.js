@@ -39,11 +39,9 @@
 **
 ****************************************************************************/
 
-(function(){
-
-var baseUrl = "";
-var initialized = false;
-var uniqueIndex = 1000;
+// Remove the calling script from the DOM.
+var scriptElement = document.querySelector('script[src="' + baseUrl + '"]');
+scriptElement.parentNode.removeChild(scriptElement);
 
 function sendRequest(url, onSuccess, onFailure)
 {
@@ -54,9 +52,11 @@ function sendRequest(url, onSuccess, onFailure)
             return;
         if (req.status != 200 && req.status != 304) {
             onFailure();
+            req = undefined;
             return;
         }
         onSuccess(JSON.parse(req.responseText));
+        req = undefined;
     };
     req.send(null);
 }
@@ -64,7 +64,7 @@ function sendRequest(url, onSuccess, onFailure)
 function poll(url, callback)
 {
     setTimeout(function() {
-    sendRequest(url + "/" + (++uniqueIndex),
+    sendRequest(url,
         function(object) {
             poll(url, callback);
             callback(object);
@@ -72,29 +72,13 @@ function poll(url, callback)
     }, 0);
 }
 
-function init() {
-    if (initialized)
-        return;
-    initialized = true;
-    var search = location.search.substr(1).split("&");
-    for (var i = 0; i < search.length; ++i) {
-        var s = search[i].split("=");
-        if (s[0] != "webchannel_baseUrl")
-            continue;
-        baseUrl = s[1];
-        return;
-    }
-}
-
 navigator.webChannel = {
     execute: function(message, onSuccess, onFailure) {
-        init();
         sendRequest(baseUrl + "/e/"+ JSON.stringify(message), onSuccess, onFailure);
     },
 
     subscribe: function(id, callback) {
-        init();
         poll(baseUrl + "/s/" + id, callback);
     },
 };
-})();
+
