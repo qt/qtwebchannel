@@ -10,22 +10,7 @@
                     return pair[1];
             }
           }
-          document.write('<script src="' + getWebChannelBaseUrl() + '"><' + '/script>');
-
-            window.onload = function() {
-                var textArea = document.querySelector("textarea");
-                function output(x) {
-                    textArea.value = textArea.value + x + "\n";
-                }
-
-                navigator.webChannel.subscribe(
-                    "incoming-call",
-                    function(message) {
-                        output(message);
-                    }
-                );
-            };
-
+            document.write('<script src="' + getWebChannelBaseUrl() + '"><' + '/script>');
             function output(x)
             {
                 document.querySelector("#out").innerHTML = x;
@@ -33,6 +18,12 @@
 
             function send()
             {
+            navigator.webChannel.subscribe(
+                "incoming-call",
+                function(message) {
+                    output(message);
+                }
+            );
                 navigator.webChannel.exec(
                     {a:"This is a request from HTML"},
                     function(response) {
