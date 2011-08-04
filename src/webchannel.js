@@ -39,46 +39,44 @@
 **
 ****************************************************************************/
 
+function S4() {
+   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+}
+function guid() {
+   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+}
+
+
 // Remove the calling script from the DOM.
-var scriptElement = document.querySelector('script[src="' + baseUrl + '"]');
-scriptElement.parentNode.removeChild(scriptElement);
+var iframeElement = document.createElement("iframe");
+iframeElement.style.display = "none";
+iframeElement.src = baseUrl + "/h/" + guid();
+document.body.appendChild(iframeElement);
+var callbacks = {};
 
-function sendRequest(url, onSuccess, onFailure)
-{
-    var req = new XMLHttpRequest();
-    req.open("GET", url, true);
-    req.onreadystatechange = function() {
-        if (req.readyState != 4)
-            return;
-        if (req.status != 200 && req.status != 304) {
-            onFailure();
-            req = undefined;
-            return;
-        }
-        onSuccess(JSON.parse(req.responseText));
-        req = undefined;
-    };
-    req.send(null);
-}
+window.addEventListener("message", function(event) {
+    if (baseUrl.indexOf(event.origin))
+        return;
+    var data = JSON.parse(event.data);
+    var callbacksForID = callbacks[data.id] || [];
 
-function poll(url, callback)
-{
-    setTimeout(function() {
-    sendRequest(url,
-        function(object) {
-            poll(url, callback);
-            callback(object);
-        }, function() { poll(url, callback); });
-    }, 0);
-}
+    callbacksForID.forEach(function(callback) { (callback)(JSON.parse(data.payload)); });
+});
 
 navigator.webChannel = {
-    execute: function(message, onSuccess, onFailure) {
-        sendRequest(baseUrl + "/e/"+ JSON.stringify(message), onSuccess, onFailure);
+    exec: function(message, callback) {
+        var id = guid();
+            iframeElement.contentWindow.postMessage(JSON.stringify({type: "exec", id: id, payload: message}), "*");
+        callbacks[id] = [function(data) {
+                             (callback)(data);
+                             delete callbacks[id];
+                         }];
     },
 
     subscribe: function(id, callback) {
-        poll(baseUrl + "/s/" + id, callback);
+        iframeElement.contentWindow.postMessage(JSON.stringify({type: "subscribe", id: id}), "*");
+        callbacks[id] = callbacks[id] || [];
+        callbacks[id].push(callback);
     },
 };
 

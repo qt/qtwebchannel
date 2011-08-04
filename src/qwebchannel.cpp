@@ -108,7 +108,6 @@ public:
     {
         connect(server, SIGNAL(newConnection()), this, SLOT(service()));
     }
-
     void initLater()
     {
         if (starting)
@@ -212,6 +211,7 @@ void QWebChannelPrivate::service()
     if ((useSecret && pathElements[0] != secret)) {
         socket->write(
                             "HTTP/1.1 401 Wrong Path\r\n"
+                            "Cache-Control: No-Cache\r\n"
                             "Content-Type: text/json\r\n"
                             "\r\n"
                             "<html><body><h1>Wrong Path</h1></body></html>"
@@ -226,18 +226,28 @@ void QWebChannelPrivate::service()
             QString message = QStringList(pathElements.mid(2)).join("/");
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
             QString msg = QUrl::fromPercentEncoding(message.toUtf8());
-
             emit execute(msg, responder);
         } else if (type == "j") {
             QFile file(":/webchannel.js");
             file.open(QIODevice::ReadOnly);
             socket->write("HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/javascript\r\n"
+                          "Cache-Control: No-Cache\r\n"
                           "\r\n");
-            socket->write("(function() {");
+            socket->write("window.onload = function() {");
             socket->write(QString("baseUrl = '%1';").arg(baseUrl.toString()).toUtf8());
             socket->write(file.readAll());
-            socket->write("})();");
+            socket->write("};");
+            socket->close();
+            file.close();
+        } else if (type == "h") {
+            QFile file(":/webchannel-iframe.html");
+            file.open(QIODevice::ReadOnly);
+            socket->write("HTTP/1.1 200 OK\r\n"
+                          "Content-Type: text/html\r\n"
+                          "Cache-Control: No-Cache\r\n"
+                          "\r\n");
+            socket->write(file.readAll());
             socket->close();
             file.close();
         } else if (type == "s") {
@@ -275,8 +285,8 @@ void QWebChannelPrivate::init()
     emit initialized();
 }
 
-QWebChannel::QWebChannel(QDeclarativeItem *parent):
-        QDeclarativeItem(parent)
+QWebChannel::QWebChannel(QObject *parent):
+        QObject(parent)
 {
     d = new QWebChannelPrivate(this);
     connect(d, SIGNAL(execute(QString,QObject*)), this, SIGNAL(execute(QString, QObject*)));

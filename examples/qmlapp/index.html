@@ -24,16 +24,26 @@
                         output(message);
                     }
                 );
-                navigator.webChannel.execute(
+            };
+
+            function output(x)
+            {
+                document.querySelector("#out").innerHTML = x;
+            }
+
+            function send()
+            {
+                navigator.webChannel.exec(
                     {a:"This is a request from HTML"},
                     function(response) {
                         output(response.b);
                     }
                 );
-            };
+            }
         </script>
     </head>
     <body>
-        <textarea style="width: 100%; height: 100%"></textarea>
+    <a href="javascript:send()">Go</a>
+    <div id="out"></div>
     </body>
 </html>

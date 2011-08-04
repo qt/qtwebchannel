@@ -13,15 +13,19 @@ Rectangle {
             txt.text = data.a;
             response.send(JSON.stringify({b:'This is a response from QML'}));
         }
+
+        onBaseUrlChanged: {
+            console.log(baseUrl);
+        }
     }
 
     WebView {
         id: webView
+        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl   ;
+        settings.developerExtrasEnabled: true
         anchors.top: txt.bottom
         height: 200
-        settings.localContentCanAccessRemoteUrls: true
-        settings.developerExtrasEnabled: true
-        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl
+        width: 200
     }
 
     TextEdit {
@@ -32,8 +36,8 @@ Rectangle {
     }
     Text {
         id: txt
+        text: "Click"
         anchors.top: editor.bottom
-        text: "BLA"
         MouseArea {
             anchors.fill: parent
             onClicked: {

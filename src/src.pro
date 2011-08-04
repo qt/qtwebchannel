@@ -13,7 +13,15 @@ SOURCES += qwebchannel_plugin.cpp
 HEADERS += qwebchannel_plugin.h
 
 OTHER_FILES = qmldir \
-    qwebchannel.js
+    qwebchannel.js \
+    qtc_packaging/debian_harmattan/rules \
+    qtc_packaging/debian_harmattan/README \
+    qtc_packaging/debian_harmattan/copyright \
+    qtc_packaging/debian_harmattan/control \
+    qtc_packaging/debian_harmattan/compat \
+    qtc_packaging/debian_harmattan/changelog \
+    webchannel.js \
+    webchannel-iframe.html
 
 !equals(_PRO_FILE_PWD_, $$OUT_PWD) {
     copy_qmldir.target = $$OUT_PWD/qmldir

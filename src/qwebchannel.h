@@ -42,9 +42,9 @@
 #ifndef QWEBCHANNEL_H
 #define QWEBCHANNEL_H
 
-#include <QtDeclarative/QDeclarativeItem>
 #include <QTcpSocket>
 #include <QPointer>
+#include <QUrl>
 
 class QWebChannelPrivate;
 
@@ -69,7 +69,7 @@ private:
     QPointer<QTcpSocket> socket;
 };
 
-class QWebChannel : public QDeclarativeItem
+class QWebChannel : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
@@ -80,7 +80,7 @@ class QWebChannel : public QDeclarativeItem
     Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
 
 public:
-    QWebChannel(QDeclarativeItem *parent = 0);
+    QWebChannel(QObject *parent = 0);
     QUrl  baseUrl() const;
     void setUseSecret(bool);
     bool useSecret() const;
