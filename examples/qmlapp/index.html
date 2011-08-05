@@ -13,24 +13,26 @@
             document.write('<script src="' + getWebChannelBaseUrl() + '"><' + '/script>');
             function output(x)
             {
-                document.querySelector("#out").innerHTML = x;
+                document.querySelector("#out").innerHTML += x + "<br/>";
             }
-
-            function send()
-            {
-            navigator.webChannel.subscribe(
-                "incoming-call",
-                function(message) {
-                    output(message);
-                }
-            );
-                navigator.webChannel.exec(
-                    {a:"This is a request from HTML"},
-                    function(response) {
-                        output(response.b);
-                    }
-                );
-            }
+        </script>
+        <script>
+            window.onload = function() {
+                navigator.createWebChannel(function(c) {
+                    c.subscribe(
+                        "incoming-call",
+                        function(message) {
+                            output(message);
+                        }
+                    );
+                    c.exec(
+                        {a:"This is a request from HTML"},
+                        function(response) {
+                            output(response.b);
+                        }
+                    );
+                });
+            };
         </script>
     </head>
     <body>

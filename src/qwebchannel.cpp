@@ -221,26 +221,31 @@ void QWebChannelPrivate::service()
     }
 
     if (method == "GET") {
-        QString type = pathElements.size() == 1 ? "j" : pathElements[1];
-        if (type == "e") {
+        QString type = pathElements.size() == 1 ? "webchannel.js" : pathElements[1];
+        if (type == "EXEC") {
             QString message = QStringList(pathElements.mid(2)).join("/");
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
             QString msg = QUrl::fromPercentEncoding(message.toUtf8());
             emit execute(msg, responder);
-        } else if (type == "j") {
+        } else if (type == "SUBSCRIBE") {
+            QString id = pathElements[2];
+            connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+            connect(socket, SIGNAL(destroyed(QObject*)), this, SLOT(onSocketDelete(QObject*)));
+            subscribers.insert(id, socket);
+        } else if (type == "webchannel.js") {
             QFile file(":/webchannel.js");
             file.open(QIODevice::ReadOnly);
             socket->write("HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/javascript\r\n"
                           "Cache-Control: No-Cache\r\n"
                           "\r\n");
-            socket->write("window.onload = function() {");
+            socket->write("(function() {");
             socket->write(QString("baseUrl = '%1';").arg(baseUrl.toString()).toUtf8());
             socket->write(file.readAll());
-            socket->write("};");
+            socket->write("})();");
             socket->close();
             file.close();
-        } else if (type == "h") {
+        } else if (type == "iframe.html") {
             QFile file(":/webchannel-iframe.html");
             file.open(QIODevice::ReadOnly);
             socket->write("HTTP/1.1 200 OK\r\n"
@@ -250,11 +255,6 @@ void QWebChannelPrivate::service()
             socket->write(file.readAll());
             socket->close();
             file.close();
-        } else if (type == "s") {
-            QString id = pathElements[2];
-            connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
-            connect(socket, SIGNAL(destroyed(QObject*)), this, SLOT(onSocketDelete(QObject*)));
-            subscribers.insert(id, socket);
         }
     }
 }

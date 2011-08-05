@@ -1,10 +1,11 @@
 <html>
     <head>
         <script>
-            function exec(data, callback)
+            function exec(data, callback, type)
             {
+                type = type || 'EXEC';
                 var xhr = new XMLHttpRequest;
-                xhr.open("GET", "../e/" + data, true);
+                xhr.open("GET", "../" + type + "/" + data, true);
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState != 4 || xhr.status != 200)
                         return;
@@ -15,20 +16,15 @@
 
             function poll(id, callback)
             {
-                var xhr = new XMLHttpRequest;
-                xhr.open("GET", "../s/" + id, true);
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState != 4 || xhr.status != 200)
-                        return;
-                    callback(xhr.responseText);
+                exec(id, function(response) {
+                    callback(response);
                     setTimeout(function() { poll(id, callback); }, 0);
-                };
-                xhr.send();
+                }, 'SUBSCRIBE');
             }
 
             window.addEventListener("message", function(event) {
                 var data = JSON.parse(event.data);
-                function callback(r) { window.parent.postMessage(JSON.stringify({ id: data.id, payload: r }), "*"); }
+                function callback(r) { window.parent.postMessage(JSON.stringify({ type: "callback", id: data.id, payload: r }), "*"); }
                 if (data.type == "exec")
                     exec(JSON.stringify(data.payload), callback);
                 else if (data.type == "subscribe")
