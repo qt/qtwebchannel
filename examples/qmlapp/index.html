@@ -1,17 +1,7 @@
 <html>
     <head>
         <script>
-            document.body.innerHTML = JSON.stringify(location);
-        function getWebChannelBaseUrl() {
-            var query = window.location.search.substring(1);
-            var vars = query.split("&");
-            for (var i=0;i<vars.length;i++) {
-                var pair = vars[i].split("=");
-                if (pair[0] == "webChannelBaseUrl")
-                    return pair[1];
-            }
-          }
-            document.write('<script src="' + getWebChannelBaseUrl() + '"><' + '/script>');
+            document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '"><' + '/script>');
             function output(x)
             {
                 document.querySelector("#out").innerHTML += x + "<br/>";

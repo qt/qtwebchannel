@@ -24,8 +24,8 @@ Rectangle {
         url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl   ;
         settings.developerExtrasEnabled: true
         anchors.top: txt.bottom
-        height: 200
-        width: 200
+        height: 2000
+        width: 2000
     }
 
     TextEdit {
