@@ -41,7 +41,7 @@ Rectangle {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                webChannel.broadcast("incoming-call", JSON.stringify(editor.text));
+                webChannel.broadcast("foobar", JSON.stringify(editor.text));
             }
         }
     }

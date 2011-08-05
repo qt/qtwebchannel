@@ -20,7 +20,7 @@
             window.onload = function() {
                 navigator.createWebChannel(function(c) {
                     c.subscribe(
-                        "incoming-call",
+                        "foobar",
                         function(message) {
                             output(message);
                         }
