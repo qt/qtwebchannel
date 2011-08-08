@@ -82,6 +82,17 @@ void QWebChannelResponder::close()
     socket->close();
 }
 
+struct HttpRequestData {
+    enum State { BeginState, AfterFirstLineState, AfterHeadersState, DoneState };
+
+    State state;
+    QString firstLine;
+    QMap<QString, QString> headers;
+    int contentLength;
+    QString content;
+    HttpRequestData() : state(BeginState), contentLength(0) { }
+};
+
 class QWebChannelPrivate : public QObject {
     Q_OBJECT
 public:
@@ -95,9 +106,10 @@ public:
     typedef QMultiMap<QString, QPointer<QTcpSocket> > SubscriberMap;
     SubscriberMap subscribers;
     bool starting;
+    QMap<QTcpSocket*, HttpRequestData> pendingData;
 
     QWebChannelPrivate(QObject* parent)
-        : QObject(0)
+        : QObject(parent)
         , useSecret(true)
         , port(-1)
         , minPort(49158)
@@ -116,11 +128,15 @@ public:
         starting = true;
     }
 
+    void handleHttpRequest(QTcpSocket* socket, const HttpRequestData& data);
+
 public slots:
     void init();
     void broadcast(const QString&, const QString&);
     void service();
     void onSocketDelete(QObject*);
+    void handleSocketData();
+    void handleSocketData(QTcpSocket*);
 
 signals:
     void execute(const QString&, QObject*);
@@ -153,19 +169,60 @@ void QWebChannelPrivate::broadcast(const QString& id, const QString& message)
     }
 }
 
-void QWebChannelPrivate::service()
+void QWebChannelPrivate::handleSocketData()
 {
-    if (!server->hasPendingConnections())
+    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket)
+        return;
+    handleSocketData(socket);
+
+}
+
+void QWebChannelPrivate::handleSocketData(QTcpSocket* socket)
+{
+    HttpRequestData* data = &pendingData[socket];
+    switch (data->state) {
+    case HttpRequestData::BeginState:
+        if (!socket->canReadLine())
+            return;
+        data->firstLine = socket->readLine().trimmed();
+        data->state = HttpRequestData::AfterFirstLineState;
+        handleSocketData(socket);
         return;
 
-    QTcpSocket* socket = server->nextPendingConnection();
-    if (!socket->canReadLine())
-        if (!socket->waitForReadyRead(1000))
+    case HttpRequestData::AfterFirstLineState: {
+        while (socket->canReadLine()) {
+            QString line = socket->readLine();
+            if (line == "\r\n") {
+                data->state = HttpRequestData::AfterHeadersState;
+                data->contentLength = data->headers["Content-Length"].toInt();
+                handleSocketData(socket);
+                return;
+            }
+
+            QStringList split = line.split(": ");
+            data->headers[split[0]] = split[1].trimmed();
+        }
+        return;
+    }
+
+    case HttpRequestData::AfterHeadersState:
+        data->content += socket->readAll();
+        if (data->content.size() != data->contentLength)
             return;
+        data->state = HttpRequestData::DoneState;
+        handleHttpRequest(socket, *data);
+        pendingData.remove(socket);
+        return;
 
+    case HttpRequestData::DoneState:
+        return;
+    }
+}
 
-    QString firstLine = socket->readLine();
-    QStringList firstLineValues = firstLine.split(' ');
+void QWebChannelPrivate::handleHttpRequest(QTcpSocket *socket, const HttpRequestData &data)
+{
+    QStringList firstLineValues = data.firstLine.split(' ');
     QString method = firstLineValues[0];
     QString path = firstLineValues[1];
     QString query;
@@ -191,18 +248,7 @@ void QWebChannelPrivate::service()
     QMap<QString, QString> queryMap;
     foreach (QString q, queryVars) {
         int idx = q.indexOf("=");
-        queryMap[q.left(idx)] = q.mid(idx + 1);
-    }
-
-    while (!socket->canReadLine())
-        socket->waitForReadyRead();
-    QString requestString = socket->readAll();
-    QStringList headersAndContent = requestString.split("\r\n\r\n");
-    QStringList headerList = headersAndContent[0].split("\r\n");
-    QMap<QString, QString> headerMap;
-    foreach (QString h, headerList) {
-        int idx = h.indexOf(": ");
-        headerMap[h.left(idx)] = h.mid(idx + 2);
+        queryMap[q.left(idx)] = q.mid(idx + 1).trimmed();
     }
 
     QStringList pathElements = path.split('/');
@@ -211,7 +257,6 @@ void QWebChannelPrivate::service()
     if ((useSecret && pathElements[0] != secret)) {
         socket->write(
                             "HTTP/1.1 401 Wrong Path\r\n"
-                            "Cache-Control: No-Cache\r\n"
                             "Content-Type: text/json\r\n"
                             "\r\n"
                             "<html><body><h1>Wrong Path</h1></body></html>"
@@ -220,43 +265,55 @@ void QWebChannelPrivate::service()
         return;
     }
 
-    if (method == "GET") {
-        QString type = pathElements.size() == 1 ? "webchannel.js" : pathElements[1];
+    QString type = pathElements[1];
+    if (method == "POST") {
         if (type == "EXEC") {
-            QString message = QStringList(pathElements.mid(2)).join("/");
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
-            QString msg = QUrl::fromPercentEncoding(message.toUtf8());
-            emit execute(msg, responder);
+            emit execute(data.content, responder);
         } else if (type == "SUBSCRIBE") {
-            QString id = pathElements[2];
             connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
             connect(socket, SIGNAL(destroyed(QObject*)), this, SLOT(onSocketDelete(QObject*)));
-            subscribers.insert(id, socket);
-        } else if (type == "webchannel.js") {
+            subscribers.insert(data.content, socket);
+        }
+    } else if (method == "GET") {
+        if (type == "webchannel.js") {
             QFile file(":/webchannel.js");
+            QString initFunction = pathElements[2];
             file.open(QIODevice::ReadOnly);
             socket->write("HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/javascript\r\n"
-                          "Cache-Control: No-Cache\r\n"
                           "\r\n");
-            socket->write("(function() {");
-            socket->write(QString("baseUrl = '%1';").arg(baseUrl.toString()).toUtf8());
+            socket->write("(function() {\n");
+            socket->write(QString("var baseUrl = '%1';\n").arg(baseUrl.toString()).toUtf8());
+            socket->write(QString("var initFunction = '%1';\n").arg(initFunction).toUtf8());
             socket->write(file.readAll());
-            socket->write("})();");
+            socket->write("\n})();");
             socket->close();
             file.close();
         } else if (type == "iframe.html") {
             QFile file(":/webchannel-iframe.html");
             file.open(QIODevice::ReadOnly);
-            socket->write("HTTP/1.1 200 OK\r\n"
+            socket->write(QString("HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/html\r\n"
-                          "Cache-Control: No-Cache\r\n"
-                          "\r\n");
+                          "Content-Length: %1\r\n"
+                          "Connection: Close\r\n"
+                          "\r\n").arg(file.size()).toUtf8());
             socket->write(file.readAll());
             socket->close();
             file.close();
         }
     }
+}
+
+void QWebChannelPrivate::service()
+{
+    if (!server->hasPendingConnections())
+        return;
+
+    QTcpSocket* socket = server->nextPendingConnection();
+    handleSocketData(socket);
+    connect(socket, SIGNAL(readyRead()), this, SLOT(handleSocketData()));
+
 }
 
 void QWebChannelPrivate::init()

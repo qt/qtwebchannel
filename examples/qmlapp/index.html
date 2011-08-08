@@ -1,7 +1,7 @@
 <html>
     <head>
         <script>
-            document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '"><' + '/script>');
+            document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '/webchannel.js/createWebChannel"><' + '/script>');
             function output(x)
             {
                 document.querySelector("#out").innerHTML += x + "<br/>";
@@ -9,7 +9,7 @@
         </script>
         <script>
             window.onload = function() {
-                navigator.createWebChannel(function(c) {
+                createWebChannel(function(c) {
                     c.subscribe(
                         "foobar",
                         function(message) {

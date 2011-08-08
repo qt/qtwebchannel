@@ -46,10 +46,13 @@ function guid() {
    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 }
 
-
-// Remove the calling script from the DOM.
 var iframeElement = document.createElement("iframe");
-iframeElement.style.display = "none";
+iframeElement.onload = function()
+{
+    loadListeners.forEach(function(callback) { (callback)(webChannelPrivate); });
+};
+
+///iframeElement.style.display = "none";
 iframeElement.src = baseUrl + "/iframe.html/" + guid();
 var callbacks = {};
 var loadListeners = [];
@@ -57,30 +60,28 @@ var initialized = false;
 var webChannelPrivate = {
     exec: function(message, callback) {
         var id = guid();
-        iframeElement.contentWindow.postMessage(JSON.stringify({type: "exec", id: id, payload: message}), "*");
+        iframeElement.contentWindow.postMessage(JSON.stringify({type: "EXEC", id: id, payload: message}), "*");
         callbacks[id] = [ function(data) { (callback)(data); delete callbacks[id]; }];
     },
 
     subscribe: function(id, callback) {
-        iframeElement.contentWindow.postMessage(JSON.stringify({type: "subscribe", id: id}), "*");
+        iframeElement.contentWindow.postMessage(JSON.stringify({type: "SUBSCRIBE", id: id}), "*");
         callbacks[id] = callbacks[id] || [];
         callbacks[id].push(callback);
     },
 };
 
 window.onmessage = function(event) {
+    alert(event.data);
     if (baseUrl.indexOf(event.origin))
         return;
     var data = JSON.parse(event.data);
+
     var callbacksForID = callbacks[data.id] || [];
     callbacksForID.forEach(function(callback) { (callback)(JSON.parse(data.payload)); });
 };
 
-iframeElement.onload = function() {
-    loadListeners.forEach(function(callback) { (callback)(webChannelPrivate); });
-};
-
-navigator.createWebChannel = function(onLoad) {
+window[initFunction] = function(onLoad) {
     if (initialized) {
         onLoad(webChannelPrivate);
         return;

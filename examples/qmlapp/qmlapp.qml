@@ -9,6 +9,7 @@ Rectangle {
         id: webChannel
 
         onExecute: {
+            console.log(requestData);
             var data = JSON.parse(requestData);
             txt.text = data.a;
             response.send(JSON.stringify({b:'This is a response from QML'}));
@@ -26,6 +27,9 @@ Rectangle {
         anchors.top: txt.bottom
         height: 2000
         width: 2000
+        onAlert: {
+            console.log(message);
+        }
     }
 
     TextEdit {

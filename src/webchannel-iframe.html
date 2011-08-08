@@ -5,13 +5,14 @@
             {
                 type = type || 'EXEC';
                 var xhr = new XMLHttpRequest;
-                xhr.open("GET", "../" + type + "/" + data, true);
+                xhr.open("POST", "../" + type, true);
+                xhr.setRequestHeader("Content-Length", data.length);
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState != 4 || xhr.status != 200)
                         return;
                     callback(xhr.responseText);
                 };
-                xhr.send();
+                xhr.send(data);
             }
 
             function poll(id, callback)
@@ -25,13 +26,13 @@
             window.addEventListener("message", function(event) {
                 var data = JSON.parse(event.data);
                 function callback(r) { window.parent.postMessage(JSON.stringify({ type: "callback", id: data.id, payload: r }), "*"); }
-                if (data.type == "exec")
+                if (data.type == "EXEC")
                     exec(JSON.stringify(data.payload), callback);
-                else if (data.type == "subscribe")
+                else if (data.type == "SUBSCRIBE")
                     poll(data.id, callback);
             });
         </script>
     </head>
-    <body>
+    <body onload="window.parent.postMessage('11111')">
     </body>
 </html>
