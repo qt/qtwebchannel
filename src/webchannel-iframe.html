@@ -27,7 +27,7 @@
                 var data = JSON.parse(event.data);
                 function callback(r) { window.parent.postMessage(JSON.stringify({ type: "callback", id: data.id, payload: r }), "*"); }
                 if (data.type == "EXEC")
-                    exec(JSON.stringify(data.payload), callback);
+                    exec(data.payload, callback);
                 else if (data.type == "SUBSCRIBE")
                     poll(data.id, callback);
             });

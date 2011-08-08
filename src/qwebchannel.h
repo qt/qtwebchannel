@@ -47,7 +47,7 @@
 #include <QUrl>
 
 class QWebChannelPrivate;
-
+class QTimer;
 class QWebChannelResponder : public QObject {
     Q_OBJECT
 
@@ -58,6 +58,8 @@ public slots:
     void open();
     void write(const QString& data);
     void close();
+    void retain();
+    void noop();
     void send(const QString& data)
     {
         open();
@@ -65,8 +67,12 @@ public slots:
         close();
     }
 
+private slots:
+    void closeIfNotRetained();
+
 private:
     QPointer<QTcpSocket> socket;
+    QTimer* autoDeleteTimer;
 };
 
 class QWebChannel : public QObject
@@ -78,12 +84,15 @@ class QWebChannel : public QObject
     Q_PROPERTY(int maxPort READ maxPort WRITE setMaxPort)
     Q_PROPERTY(int minPort READ minPort WRITE setMinPort)
     Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
+    Q_PROPERTY(bool autoRetain READ autoRetain WRITE setAutoRetain)
 
 public:
     QWebChannel(QObject *parent = 0);
     QUrl  baseUrl() const;
     void setUseSecret(bool);
     bool useSecret() const;
+    void setAutoRetain(bool);
+    bool autoRetain() const;
     int port() const;
     int minPort() const;
     int maxPort() const;

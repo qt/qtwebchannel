@@ -22,8 +22,7 @@ Rectangle {
 
     WebView {
         id: webView
-        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl   ;
-        settings.developerExtrasEnabled: true
+        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
         anchors.top: txt.bottom
         height: 2000
         width: 2000

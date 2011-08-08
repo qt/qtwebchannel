@@ -1,0 +1,60 @@
+<html>
+    <head>
+        <style>
+        #output {
+            width:92%; height: 95%; display: block;
+            border-radius: 5px;
+            border-style: solid;
+            border-color: #666666;
+            background-image: -webkit-linear-gradient(left top,#dddddd, #ffffff)
+        }
+        #input {
+            width:92%; height: 5%; display: block; background-color: #dddddd;
+            border-radius: 3px;
+            border-style: solid;
+            border-color: #dddddd;
+            background-image: -webkit-linear-gradient(left,#eeeeee, #cccccc)
+        }
+        </style>
+        <script>
+            document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '/webchannel.js/createWebChannel"><' + '/script>');
+        </script>
+        <script>
+        function out(line)
+        {
+            document.querySelector("#output").value += line + "\r\n";
+        }
+        window.onload = function() {
+            out("Starting...");
+            createWebChannel(function(webChannel) {
+                window.navigator.webChannel = webChannel;
+                out("Ready");
+                webChannel.subscribe("stdout", out);
+            });
+        };
+
+        function send()
+        {
+            var input = document.querySelector("#input");
+            var text = input.value;
+            out("> " + text);
+            input.value = "";
+            navigator.webChannel.exec(text);
+        }
+
+        function handleKey(code)
+        {
+            switch (code) {
+                case 13:
+                    send();
+                    break;
+
+            }
+        }
+        </script>
+    </head>
+    <body marginleft=0 margintop=0 style="width:480px; height: 800px">
+        <textarea readonly id="output" ></textarea>
+        <input type="text" id="input" onkeyup="handleKey(event.keyCode)"></input>
+    </body>
+</html>

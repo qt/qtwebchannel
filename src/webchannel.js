@@ -78,7 +78,7 @@ window.onmessage = function(event) {
     var data = JSON.parse(event.data);
 
     var callbacksForID = callbacks[data.id] || [];
-    callbacksForID.forEach(function(callback) { (callback)(JSON.parse(data.payload)); });
+    callbacksForID.forEach(function(callback) { (callback)(data.payload); });
 };
 
 window[initFunction] = function(onLoad) {

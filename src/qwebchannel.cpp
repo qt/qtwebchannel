@@ -53,14 +53,30 @@
 QWebChannelResponder::QWebChannelResponder(QTcpSocket* s)
     : QObject(s)
     , socket(s)
+    , autoDeleteTimer(new QTimer(this))
 {
     connect(socket.data(), SIGNAL(disconnected()), socket.data(), SLOT(deleteLater()));
+    connect(autoDeleteTimer, SIGNAL(timeout()), this, SLOT(noop()));
+    autoDeleteTimer->setSingleShot(true);
+    autoDeleteTimer->start(0);
+}
+
+void QWebChannelResponder::retain()
+{
+    autoDeleteTimer->stop();
+}
+
+void QWebChannelResponder::noop()
+{
+    send("");
 }
 
 void QWebChannelResponder::open()
 {
     if (!socket || !socket->isOpen())
         return;
+
+    retain();
 
     socket->write("HTTP/1.1 200 OK\r\n"
                   "Content-Type: text/json\r\n"
@@ -90,13 +106,16 @@ struct HttpRequestData {
     QMap<QString, QString> headers;
     int contentLength;
     QString content;
-    HttpRequestData() : state(BeginState), contentLength(0) { }
+    HttpRequestData()
+        : state(BeginState),
+          contentLength(0) { }
 };
 
 class QWebChannelPrivate : public QObject {
     Q_OBJECT
 public:
     bool useSecret;
+    bool autoRetain;
     int port;
     int minPort;
     int maxPort;
@@ -111,6 +130,7 @@ public:
     QWebChannelPrivate(QObject* parent)
         : QObject(parent)
         , useSecret(true)
+        , autoRetain(false)
         , port(-1)
         , minPort(49158)
         , maxPort(65535)
@@ -269,6 +289,8 @@ void QWebChannelPrivate::handleHttpRequest(QTcpSocket *socket, const HttpRequest
     if (method == "POST") {
         if (type == "EXEC") {
             QWebChannelResponder* responder = new QWebChannelResponder(socket);
+            if (autoRetain)
+                responder->retain();
             emit execute(data.content, responder);
         } else if (type == "SUBSCRIBE") {
             connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
@@ -369,6 +391,15 @@ bool QWebChannel::useSecret() const
 {
     return d->useSecret;
 }
+bool QWebChannel::autoRetain() const
+{
+    return d->autoRetain;
+}
+
+void QWebChannel::setAutoRetain(bool a)
+{
+    d->autoRetain = a;
+}
 
 int QWebChannel::port() const
 {
@@ -410,6 +441,8 @@ void QWebChannel::broadcast(const QString& id, const QString& data)
 {
     d->broadcast(id, data);
 }
+
+
 
 
 #include <qwebchannel.moc>

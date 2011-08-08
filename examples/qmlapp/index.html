@@ -17,9 +17,9 @@
                         }
                     );
                     c.exec(
-                        {a:"This is a request from HTML"},
+                        JSON.stringify({a:"This is a request from HTML"}),
                         function(response) {
-                            output(response.b);
+                            output(JSON.parse(response).b);
                         }
                     );
                 });
