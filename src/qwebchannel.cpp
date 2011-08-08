@@ -293,11 +293,9 @@ void QWebChannelPrivate::handleHttpRequest(QTcpSocket *socket, const HttpRequest
         } else if (type == "iframe.html") {
             QFile file(":/webchannel-iframe.html");
             file.open(QIODevice::ReadOnly);
-            socket->write(QString("HTTP/1.1 200 OK\r\n"
+            socket->write("HTTP/1.1 200 OK\r\n"
                           "Content-Type: text/html\r\n"
-                          "Content-Length: %1\r\n"
-                          "Connection: Close\r\n"
-                          "\r\n").arg(file.size()).toUtf8());
+                          "\r\n");
             socket->write(file.readAll());
             socket->close();
             file.close();
