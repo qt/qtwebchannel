@@ -69,7 +69,16 @@ window.onload = function() {
                      methodsAndSignals.push(data.signals[i]);
 
                  methodsAndSignals.forEach(function(method) {
-                     object[method] = function(args, callback) {
+                     object[method] = function() {
+                         var args = [];
+                         var callback;
+                         for (var i = 0; i < arguments.length; ++i) {
+                             if (typeof arguments[i] == "function")
+                                 callback = arguments[i];
+                             else
+                                 args.push(arguments[i]);
+                         }
+
                          webChannel.exec(JSON.stringify({type: "Qt.invokeMethod", object: objectName, method: method, args: args}), function(response) {
                              if (response.length)
                                  (callback)(JSON.parse(response));

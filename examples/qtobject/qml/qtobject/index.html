@@ -12,7 +12,7 @@
         </script>
     </head>
     <body>
-        <a href="#" onclick="testObject.debugMe('Debugging!')">invoke method</a>
+        <a href="#" onclick="testObject.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
         <a href="#" onclick="testObject.prop1(function(value) { output(value); })">Get property</a>
         <a href="#" onclick="testObject.prop1 = 'Different property'; testObject.prop1(function(value) { output(value); })">Set property</a>
         <a href="#" onclick="testObject.timeout.connect(function() { output('timeout'); }); testObject.startTimer(1000);">Timer</a>

@@ -22,7 +22,7 @@ public slots:
         timer.start(millis);
     }
 
-    void debugMe(const QString& data);
+    QString debugMe(const QString& data);
 
 private:
     QString p1;

@@ -7,9 +7,10 @@ TestObject::TestObject(QObject *parent) :
     connect(&timer, SIGNAL(timeout()), this, SIGNAL(timeout()));
 }
 
-void TestObject::debugMe(const QString& data)
+QString TestObject::debugMe(const QString& data)
 {
     qWarning() << data;
+    return "OK";
 }
 
 void TestObject::setProp1(const QString& s)
