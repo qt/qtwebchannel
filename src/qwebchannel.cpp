@@ -442,7 +442,4 @@ void QWebChannel::broadcast(const QString& id, const QString& data)
     d->broadcast(id, data);
 }
 
-
-
-
 #include <qwebchannel.moc>

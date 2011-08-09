@@ -52,7 +52,7 @@ iframeElement.onload = function()
     loadListeners.forEach(function(callback) { (callback)(webChannelPrivate); });
 };
 
-///iframeElement.style.display = "none";
+iframeElement.style.display = "none";
 iframeElement.src = baseUrl + "/iframe.html/" + guid();
 var callbacks = {};
 var loadListeners = [];

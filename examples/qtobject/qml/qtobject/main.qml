@@ -65,7 +65,7 @@ Rectangle {
             } else if (payload.type == "Qt.connectToSignal") {
                 object[payload.signal].connect(
                     function(a,b,c,d,e,f,g,h,i,j) {
-                        broadcast("Qt.signal", JSON.stringify({object: payload.object, signal: payload.signal, arguments: [a,b,c,d,e,f,g,h,i,j]}));
+                        broadcast("Qt.signal", JSON.stringify({object: payload.object, signal: payload.signal, args: [a,b,c,d,e,f,g,h,i,j]}));
                 });
             } else if (payload.type == "Qt.getProperty") {
                 ret = object[payload.property];
@@ -75,8 +75,8 @@ Rectangle {
                 var objectNames = publisher.objectNames;
                 for (var i = 0; i < objectNames.length; ++i) {
                     var name = objectNames[i];
-                    var object = publisher.namedObject(name);
-                    addObject(name, object);
+                    var o = publisher.namedObject(name);
+                    addObject(name, o);
                 }
             }
 
@@ -87,7 +87,7 @@ Rectangle {
         {
             publisher.addObject(name, object);
             var metaData = { name: name, data: publisher.classInfoForObject(object) };
-            broadcast("Qt.addObject", JSON.stringify(metaData));
+            broadcast("Qt.addToWindowObject", JSON.stringify(metaData));
         }
 
         onBaseUrlChanged: addObject("testObject", testObject)
