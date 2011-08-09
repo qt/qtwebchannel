@@ -1,0 +1,89 @@
+<html>
+    <head>
+        <script>
+            document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '/webchannel.js/createWebChannel"><' + '/script>');
+            function output(x)
+            {
+                document.querySelector("#out").innerHTML += x + "<br/>";
+            }
+        </script>
+        <script>
+            function createObjectProxy(webChannel, objectName, data)
+            {
+                var object = {_qtSignals: []};
+                var methodsAndSignals = [];
+                for (var i = 0; i < data.methods.length; ++i)
+                    methodsAndSignals.push(data.methods[i]);
+                for (var i = 0; i < data.signals.length; ++i)
+                    methodsAndSignals.push(data.signals[i]);
+                methodsAndSignals.forEach(function(method) {
+                    object[method] = function(args, callback) {
+                        webChannel.exec(JSON.stringify({type: "Qt.invokeMethod", object: objectName, method: method, args: args}), function(response) {
+                            (callback)(JSON.parse(response));
+                        });
+                    };
+                });
+                data.signals.forEach(function(signal) {
+                    object[signal].connect = function() {
+                        webChannel.exec(JSON.stringify({type: "Qt.connectToSignal", signal: signal}));
+                        var func, target;
+                        for (var i = 0; i < arguments; ++i) {
+                            if (typeof arguments[i] == "function" || typeof arguments[i] == "string")
+                                func = arguments[i];
+                            else if (typeof arguments[i] == "object")
+                                target = arguments[i];
+                        }
+                        if (typeof func == "string") {
+                            if (!target)
+                                return;
+                            func = target[func];
+                        }
+                        if (typeof func != "function")
+                            return;
+                        object["_qtSignals"].push({name: signal, target: target, func: func});
+                    };
+                });
+
+                data.properties.forEach(function(prop) {
+                    object.__defineSetter__(prop, function(value) {
+                        webChannel.exec(JSON.stringify({type: "Qt.setProperty", object: objectName, property: prop, value: value }));
+                    });
+                    object.__defineGetter__(prop, function() {
+                        return (function(callback) {
+                            webChannel.exec(JSON.stringify({type: "Qt.getProperty", object: objectName, property: prop}), function(response) {
+                                callback(JSON.parse(response));
+                            });
+                        });
+                    });
+                });
+                return object;
+            }
+            window.onload = function() {
+                createWebChannel(function(webChannel) {
+                    webChannel.subscribe(
+                        "Qt.signal",
+                        function(payload) {
+                            alert(1);
+                            output(payload);
+                        }
+                    );
+                    webChannel.subscribe(
+                        "Qt.addObject",
+                        function(payload) {
+                            var addObjectData = JSON.parse(payload);
+                            alert(addObjectData.name);
+                            window[addObjectData.name] = createObjectProxy(webChannel, addObjectData.name, addObjectData.data);
+                        }
+                    );
+                    webChannel.exec(JSON.stringify({type:"Qt.getObjects"}));
+                });
+            };
+        </script>
+    </head>
+    <body>
+    <a href="javascript:testObject.debugMe('Debugging!')">invoke method</a>
+    <a href="javascript:testObject.prop1(function(value) { output(value); })">Get property</a>
+    <a href="javascript:testObject.prop1 = 'Different property'; testObject.prop1(function(value) { output(value); })">Set property</a>
+    <div id="out"></div>
+    </body>
+</html>

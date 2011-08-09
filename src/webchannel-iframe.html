@@ -6,7 +6,6 @@
                 type = type || 'EXEC';
                 var xhr = new XMLHttpRequest;
                 xhr.open("POST", "../" + type, true);
-                xhr.setRequestHeader("Content-Length", data.length);
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState != 4 || xhr.status != 200)
                         return;
@@ -33,6 +32,6 @@
             });
         </script>
     </head>
-    <body onload="window.parent.postMessage('11111')">
+    <body>
     </body>
 </html>

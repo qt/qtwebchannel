@@ -61,7 +61,8 @@ var webChannelPrivate = {
     exec: function(message, callback) {
         var id = guid();
         iframeElement.contentWindow.postMessage(JSON.stringify({type: "EXEC", id: id, payload: message}), "*");
-        callbacks[id] = [ function(data) { (callback)(data); delete callbacks[id]; }];
+        if (callback)
+            callbacks[id] = [ function(data) { (callback)(data); delete callbacks[id]; }];
     },
 
     subscribe: function(id, callback) {
@@ -72,7 +73,6 @@ var webChannelPrivate = {
 };
 
 window.onmessage = function(event) {
-    alert(event.data);
     if (baseUrl.indexOf(event.origin))
         return;
     var data = JSON.parse(event.data);
