@@ -1,0 +1,54 @@
+Qt Web Channel is a labs project that enables the creation of an HTTP-based channel between a web view and its QML/C++ container.
+
+To build:
+cd src
+qmake
+make
+sudo make install
+
+This would enable a QML import, which can be imported as such:
+import Qt.labs.WebChannel 1.0
+
+and then instantiated:
+    WebChannel {
+        id: webChannel
+
+        onExecute: {
+        }
+    }
+
+A new WebChannel then generates a secret URL, that can be used from within an HTML page as a loaded script.
+
+QML:
+WebView {
+    id: webView
+    url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
+}
+
+HTML:
+document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '/webchannel.js/createWebChannel"><' + '/script>');
+
+This would invoke a function named createWebChannel (or any other name passed in the URL), that would receieve as a parameter the web channel object.
+That object can be used to execute commands:
+
+HTML
+webChannel.exec("command", function(result) { ... });
+
+QML
+WebChannel {
+     onExecute { 
+         if (requestData == "command") { response.send("..."); }
+     }
+}
+
+or subscribe to events:
+
+HTML
+webChannel.subscribe("myEvent", function(eventData) { ... });
+
+QML
+webChannel.broadcast("myEvent", "...");
+
+
+See examples for further details.
+

@@ -55,7 +55,6 @@ void Shell::start()
 
 void Shell::exec(const QString& data)
 {
-    qWarning() << "executing" << data;
     process.write(data.toUtf8());
     process.write("\n");
 }
