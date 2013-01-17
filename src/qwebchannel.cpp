@@ -41,7 +41,6 @@
 
 #include "qwebchannel.h"
 
-#include <QtDeclarative/qdeclarative.h>
 #include <QFile>
 #include <QPointer>
 #include <QStringList>

@@ -3,7 +3,7 @@ include(src.pri)
 TEMPLATE = lib
 TARGET = qwebchannel
 TARGETPATH = Qt/labs/WebChannel
-QT += declarative
+QT += qml
 CONFIG += qt plugin
 
 TARGET = $$qtLibraryTarget($$TARGET)
@@ -31,10 +31,10 @@ OTHER_FILES = qmldir \
     PRE_TARGETDEPS += $$copy_qmldir.target
 }
 
-target.path = $$[QT_INSTALL_IMPORTS]/$$TARGETPATH
+target.path = $$[QT_INSTALL_QML]/$$TARGETPATH
 
 qmldir.files += $$PWD/qmldir
-qmldir.path +=  $$[QT_INSTALL_IMPORTS]/$$TARGETPATH
+qmldir.path +=  $$[QT_INSTALL_QML]/$$TARGETPATH
 
 INSTALLS += target qmldir
 
