@@ -63,9 +63,9 @@ window.onload = function() {
                  var object = {};
                  var objectName = addObjectData.name;
                  var data = addObjectData.data;
-                 for (var i = 0; i < data.methods.length; ++i)
+                 for (var i in data.methods)
                      methodsAndSignals.push(data.methods[i]);
-                 for (i = 0; i < data.signals.length; ++i)
+                 for (i in data.signals)
                      methodsAndSignals.push(data.signals[i]);
 
                  methodsAndSignals.forEach(function(method) {
@@ -86,16 +86,18 @@ window.onload = function() {
                      };
                  });
 
-                 data.signals.forEach(function(signal) {
+                 for (i in data.signals) {
+                     var signal = data.signals[i];
                      object[signal].connect = function(callback) {
                          objectSignals[signal] = objectSignals[signal] || [];
                          webChannel.exec(JSON.stringify({type: "Qt.connectToSignal", object: objectName, signal: signal}));
                          objectSignals[signal].push(callback);
                      };
-                 });
-                 allSignals[addObjectData.name] = objectSignals;
+                 }
+                 allSignals[objectName] = objectSignals;
 
-                 data.properties.forEach(function(prop) {
+                 for (i in data.properties) {
+                     var prop = data.properties[i];
                      object.__defineSetter__(prop, function(value) {
                          webChannel.exec(JSON.stringify({type: "Qt.setProperty", object: objectName, property: prop, value: value }));
                      });
@@ -106,9 +108,9 @@ window.onload = function() {
                              });
                          });
                      });
-                 });
+                 }
 
-                 window[addObjectData.name] = object;
+                 window[objectName] = object;
             }
         );
         webChannel.exec(JSON.stringify({type:"Qt.getObjects"}));
