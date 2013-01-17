@@ -18,7 +18,7 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object)
         qtProperties.append(metaObject->property(i).name());
     for (int i = 0; i < metaObject->methodCount(); ++i) {
         QMetaMethod method = metaObject->method(i);
-        QString signature = method.signature();
+        QString signature = method.methodSignature();
         QString name = signature.left(signature.indexOf("("));
         if (method.access() == QMetaMethod::Public)
             qtMethods << signature << name;

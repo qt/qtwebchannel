@@ -39,20 +39,15 @@
 **
 ****************************************************************************/
 
-#include <QtDeclarative/qdeclarative.h>
+#include <qqml.h>
 
 #include "qwebchannel.h"
 
-QML_DECLARE_TYPE(QWebChannel)
-QML_DECLARE_TYPE(QWebChannelResponder)
-
 #include "qwebchannel_plugin.h"
-
 
 void QWebChannelPlugin::registerTypes(const char *uri)
 {
+    Q_ASSERT(uri == QLatin1String("Qt.labs.WebChannel"));
     qmlRegisterType<QWebChannel>(uri, 1, 0, "WebChannel");
 }
-
-Q_EXPORT_PLUGIN2(QWebChannel, QWebChannelPlugin)
 
