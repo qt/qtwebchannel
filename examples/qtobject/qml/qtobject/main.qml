@@ -39,10 +39,12 @@
 **
 ****************************************************************************/
 
-import QtQuick 1.0
+import QtQuick 2.0
+
 import Qt.labs 1.0
 import Qt.labs.WebChannel 1.0
-import QtWebKit 1.0
+import QtWebKit 3.0
+import QtWebKit.experimental 1.0
 
 Rectangle {
     QtMetaObjectPublisher {
@@ -99,7 +101,6 @@ Rectangle {
     WebView {
         anchors.fill: parent
         url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl
-        onAlert: console.log(message)
-        settings.developerExtrasEnabled: true
+        experimental.preferences.developerExtrasEnabled: true
     }
 }

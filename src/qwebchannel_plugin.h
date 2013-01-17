@@ -42,12 +42,12 @@
 #ifndef QWEBCHANNEL_PLUGIN_H
 #define QWEBCHANNEL_PLUGIN_H
 
-#include <QtDeclarative/QDeclarativeExtensionPlugin>
+#include <QtQml/QQmlExtensionPlugin>
 
-class QWebChannelPlugin : public QDeclarativeExtensionPlugin
+class QWebChannelPlugin : public QQmlExtensionPlugin
 {
     Q_OBJECT
-
+  Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
 public:
     void registerTypes(const char *uri);
 };
