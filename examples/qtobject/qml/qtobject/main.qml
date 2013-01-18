@@ -47,52 +47,45 @@ import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 
 Rectangle {
-    QtMetaObjectPublisher {
+    MetaObjectPublisher {
         id: publisher
     }
 
     TestObject {
-        id: testObject
+        id: testObject1
+        objectName: "object1"
+    }
+
+    TestObject {
+        id: testObject2
+        objectName: "object2"
+    }
+
+    TestObject {
+        id: testObject3
+        objectName: "object3"
     }
 
     WebChannel {
         id: webChannel
         onExecute: {
             var payload = JSON.parse(requestData);
-            var object = publisher.namedObject(payload.object);
-            var ret;
-            console.log(requestData);
-            if (payload.type == "Qt.invokeMethod") {
-                ret = (object[payload.method])(payload.args);
-            } else if (payload.type == "Qt.connectToSignal") {
-                object[payload.signal].connect(
-                    function(a,b,c,d,e,f,g,h,i,j) {
-                        broadcast("Qt.signal", JSON.stringify({object: payload.object, signal: payload.signal, args: [a,b,c,d,e,f,g,h,i,j]}));
-                });
-            } else if (payload.type == "Qt.getProperty") {
-                ret = object[payload.property];
-            } else if (payload.type == "Qt.setProperty") {
-                object[payload.property] = payload.value;
-            } else if (payload.type == "Qt.getObjects") {
-                var objectNames = publisher.objectNames;
-                for (var i = 0; i < objectNames.length; ++i) {
-                    var name = objectNames[i];
-                    var o = publisher.namedObject(name);
-                    addObject(name, o);
-                }
+            var ret = publisher.handleRequest(payload, webChannel);
+            if (!ret) {
+                console.log("unhandled request: ", requestData);
+            } else {
+                response.send(JSON.stringify(ret));
             }
-
-            response.send(JSON.stringify(ret));
         }
 
-        function addObject(name, object)
+        function registerObjects(objects)
         {
-            publisher.addObject(name, object);
-            var metaData = { name: name, data: publisher.classInfoForObject(object) };
-            broadcast("Qt.addToWindowObject", JSON.stringify(metaData));
+            for(var name in objects) {
+                publisher.addObject(name, objects[name]);
+            }
         }
 
-        onBaseUrlChanged: addObject("testObject", testObject)
+        onBaseUrlChanged: registerObjects({"testObject1": testObject1, "testObject2": testObject2, "testObject3":testObject3})
     }
 
     width: 480

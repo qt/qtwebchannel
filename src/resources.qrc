@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>webchannel.js</file>
+        <file>qobject.js</file>
         <file>webchannel-iframe.html</file>
     </qresource>
 </RCC>

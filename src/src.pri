@@ -1,3 +1,3 @@
 QT += network
-SOURCES += $$PWD/qwebchannel.cpp
-HEADERS += $$PWD/qwebchannel.h
+SOURCES += $$PWD/qwebchannel.cpp $$PWD/qtmetaobjectpublisher.cpp
+HEADERS += $$PWD/qwebchannel.h $$PWD/qtmetaobjectpublisher.h
