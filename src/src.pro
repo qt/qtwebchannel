@@ -13,7 +13,6 @@ SOURCES += qwebchannel_plugin.cpp
 HEADERS += qwebchannel_plugin.h
 
 OTHER_FILES = qmldir \
-    qwebchannel.js \
     qtc_packaging/debian_harmattan/rules \
     qtc_packaging/debian_harmattan/README \
     qtc_packaging/debian_harmattan/copyright \
@@ -21,7 +20,9 @@ OTHER_FILES = qmldir \
     qtc_packaging/debian_harmattan/compat \
     qtc_packaging/debian_harmattan/changelog \
     webchannel.js \
-    webchannel-iframe.html
+    qobject.js \
+    webchannel-iframe.html \
+    MetaObjectPublisher.qml
 
 !equals(_PRO_FILE_PWD_, $$OUT_PWD) {
     copy_qmldir.target = $$OUT_PWD/qmldir
@@ -33,7 +34,7 @@ OTHER_FILES = qmldir \
 
 target.path = $$[QT_INSTALL_QML]/$$TARGETPATH
 
-qmldir.files += $$PWD/qmldir
+qmldir.files += $$PWD/qmldir $$PWD/MetaObjectPublisher.qml
 qmldir.path +=  $$[QT_INSTALL_QML]/$$TARGETPATH
 
 INSTALLS += target qmldir

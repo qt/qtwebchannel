@@ -39,16 +39,36 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
+#ifndef QTMETAOBJECTPUBLISHER_H
+#define QTMETAOBJECTPUBLISHER_H
 
-#include "qwebchannel.h"
-#include "qtmetaobjectpublisher.h"
+#include <QObject>
+#include <QVariantMap>
+#include <QPointer>
+#include <QStringList>
 
-#include "qwebchannel_plugin.h"
-
-void QWebChannelPlugin::registerTypes(const char *uri)
+class QtMetaObjectPublisher : public QObject
 {
-    qmlRegisterType<QWebChannel>(uri, 1, 0, "WebChannel");
-    qmlRegisterType<QtMetaObjectPublisher>(uri, 1, 0, "MetaObjectPublisherPrivate");
-}
+    Q_OBJECT
+    Q_PROPERTY(QStringList objectNames READ objectNames)
+public:
+    explicit QtMetaObjectPublisher(QObject *parent = 0);
+    Q_INVOKABLE QVariantMap classInfoForObject(QObject*);
+    QStringList objectNames() { return objects.keys(); }
+    Q_INVOKABLE QObject* namedObject(const QString& name) {
+        if (!objects.contains(name))
+            return 0;
+        return objects[name];
+    }
+public slots:
+    void addObject(const QString& name, QObject* object)
+    {
+        objects[name] = object;
+    }
 
+private:
+    QMap<QString, QPointer<QObject> > objects;
+
+};
+
+#endif // QTMETAOBJECTPUBLISHER_H

@@ -311,6 +311,15 @@ void QWebChannelPrivate::handleHttpRequest(QTcpSocket *socket, const HttpRequest
             socket->write("\n})();");
             socket->close();
             file.close();
+        } else if (type == "qobject.js") {
+            QFile file(":/qobject.js");
+            file.open(QIODevice::ReadOnly);
+            socket->write("HTTP/1.1 200 OK\r\n"
+                          "Content-Type: text/javascript\r\n"
+                          "\r\n");
+            socket->write(file.readAll());
+            socket->close();
+            file.close();
         } else if (type == "iframe.html") {
             QFile file(":/webchannel-iframe.html");
             file.open(QIODevice::ReadOnly);

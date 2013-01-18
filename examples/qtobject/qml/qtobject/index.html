@@ -1,21 +1,39 @@
 <html>
     <head>
-        <script>
-            document.write('<script src="' + (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]) + '/webchannel.js/createWebChannel"><' + '/script>');
+        <script type="text/javascript">
+            var base = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]);
+            document.write('<script src="' + base + '/webchannel.js/setupWebChannel"></script>');
+            document.write('<script src="' + base + '/qobject.js"><' + '/script>');
             window.output = function(x)
             {
                 document.querySelector("#out").innerHTML += x + "\n";
             }
-        </script>
-        <script src="qtobject.js"></script>
-        <script>
+            window.onload = function() {
+                setupWebChannel(function(webChannel) {
+                    setupQObjectWebChannel(webChannel);
+                });
+            }
         </script>
     </head>
     <body>
-        <a href="#" onclick="testObject.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
-        <a href="#" onclick="testObject.prop1(function(value) { output(value); })">Get property</a>
-        <a href="#" onclick="testObject.prop1 = 'Different property'; testObject.prop1(function(value) { output(value); })">Set property</a>
-        <a href="#" onclick="testObject.timeout.connect(function() { output('timeout'); }); testObject.startTimer(1000);">Timer</a>
+    <p>TestObject 1:
+        <a href="#" onclick="testObject1.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
+        <a href="#" onclick="testObject1.prop1(function(value) { output(value); })">Get property</a>
+        <a href="#" onclick="testObject1.prop1 = 'Different property'; testObject1.prop1(function(value) { output(value); })">Set property</a>
+        <a href="#" onclick="testObject1.timeout.connect(function() { output('timeout 1'); }); testObject1.startTimer(1000);">Timer</a>
+    </p>
+    <p>TestObject 2:
+        <a href="#" onclick="testObject2.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
+        <a href="#" onclick="testObject2.prop1(function(value) { output(value); })">Get property</a>
+        <a href="#" onclick="testObject2.prop1 = 'Different property'; testObject2.prop1(function(value) { output(value); })">Set property</a>
+        <a href="#" onclick="testObject2.timeout.connect(function() { output('timeout 2'); }); testObject2.startTimer(1000);">Timer</a>
+    </p>
+    <p>TestObject 3:
+        <a href="#" onclick="testObject3.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
+        <a href="#" onclick="testObject3.prop1(function(value) { output(value); })">Get property</a>
+        <a href="#" onclick="testObject3.prop1 = 'Different property'; testObject3.prop1(function(value) { output(value); })">Set property</a>
+        <a href="#" onclick="testObject3.timeout.connect(function() { output('timeout 3'); }); testObject3.startTimer(1000);">Timer</a>
+    </p>
         <br/>
         <textarea id="out" style="height:80%; width: 80%"></textarea>
     </body>
