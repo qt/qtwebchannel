@@ -39,9 +39,10 @@
 **
 ****************************************************************************/
 
-import QtQuick 1.0
+import QtQuick 2.0
+
 import Qt.labs.WebChannel 1.0
-import QtWebKit 1.0
+import QtWebKit 3.0
 
 Rectangle {
     width: 1000
@@ -67,9 +68,6 @@ Rectangle {
         anchors.top: txt.bottom
         height: 2000
         width: 2000
-        onAlert: {
-            console.log(message);
-        }
     }
 
     TextEdit {
