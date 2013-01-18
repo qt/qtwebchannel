@@ -70,11 +70,8 @@ Rectangle {
         id: webChannel
         onExecute: {
             var payload = JSON.parse(requestData);
-            var ret = publisher.handleRequest(payload, webChannel);
-            if (!ret) {
+            if (!publisher.handleRequest(payload, webChannel, response)) {
                 console.log("unhandled request: ", requestData);
-            } else {
-                response.send(JSON.stringify(ret));
             }
         }
 
