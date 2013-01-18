@@ -39,16 +39,36 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
+import QtQuick 2.0
 
-#include "qwebchannel.h"
-#include "qtmetaobjectpublisher.h"
+import Qt.labs.WebChannel 1.0
 
-#include "qwebchannel_plugin.h"
+MetaObjectPublisherPrivate {
+    function handleRequest(payload, webChannel) {
+        var object = publisher.namedObject(payload.object);
+        var ret = false;
+        if (payload.type == "Qt.invokeMethod") {
+            ret = (object[payload.method])(payload.args);
+        } else if (payload.type == "Qt.connectToSignal") {
+            object[payload.signal].connect(
+                function(a,b,c,d,e,f,g,h,i,j) {
+                    webChannel.broadcast("Qt.signal", JSON.stringify({object: payload.object, signal: payload.signal, args: [a,b,c,d,e,f,g,h,i,j]}));
+            });
+        } else if (payload.type == "Qt.getProperty") {
+            ret = object[payload.property];
+        } else if (payload.type == "Qt.setProperty") {
+            object[payload.property] = payload.value;
+        } else if (payload.type == "Qt.getObjects") {
+            var objects = {};
+            var objectNames = publisher.objectNames;
+            for (var i = 0; i < objectNames.length; ++i) {
+                var name = objectNames[i];
+                var object = publisher.namedObject(name);
+                objects[name] = publisher.classInfoForObject(object);
+            }
+            ret = objects;
+        }
 
-void QWebChannelPlugin::registerTypes(const char *uri)
-{
-    qmlRegisterType<QWebChannel>(uri, 1, 0, "WebChannel");
-    qmlRegisterType<QtMetaObjectPublisher>(uri, 1, 0, "MetaObjectPublisherPrivate");
+        return ret;
+    }
 }
-

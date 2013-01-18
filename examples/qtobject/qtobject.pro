@@ -14,12 +14,9 @@ QML_IMPORT_PATH =
 
 # The .cpp file which was generated for your project. Feel free to hack it.
 SOURCES += main.cpp \
-    qtmetaobjectpublisher.cpp \
     testobject.cpp
 
-HEADERS += \
-    qtmetaobjectpublisher.h \
-    testobject.h
+HEADERS += testobject.h
 
 # Please do not modify the following two lines. Required for deployment.
 include(qtquick2applicationviewer/qtquick2applicationviewer.pri)
