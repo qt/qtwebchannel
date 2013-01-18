@@ -2,8 +2,8 @@
     <head>
         <script type="text/javascript">
             var base = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]);
-            document.write('<script src="' + base + '/webchannel.js/setupWebChannel"></script>');
-            document.write('<script src="' + base + '/qobject.js"><' + '/script>');
+            document.write('<script src="' + base + '/webchannel.js/setupWebChannel"><'+'/script>');
+            document.write('<script src="' + base + '/qobject.js"><'+'/script>');
             window.output = function(x)
             {
                 document.querySelector("#out").innerHTML += x + "\n";
