@@ -16,12 +16,15 @@
                             output(message);
                         }
                     );
-                    c.exec(
-                        JSON.stringify({a:"This is a request from HTML"}),
-                        function(response) {
-                            output(JSON.parse(response).b);
-                        }
-                    );
+                    window.send = function() {
+                        c.exec(
+                            JSON.stringify({a:"This is a request from HTML"}),
+                            function(response) {
+                                output(JSON.parse(response).b);
+                            }
+                        );
+                    };
+                    window.send();
                 });
             };
         </script>
