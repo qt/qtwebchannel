@@ -45,10 +45,10 @@ import Qt.labs.WebChannel 1.0
 
 MetaObjectPublisherPrivate
 {
-    function handleRequest(payload, webChannel)
+    function handleRequest(payload, webChannel, response)
     {
         var object = namedObject(payload.object);
-        var ret = false;
+        var ret;
         if (payload.type == "Qt.invokeMethod") {
             ret = (object[payload.method])(payload.args);
         } else if (payload.type == "Qt.connectToSignal") {
@@ -62,9 +62,14 @@ MetaObjectPublisherPrivate
             object[payload.property] = payload.value;
         } else if (payload.type == "Qt.getObjects") {
             ret = registeredClassInfo();
+        } else {
+            return false;
         }
 
-        return ret;
+        if (ret) {
+            response.send(JSON.stringify(ret));
+        }
+        return true;
     }
 
     function registerObjects(objects)
