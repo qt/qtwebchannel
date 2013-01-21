@@ -48,6 +48,9 @@
 #include <QTcpSocket>
 #include <QTimer>
 #include <QUuid>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 QWebChannelResponder::QWebChannelResponder(QTcpSocket* s)
     : QObject(s)
@@ -121,8 +124,10 @@ public:
     QUrl baseUrl;
     QTcpServer* server;
     QString secret;
-    typedef QMultiMap<QString, QPointer<QTcpSocket> > SubscriberMap;
-    SubscriberMap subscribers;
+    typedef QPair<QString, QString> Broadcast;
+    typedef QVector< Broadcast > BroadcastList;
+    BroadcastList pendingBroadcasts;
+    QPointer<QTcpSocket> pollSocket;
     bool starting;
     QMap<QTcpSocket*, HttpRequestData> pendingData;
 
@@ -149,11 +154,12 @@ public:
 
     void handleHttpRequest(QTcpSocket* socket, const HttpRequestData& data);
 
+    void submitBroadcasts(QTcpSocket* socket);
+
 public slots:
     void init();
     void broadcast(const QString&, const QString&);
     void service();
-    void onSocketDelete(QObject*);
     void handleSocketData();
     void handleSocketData(QTcpSocket*);
 
@@ -163,28 +169,32 @@ signals:
     void noPortAvailable();
 };
 
-void QWebChannelPrivate::onSocketDelete(QObject * o)
+void QWebChannelPrivate::submitBroadcasts(QTcpSocket* socket)
 {
-    for (SubscriberMap::iterator it = subscribers.begin(); it != subscribers.end(); ++it) {
-        if (it.value() != o)
-            continue;
-        subscribers.erase(it);
-        return;
+    socket->write("HTTP/1.1 200 OK\r\n"
+                  "Content-Type: text/json\r\n"
+                  "\r\n");
+    QJsonArray array;
+    foreach(const Broadcast& broadcast, pendingBroadcasts) {
+        QJsonObject obj;
+        obj.insert(QStringLiteral("id"), broadcast.first);
+        obj.insert(QStringLiteral("data"), broadcast.second);
+        array.append(obj);
     }
+    pendingBroadcasts.clear();
+    QJsonDocument doc;
+    doc.setArray(array);
+    socket->write(doc.toJson());
+    socket->close();
 }
 
 void QWebChannelPrivate::broadcast(const QString& id, const QString& message)
 {
-    QList<QPointer<QTcpSocket> > sockets = subscribers.values(id);
+    pendingBroadcasts << qMakePair(id, message);
 
-    foreach(QPointer<QTcpSocket> socket, sockets) {
-        if (!socket)
-            continue;
-        socket->write("HTTP/1.1 200 OK\r\n"
-                      "Content-Type: text/json\r\n"
-                      "\r\n");
-        socket->write(message.toUtf8());
-        socket->close();
+    if (pollSocket) {
+        submitBroadcasts(pollSocket);
+        pollSocket = 0;
     }
 }
 
@@ -291,10 +301,15 @@ void QWebChannelPrivate::handleHttpRequest(QTcpSocket *socket, const HttpRequest
             if (autoRetain)
                 responder->retain();
             emit execute(data.content, responder);
-        } else if (type == "SUBSCRIBE") {
-            connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
-            connect(socket, SIGNAL(destroyed(QObject*)), this, SLOT(onSocketDelete(QObject*)));
-            subscribers.insert(data.content, socket);
+        } else if (type == "POLL") {
+            ///FIXME: this should be rewritten using a proper web socket approach
+            if (!pendingBroadcasts.isEmpty()) {
+                submitBroadcasts(socket);
+            } else {
+                // defer transmission until broadcast comes in
+                pollSocket = socket;
+                connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+            }
         }
     } else if (method == "GET") {
         if (type == "webchannel.js") {
