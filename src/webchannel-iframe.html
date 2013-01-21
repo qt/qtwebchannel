@@ -1,35 +1,69 @@
 <html>
     <head>
         <script>
+            /**
+             * Send a POST request to the QWebChannel socket with the given stringified JSON @p data
+             * and call @p callback when the response if fully available.
+             */
             function exec(data, callback, type)
             {
                 type = type || 'EXEC';
                 var xhr = new XMLHttpRequest;
+
                 xhr.open("POST", "../" + type, true);
+                xhr.setRequestHeader("Content-type", "text/json");
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState != 4 || xhr.status != 200)
                         return;
+                    // data is fully available now
                     callback(xhr.responseText);
                 };
                 xhr.send(data);
             }
 
-            function poll(id, callback)
+            /**
+             * maps subscription IDs to list of callbacks.
+             */
+            var subscriptions = {};
+            /**
+             * Poll for new broadcasts and delegate payload to subscribed callbacks
+             */
+            function poll()
             {
-                exec(id, function(response) {
-                    callback(response);
-                    setTimeout(function() { poll(id, callback); }, 0);
-                }, 'SUBSCRIBE');
+                exec("", function(response) {
+                    var data = JSON.parse(response);
+                    for (var i = 0; i < data.length; ++i) {
+                        // delegate payload to subscribed callbacks
+                        var broadcast = data[i];
+                        var callbacks = subscriptions[broadcast.id];
+                        for(var j = 0; j < callbacks.length; ++j) {
+                            callbacks[j](broadcast.data);
+                        }
+                    }
+                    // reschedule a poll
+                    setTimeout(poll, 0);
+                }, 'POLL');
             }
 
             window.addEventListener("message", function(event) {
                 var data = JSON.parse(event.data);
-                function callback(r) { window.parent.postMessage(JSON.stringify({ type: "callback", id: data.id, payload: r }), "*"); }
+                function callback(r) {
+                    // post message to actual user-defined HTML client
+                    window.parent.postMessage(JSON.stringify({ type: "callback", id: data.id, payload: r }), "*");
+                }
                 if (data.type == "EXEC")
                     exec(data.payload, callback);
-                else if (data.type == "SUBSCRIBE")
-                    poll(data.id, callback);
+                else if (data.type == "SUBSCRIBE") {
+                    if (subscriptions[data.id]) {
+                        subscriptions[data.id].append(callback);
+                    } else {
+                        subscriptions[data.id] = [callback];
+                    }
+                }
             });
+
+            // start intial polling for data
+            window.onload = poll;
         </script>
     </head>
     <body>
