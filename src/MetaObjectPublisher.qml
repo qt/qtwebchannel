@@ -68,6 +68,8 @@ MetaObjectPublisherPrivate
 
         if (ret) {
             response.send(JSON.stringify(ret));
+        } else {
+            response.noop();
         }
         return true;
     }
