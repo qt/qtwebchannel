@@ -55,17 +55,12 @@ public:
     QWebChannelResponder(QTcpSocket* s);
 
 public slots:
-    void open();
-    void write(const QString& data);
+    void open(uint contentLength);
+    void write(const QByteArray& data);
     void close();
     void retain();
     void noop();
-    void send(const QString& data)
-    {
-        open();
-        write(data);
-        close();
-    }
+    void send(const QString& stringData);
 
 private slots:
     void closeIfNotRetained();

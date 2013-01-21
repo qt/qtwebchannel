@@ -70,10 +70,19 @@ void QWebChannelResponder::retain()
 
 void QWebChannelResponder::noop()
 {
-    send("");
+    open(0);
+    close();
 }
 
-void QWebChannelResponder::open()
+void QWebChannelResponder::send(const QString& stringData)
+{
+    const QByteArray data = stringData.toUtf8();
+    open(data.length());
+    write(data);
+    close();
+}
+
+void QWebChannelResponder::open(uint contentLength)
 {
     if (!socket || !socket->isOpen()) {
         qWarning() << "cannot open response - socket is not open anymore";
@@ -84,16 +93,17 @@ void QWebChannelResponder::open()
 
     socket->write("HTTP/1.1 200 OK\r\n"
                   "Content-Type: text/json\r\n"
+                  "Content-Length: " + QByteArray::number(contentLength) + "\r\n"
                   "\r\n");
 }
 
-void QWebChannelResponder::write(const QString& data)
+void QWebChannelResponder::write(const QByteArray& data)
 {
     if (!socket || !socket->isOpen()) {
         qWarning() << "cannot write response - socket is not open anymore";
         return;
     }
-    socket->write(data.toUtf8());
+    socket->write(data);
 }
 
 void QWebChannelResponder::close()
