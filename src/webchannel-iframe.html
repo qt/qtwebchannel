@@ -13,8 +13,18 @@
                 xhr.open("POST", "../" + type, true);
                 xhr.setRequestHeader("Content-type", "text/json");
                 xhr.onreadystatechange = function() {
-                    if (xhr.readyState != 4 || xhr.status != 200)
+                    if (xhr.readyState != 4) {
+                        // not yet finished loading
                         return;
+                    }
+                    if (xhr.status != 200) {
+                        console.log("webchannel exec error:", xhr.status, data, type, xhr.responseText);
+                        if (type == "POLL") {
+                            // reschedule a poll
+                            setTimeout(poll, 0);
+                        }
+                        return;
+                    }
                     // data is fully available now
                     callback(xhr.responseText);
                 };
