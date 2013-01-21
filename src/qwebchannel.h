@@ -106,6 +106,7 @@ signals:
     // To be able to access the object from QML, it has to be an explicit QObject* and not a subclass.
     void execute(const QString& requestData, QObject* response);
     void noPortAvailable();
+    void initialized();
 
 public slots:
     void broadcast(const QString& id, const QString& data);
