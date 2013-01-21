@@ -75,15 +75,15 @@ Rectangle {
             }
         }
 
-        onBaseUrlChanged: publisher.registerObjects({"testObject1": testObject1, "testObject2": testObject2, "testObject3":testObject3})
+        onInitialized: publisher.registerObjects({"testObject1": testObject1, "testObject2": testObject2, "testObject3":testObject3});
     }
 
     width: 480
     height: 800
 
     WebView {
+        url: webChannel.baseUrl ? "index.html?webChannelBaseUrl=" + webChannel.baseUrl : "about:blank"
         anchors.fill: parent
-        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl
         experimental.preferences.developerExtrasEnabled: true
     }
 }
