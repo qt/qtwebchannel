@@ -314,6 +314,7 @@ void QWebChannelPrivate::handleHttpRequest(QTcpSocket *socket, const HttpRequest
             if (!pendingBroadcasts.isEmpty()) {
                 submitBroadcasts(socket);
             } else {
+                Q_ASSERT(!pollSocket);
                 // defer transmission until broadcast comes in
                 pollSocket = socket;
                 connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
