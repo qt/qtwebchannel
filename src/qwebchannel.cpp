@@ -178,8 +178,7 @@ signals:
 void QWebChannelPrivate::submitBroadcasts(QTcpSocket* socket)
 {
     socket->write("HTTP/1.1 200 OK\r\n"
-                  "Content-Type: text/json\r\n"
-                  "\r\n");
+                  "Content-Type: text/json\r\n");
     QJsonArray array;
     foreach(const Broadcast& broadcast, pendingBroadcasts) {
         QJsonObject obj;
@@ -190,6 +189,9 @@ void QWebChannelPrivate::submitBroadcasts(QTcpSocket* socket)
     pendingBroadcasts.clear();
     QJsonDocument doc;
     doc.setArray(array);
+    const QByteArray jsonData = doc.toJson();
+    socket->write("Content-Length: " + QByteArray::number(jsonData.length()) + "\r\n"
+                  "\r\n");
     socket->write(doc.toJson());
     socket->close();
 }
