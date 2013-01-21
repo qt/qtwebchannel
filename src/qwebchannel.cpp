@@ -159,6 +159,7 @@ public:
         , starting(false)
     {
         connect(server, SIGNAL(newConnection()), this, SLOT(service()));
+        connect(server, SIGNAL(acceptError(QAbstractSocket::SocketError)), SLOT(acceptError(QAbstractSocket::SocketError)));
     }
     void initLater()
     {
@@ -178,12 +179,24 @@ public slots:
     void service();
     void handleSocketData();
     void handleSocketData(QTcpSocket*);
+    void acceptError(QAbstractSocket::SocketError);
+    void socketError(QAbstractSocket::SocketError);
 
 signals:
     void execute(const QString&, QObject*);
     void initialized();
     void noPortAvailable();
 };
+
+void QWebChannelPrivate::acceptError(QAbstractSocket::SocketError error)
+{
+    qWarning() << "SERVER ERROR" << server->errorString() << error;
+}
+
+void QWebChannelPrivate::socketError(QAbstractSocket::SocketError error)
+{
+    qWarning() << "SOCKET ERROR" << qobject_cast<QTcpSocket*>(sender())->errorString() << error;
+}
 
 void QWebChannelPrivate::submitBroadcasts(QTcpSocket* socket)
 {
@@ -373,6 +386,7 @@ void QWebChannelPrivate::service()
         return;
 
     QTcpSocket* socket = server->nextPendingConnection();
+    connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(socketError(QAbstractSocket::SocketError)));
     handleSocketData(socket);
     connect(socket, SIGNAL(readyRead()), this, SLOT(handleSocketData()));
 
