@@ -75,8 +75,10 @@ void QWebChannelResponder::noop()
 
 void QWebChannelResponder::open()
 {
-    if (!socket || !socket->isOpen())
+    if (!socket || !socket->isOpen()) {
+        qWarning() << "cannot open response - socket is not open anymore";
         return;
+    }
 
     retain();
 
@@ -87,15 +89,19 @@ void QWebChannelResponder::open()
 
 void QWebChannelResponder::write(const QString& data)
 {
-    if (!socket || !socket->isOpen())
+    if (!socket || !socket->isOpen()) {
+        qWarning() << "cannot write response - socket is not open anymore";
         return;
+    }
     socket->write(data.toUtf8());
 }
 
 void QWebChannelResponder::close()
 {
-    if (!socket)
+    if (!socket) {
+        qWarning() << "cannot close - socket is not available anymore";
         return;
+    }
     deleteLater();
     socket->close();
 }
