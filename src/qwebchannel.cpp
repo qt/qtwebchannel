@@ -442,6 +442,7 @@ void QWebChannel::setMaxPort(int p)
 
 void QWebChannel::onInitialized()
 {
+    emit initialized();
     emit baseUrlChanged(d->baseUrl);
 }
 
