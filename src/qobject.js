@@ -69,27 +69,32 @@ function QObject(name, data, webChannel) {
         };
     });
 
-    for (i in data.signals) {
-        var signal = data.signals[i];
+    function connectToSignal(signal) {
         object[signal].connect = function(callback) {
             object.__objectSignals__[signal] = object.__objectSignals__[signal] || [];
             webChannel.exec(JSON.stringify({"type": "Qt.connectToSignal", "object": object.__id__, "signal": signal}));
             object.__objectSignals__[signal].push(callback);
         };
     }
+    for (i in data.signals) {
+        var signal = data.signals[i];
+        connectToSignal(data.signals[i]);
+    }
 
-    for (i in data.properties) {
-        var prop = data.properties[i];
-        object.__defineSetter__(prop, function(value) {
-            webChannel.exec(JSON.stringify({"type": "Qt.setProperty", "object": object.__id__, "property": prop, "value": value }));
+    function bindGetterSetter(property) {
+        object.__defineSetter__(property, function(value) {
+            webChannel.exec(JSON.stringify({"type": "Qt.setProperty", "object": object.__id__, "property": property, "value": value }));
         });
-        object.__defineGetter__(prop, function() {
+        object.__defineGetter__(property, function() {
             return (function(callback) {
-                webChannel.exec(JSON.stringify({"type": "Qt.getProperty", "object": object.__id__, "property": prop}), function(response) {
+                webChannel.exec(JSON.stringify({"type": "Qt.getProperty", "object": object.__id__, "property": property}), function(response) {
                     callback(JSON.parse(response));
                 });
             });
         });
+    }
+    for (i in data.properties) {
+        bindGetterSetter(data.properties[i]);
     }
 }
 

@@ -19,3 +19,8 @@ void TestObject::setProp1(const QString& s)
     qWarning() << __func__ << p1;
 }
 
+void TestObject::setProp2(const QString& s)
+{
+    p2 = s;
+    qWarning() << __func__ << p2;
+}
