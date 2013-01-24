@@ -18,20 +18,26 @@
     <body>
     <p>TestObject 1:
         <a href="#" onclick="testObject1.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
-        <a href="#" onclick="testObject1.prop1(function(value) { output(value); })">Get property</a>
-        <a href="#" onclick="testObject1.prop1 = 'Different property'; testObject1.prop1(function(value) { output(value); })">Set property</a>
+        <a href="#" onclick="testObject1.prop1(function(value) { output(value); })">Get property 1</a>
+        <a href="#" onclick="testObject1.prop1 = 'Different property'; testObject1.prop1(function(value) { output(value); })">Set property 1</a>
+        <a href="#" onclick="testObject1.prop2(function(value) { output(value); })">Get property 2</a>
+        <a href="#" onclick="testObject1.prop2 = 'Different property'; testObject1.prop2(function(value) { output(value); })">Set property 2</a>
         <a href="#" onclick="testObject1.timeout.connect(function() { output('timeout 1'); }); testObject1.startTimer(1000);">Timer</a>
     </p>
     <p>TestObject 2:
         <a href="#" onclick="testObject2.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
-        <a href="#" onclick="testObject2.prop1(function(value) { output(value); })">Get property</a>
-        <a href="#" onclick="testObject2.prop1 = 'Different property'; testObject2.prop1(function(value) { output(value); })">Set property</a>
+        <a href="#" onclick="testObject2.prop1(function(value) { output(value); })">Get property 1</a>
+        <a href="#" onclick="testObject2.prop1 = 'Different property'; testObject2.prop1(function(value) { output(value); })">Set property 1</a>
+        <a href="#" onclick="testObject2.prop2(function(value) { output(value); })">Get property 2</a>
+        <a href="#" onclick="testObject2.prop2 = 'Different property'; testObject2.prop2(function(value) { output(value); })">Set property 2</a>
         <a href="#" onclick="testObject2.timeout.connect(function() { output('timeout 2'); }); testObject2.startTimer(1000);">Timer</a>
     </p>
     <p>TestObject 3:
         <a href="#" onclick="testObject3.debugMe('Debugging!', function(result) { output(result); })">invoke method</a>
-        <a href="#" onclick="testObject3.prop1(function(value) { output(value); })">Get property</a>
-        <a href="#" onclick="testObject3.prop1 = 'Different property'; testObject3.prop1(function(value) { output(value); })">Set property</a>
+        <a href="#" onclick="testObject3.prop1(function(value) { output(value); })">Get property 1</a>
+        <a href="#" onclick="testObject3.prop1 = 'Different property'; testObject3.prop1(function(value) { output(value); })">Set property 1</a>
+        <a href="#" onclick="testObject3.prop2(function(value) { output(value); })">Get property 2</a>
+        <a href="#" onclick="testObject3.prop2 = 'Different property'; testObject3.prop2(function(value) { output(value); })">Set property 2</a>
         <a href="#" onclick="testObject3.timeout.connect(function() { output('timeout 3'); }); testObject3.startTimer(1000);">Timer</a>
     </p>
         <br/>
