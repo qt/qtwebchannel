@@ -195,7 +195,11 @@ void QWebChannelPrivate::acceptError(QAbstractSocket::SocketError error)
 
 void QWebChannelPrivate::socketError(QAbstractSocket::SocketError error)
 {
-    qWarning() << "SOCKET ERROR" << qobject_cast<QTcpSocket*>(sender())->errorString() << error;
+    if (error == QAbstractSocket::RemoteHostClosedError) {
+        pendingData.remove(qobject_cast<QTcpSocket*>(sender()));
+    } else {
+        qWarning() << "SOCKET ERROR" << qobject_cast<QTcpSocket*>(sender())->errorString() << error;
+    }
 }
 
 void QWebChannelPrivate::submitBroadcasts(QTcpSocket* socket)
