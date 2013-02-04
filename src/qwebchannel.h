@@ -62,9 +62,6 @@ public slots:
     void noop();
     void send(const QString& stringData);
 
-private slots:
-    void closeIfNotRetained();
-
 private:
     QPointer<QTcpSocket> socket;
     QTimer* autoDeleteTimer;
