@@ -105,9 +105,8 @@ window.setupQObjectWebChannel = function(webChannel) {
             var signalData = JSON.parse(payload);
             var object = window[signalData.object];
             var conns = (object ? object.__objectSignals__[signalData.signal] : []) || [];
-            var a = payload.args;
             conns.forEach(function(callback) {
-                callback.call(a);
+                callback.apply(callback, signalData.args);
             });
         }
     );

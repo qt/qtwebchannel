@@ -63,11 +63,22 @@ MetaObjectPublisherPrivate
 
         var ret = undefined;
         if (payload.type === "Qt.invokeMethod" && object) {
-            ret = (object[payload.method])(payload.args);
+            var method = object[payload.method];
+            ret = method.apply(method, payload.args);
         } else if (payload.type === "Qt.connectToSignal" && object) {
-            object[payload.signal].connect(
-                function(a,b,c,d,e,f,g,h,i,j) {
-                    webChannel.broadcast("Qt.signal", JSON.stringify({object: payload.object, signal: payload.signal, args: [a,b,c,d,e,f,g,h,i,j]}));
+            object[payload.signal].connect(function() {
+                // NOTE: QML arguments is a map not an array it seems...
+                // so do the conversion manually
+                var args = [];
+                for(var i = 0; i < arguments.length; ++i) {
+                    args.push(arguments[i]);
+                }
+                var data = {
+                    object: payload.object,
+                    signal: payload.signal,
+                    args: args
+                };
+                webChannel.broadcast("Qt.signal", JSON.stringify(data));
             });
         } else if (payload.type === "Qt.getProperty" && object) {
             ret = object[payload.property];
