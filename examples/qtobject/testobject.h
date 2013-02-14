@@ -19,6 +19,8 @@ public:
 
 signals:
     void timeout();
+    void sig1(int a, float b, const QString& c);
+    void sig2();
 
 public slots:
     void startTimer(int millis)
@@ -27,6 +29,8 @@ public slots:
     }
 
     QString debugMe(const QString& data);
+
+    QString manyArgs(int a, float b, const QString& c) const;
 
 private:
     QString p1;
