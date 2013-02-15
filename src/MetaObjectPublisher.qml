@@ -42,7 +42,7 @@
 import QtQuick 2.0
 import Qt.labs.WebChannel 1.0
 
-MetaObjectPublisherPrivate
+MetaObjectPublisherImpl
 {
     /**
      * This map contains the registered objects indexed by their name.
@@ -50,21 +50,25 @@ MetaObjectPublisherPrivate
     property variant registeredObjects
 
     /**
-     * Handle the given WebChannel client request and write to the given response.
+     * Handle the given WebChannel client request and potentially give a response.
      *
      * @return true if the request was handled, false otherwise.
      */
-    function handleRequest(payload, webChannel, response)
+    function handleRequest(data, webChannel)
     {
+        var message = JSON.parse(data);
+        if (!message.data) {
+            return false;
+        }
+        var payload = message.data;
         if (!payload.type) {
             return false;
         }
         var object = payload.object ? registeredObjects[payload.object] : null;
 
-        var ret = undefined;
         if (payload.type === "Qt.invokeMethod" && object) {
             var method = object[payload.method];
-            ret = method.apply(method, payload.args);
+            webChannel.respond(message.id, method.apply(method, payload.args));
         } else if (payload.type === "Qt.connectToSignal" && object) {
             object[payload.signal].connect(function() {
                 // NOTE: QML arguments is a map not an array it seems...
@@ -73,34 +77,24 @@ MetaObjectPublisherPrivate
                 for(var i = 0; i < arguments.length; ++i) {
                     args.push(arguments[i]);
                 }
-                var data = {
-                    object: payload.object,
-                    signal: payload.signal,
-                    args: args
-                };
-                webChannel.broadcast("Qt.signal", JSON.stringify(data));
+                webChannel.sendMessage("Qt.signal", {
+                        object: payload.object,
+                        signal: payload.signal,
+                        args: args
+                });
             });
         } else if (payload.type === "Qt.getProperty" && object) {
-            ret = object[payload.property];
+            webChannel.respond(message.id, object[payload.property]);
         } else if (payload.type === "Qt.setProperty" && object) {
             object[payload.property] = payload.value;
         } else if (payload.type === "Qt.getObjects") {
-            var ret = {};
-            for(var name in registeredObjects) {
-                object = registeredObjects[name];
-                if (object) {
-                    ret[name] = classInfoForObject(object);
-                }
-            }
+            webChannel.respond(message.id, registeredObjectInfos());
         } else if (payload.type === "Qt.Debug") {
             console.log("DEBUG: ", payload.message);
         } else {
             return false;
         }
 
-        if(ret != undefined) {
-            response.send(JSON.stringify(ret));
-        }
         return true;
     }
 
@@ -113,5 +107,17 @@ MetaObjectPublisherPrivate
             }
         }
         registeredObjects = objects;
+    }
+
+    function registeredObjectInfos()
+    {
+        var objectInfos = {};
+        for(var name in registeredObjects) {
+            var object = registeredObjects[name];
+            if (object) {
+                objectInfos[name] = classInfoForObject(object);
+            }
+        }
+        return objectInfos;
     }
 }

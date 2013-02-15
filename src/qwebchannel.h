@@ -42,66 +42,35 @@
 #ifndef QWEBCHANNEL_H
 #define QWEBCHANNEL_H
 
-#include <QTcpSocket>
-#include <QPointer>
-#include <QUrl>
+#include <QObject>
 
 class QWebChannelPrivate;
-class QTimer;
-class QWebChannelResponder : public QObject {
-    Q_OBJECT
-
-public:
-    QWebChannelResponder(QTcpSocket* s);
-
-public slots:
-    void open(uint contentLength);
-    void write(const QByteArray& data);
-    void close();
-    void retain();
-    void noop();
-    void send(const QString& stringData);
-
-private:
-    QPointer<QTcpSocket> socket;
-    QTimer* autoDeleteTimer;
-};
 
 class QWebChannel : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
-    Q_PROPERTY(QUrl baseUrl READ baseUrl NOTIFY baseUrlChanged)
-    Q_PROPERTY(int port READ port)
-    Q_PROPERTY(int maxPort READ maxPort WRITE setMaxPort)
-    Q_PROPERTY(int minPort READ minPort WRITE setMinPort)
+    Q_PROPERTY(QString baseUrl READ baseUrl NOTIFY baseUrlChanged)
     Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
-    Q_PROPERTY(bool autoRetain READ autoRetain WRITE setAutoRetain)
 
 public:
     QWebChannel(QObject *parent = 0);
-    QUrl  baseUrl() const;
-    void setUseSecret(bool);
-    bool useSecret() const;
-    void setAutoRetain(bool);
-    bool autoRetain() const;
-    int port() const;
-    int minPort() const;
-    int maxPort() const;
-    void setMinPort(int);
-    void setMaxPort(int);
     ~QWebChannel();
 
+    QString  baseUrl() const;
+
+    void setUseSecret(bool);
+    bool useSecret() const;
+
 signals:
-    void baseUrlChanged(const QUrl &);
-    void scriptUrlChanged(const QUrl &);
-    // To be able to access the object from QML, it has to be an explicit QObject* and not a subclass.
-    void execute(const QString& requestData, QObject* response);
-    void noPortAvailable();
+    void baseUrlChanged(const QString& baseUrl);
+    void rawMessageReceived(const QString& rawMessage);
     void initialized();
 
+    void failed(const QString& reason);
+
 public slots:
-    void broadcast(const QString& id, const QString& data);
+    void sendRawMessage(const QString& rawMessage);
 
 private slots:
     void onInitialized();

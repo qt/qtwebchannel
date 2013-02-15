@@ -1,24 +1,22 @@
 <html>
     <head>
+        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
+        <script type="text/javascript" src="qrc:///qwebchannel/qobject.js"></script>
         <script type="text/javascript">
-            var base = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]);
-            document.write('<script src="' + base + '/webchannel.js/setupWebChannel"><'+'/script>');
-            document.write('<script src="' + base + '/qobject.js"><'+'/script>');
             window.output = function(x) {
                 document.querySelector("#out").innerHTML += x + "\n";
             }
-            window.onload = function() {
-                setupWebChannel(function(webChannel) {
-                    setupQObjectWebChannel(webChannel, function() {
-                        testObject1.sig1.connect(function(a, b, c) { output("1 sig1" + a + b + c); });
-                        testObject1.sig2.connect(function() { output("1 sig2"); });
-                        testObject2.sig1.connect(function(a, b, c) { output("2 sig1" + a + b + c); });
-                        testObject2.sig2.connect(function() { output("2 sig2"); });
-                        testObject3.sig1.connect(function(a, b, c) { output("3 sig1" + a + b + c); });
-                        testObject3.sig2.connect(function() { output("3 sig2"); });
-                    });
+            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]);
+            new QWebChannel(baseUrl, function(channel) {
+                setupQObjectWebChannel(channel, function() {
+                    testObject1.sig1.connect(function(a, b, c) { output("1 sig1" + a + b + c); });
+                    testObject1.sig2.connect(function() { output("1 sig2"); });
+                    testObject2.sig1.connect(function(a, b, c) { output("2 sig1" + a + b + c); });
+                    testObject2.sig2.connect(function() { output("2 sig2"); });
+                    testObject3.sig1.connect(function(a, b, c) { output("3 sig1" + a + b + c); });
+                    testObject3.sig2.connect(function() { output("3 sig2"); });
                 });
-            }
+            });
         </script>
     </head>
     <body>

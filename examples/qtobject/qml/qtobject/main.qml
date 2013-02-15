@@ -68,14 +68,19 @@ Rectangle {
 
     WebChannel {
         id: webChannel
-        onExecute: {
-            var payload = JSON.parse(requestData);
-            if (!publisher.handleRequest(payload, webChannel, response)) {
-                console.log("unhandled request: ", requestData);
+        onRawMessageReceived: {
+            if (!publisher.handleRequest(rawMessage, webChannel)) {
+                console.log("unhandled request: ", rawMessage);
             }
         }
 
-        onInitialized: publisher.registerObjects({"testObject1": testObject1, "testObject2": testObject2, "testObject3":testObject3});
+        onInitialized: {
+            publisher.registerObjects({
+                "testObject1": testObject1,
+                "testObject2": testObject2,
+                "testObject3":testObject3
+            });
+        }
     }
 
     width: 480
