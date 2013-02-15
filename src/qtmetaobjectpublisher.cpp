@@ -54,6 +54,10 @@ QtMetaObjectPublisher::QtMetaObjectPublisher(QObject *parent)
 QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
 {
     QVariantMap data;
+    if (!object) {
+        qWarning("null object given to MetaObjectPublisher - bad API usage?");
+        return data;
+    }
     QStringList qtSignals, qtMethods, qtProperties;
     const QMetaObject* metaObject = object->metaObject();
     for (int i = 0; i < metaObject->propertyCount(); ++i)
