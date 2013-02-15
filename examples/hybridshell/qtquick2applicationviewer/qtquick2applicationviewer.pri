@@ -151,7 +151,7 @@ android {
 }
 
 export (ICON)
-export (INSTALLS)
+# export (INSTALLS)
 export (DEPLOYMENT)
 export (LIBS)
 export (QMAKE_EXTRA_TARGETS)
