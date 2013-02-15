@@ -63,14 +63,19 @@ function QObject(name, data, webChannel) {
             }
 
             webChannel.exec(JSON.stringify({"type": "Qt.invokeMethod", "object": object.__id__, "method": method, "args": args}), function(response) {
-                if (response.length)
+                if (response.length && callback) {
                     (callback)(JSON.parse(response));
+                }
             });
         };
     });
 
     function connectToSignal(signal) {
         object[signal].connect = function(callback) {
+            if (typeof(callback) !== "function") {
+                console.error("Bad callback given to connect to signal " + signal);
+                return;
+            }
             object.__objectSignals__[signal] = object.__objectSignals__[signal] || [];
             webChannel.exec(JSON.stringify({"type": "Qt.connectToSignal", "object": object.__id__, "signal": signal}));
             object.__objectSignals__[signal].push(callback);
@@ -88,6 +93,10 @@ function QObject(name, data, webChannel) {
         object.__defineGetter__(property, function() {
             return (function(callback) {
                 webChannel.exec(JSON.stringify({"type": "Qt.getProperty", "object": object.__id__, "property": property}), function(response) {
+                    if (typeof(callback) !== "function") {
+                        console.error("Bad callback given to get property " + property);
+                        return;
+                    }
                     callback(JSON.parse(response));
                 });
             });
