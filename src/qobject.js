@@ -46,7 +46,7 @@ function QObject(name, data, webChannel) {
     var methodsAndSignals = [];
     for (var i in data.methods)
         methodsAndSignals.push(data.methods[i]);
-    for (i in data.signals)
+    for (var i in data.signals)
         methodsAndSignals.push(data.signals[i]);
 
     var object = this;
@@ -76,7 +76,7 @@ function QObject(name, data, webChannel) {
             object.__objectSignals__[signal].push(callback);
         };
     }
-    for (i in data.signals) {
+    for (var i in data.signals) {
         var signal = data.signals[i];
         connectToSignal(data.signals[i]);
     }
