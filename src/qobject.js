@@ -98,7 +98,7 @@ function QObject(name, data, webChannel) {
     }
 }
 
-window.setupQObjectWebChannel = function(webChannel) {
+window.setupQObjectWebChannel = function(webChannel, doneCallback) {
     webChannel.subscribe(
         "Qt.signal",
         function(payload) {
@@ -118,6 +118,9 @@ window.setupQObjectWebChannel = function(webChannel) {
                 var object = new QObject(objectName, data, webChannel);
                 window[objectName] = object;
             }
+        }
+        if (doneCallback) {
+            doneCallback();
         }
     });
 };
