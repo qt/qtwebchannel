@@ -65,9 +65,12 @@ var QWebChannel = function(baseUrl, initCallback)
     this.socket.onmessage = function(message)
     {
         var jsonData = JSON.parse(message.data);
-        if (jsonData.id === undefined || jsonData.data === undefined) {
+        if (jsonData.id === undefined) {
             console.error("invalid message received:", message.data);
             return;
+        }
+        if (jsonData.data === undefined) {
+            jsonData.data = {};
         }
         if (jsonData.response) {
             channel.execCallbacks[jsonData.id](jsonData.data);
