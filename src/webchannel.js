@@ -44,7 +44,7 @@ var QWebChannel = function(baseUrl, initCallback)
     var channel = this;
     ///TODO: use ssl?
     var socketUrl = "ws://" + baseUrl;
-    this.socket = new WebSocket(socketUrl);
+    this.socket = new WebSocket(socketUrl, "QWebChannel");
     this.send = function(data)
     {
         channel.socket.send(JSON.stringify(data));
