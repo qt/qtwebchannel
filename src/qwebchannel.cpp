@@ -47,29 +47,23 @@
 
 #include "qwebsocketserver.h"
 
-class QWebChannelPrivate : public QObject
+class QWebChannelPrivate : public QWebSocketServer
 {
     Q_OBJECT
 public:
-    QWebSocketServer m_server;
-    QString m_secret;
+    QByteArray m_secret;
     bool m_useSecret;
 
     QString m_baseUrl;
     bool m_starting;
 
     QWebChannelPrivate(QObject* parent)
-    : QObject(parent)
+    : QWebSocketServer(parent)
     , m_useSecret(true)
     , m_starting(false)
     {
-        connect(&m_server, SIGNAL(error(QAbstractSocket::SocketError)),
+        connect(this, SIGNAL(error(QAbstractSocket::SocketError)),
                 SLOT(socketError()));
-    }
-
-    virtual ~QWebChannelPrivate()
-    {
-        m_server.close();
     }
 
     void initLater()
@@ -84,41 +78,55 @@ signals:
     void failed(const QString& reason);
     void initialized();
 
+protected:
+    virtual bool isValid(const HeaderData& connection);
+
 private slots:
     void init();
     void socketError();
 };
 
+bool QWebChannelPrivate::isValid(const HeaderData& connection)
+{
+    if (!QWebSocketServer::isValid(connection)) {
+        return false;
+    }
+    return connection.protocol == QByteArrayLiteral("QWebChannel")
+            && connection.path == m_secret;
+}
+
 void QWebChannelPrivate::init()
 {
-    m_server.close();
+    close();
 
     m_starting = false;
     if (m_useSecret) {
-        m_secret = QUuid::createUuid().toString();
-        m_secret = m_secret.mid(1, m_secret.size() - 2);
+        m_secret = QUuid::createUuid().toByteArray();
+        // replace { by /
+        m_secret[0] = '/';
+        // chop of trailing }
+        m_secret.chop(1);
     }
 
-    if (!m_server.listen(QHostAddress::LocalHost)) {
-        emit failed(m_server.errorString());
+    if (!listen(QHostAddress::LocalHost)) {
+        emit failed(errorString());
         return;
     }
 
-    m_baseUrl = QString("localhost:%1/%2").arg(m_server.port()).arg(m_secret);
-    qDebug() << m_baseUrl;
+    m_baseUrl = QString("localhost:%1%2").arg(port()).arg(QString::fromLatin1(m_secret));
     emit initialized();
 }
 
 void QWebChannelPrivate::socketError()
 {
-    emit failed(m_server.errorString());
+    emit failed(errorString());
 }
 
 QWebChannel::QWebChannel(QObject *parent)
 : QObject(parent)
 , d(new QWebChannelPrivate(this))
 {
-    connect(&d->m_server, SIGNAL(textDataReceived(QString)),
+    connect(d, SIGNAL(textDataReceived(QString)),
             SIGNAL(rawMessageReceived(QString)));
     connect(d, SIGNAL(failed(QString)),
             SIGNAL(failed(QString)));
@@ -157,7 +165,7 @@ void QWebChannel::onInitialized()
 
 void QWebChannel::sendRawMessage(const QString& message)
 {
-    d->m_server.sendMessage(message);
+    d->sendMessage(message);
 }
 
 #include <qwebchannel.moc>
