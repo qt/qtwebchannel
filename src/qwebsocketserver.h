@@ -54,6 +54,7 @@ class QWebSocketServer : public QObject
 
 public:
     explicit QWebSocketServer(QObject* parent = 0);
+    virtual ~QWebSocketServer();
 
     bool listen(const QHostAddress& address = QHostAddress::LocalHost, quint16 port = 0);
     void close();
@@ -100,6 +101,9 @@ protected:
         bool hasConnection;
         bool wasUpgraded;
     };
+    virtual bool isValid(const HeaderData& connection);
+
+private:
     struct Frame
     {
         enum State {
@@ -137,9 +141,6 @@ protected:
         Frame currentFrame;
     };
 
-    virtual bool isValid(const HeaderData& connection);
-
-private:
     void readHeaderData(QTcpSocket* socket, HeaderData& header);
     void close(QTcpSocket* socket, const HeaderData& header);
     void upgrade(QTcpSocket* socket, HeaderData& header);

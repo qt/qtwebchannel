@@ -87,6 +87,11 @@ QWebSocketServer::QWebSocketServer(QObject* parent)
             SIGNAL(error(QAbstractSocket::SocketError)));
 }
 
+QWebSocketServer::~QWebSocketServer()
+{
+    close();
+}
+
 bool QWebSocketServer::listen(const QHostAddress& address, quint16 port)
 {
     return m_server->listen(address, port);
@@ -137,7 +142,7 @@ void QWebSocketServer::disconnected()
 }
 
 static const QByteArray headerSwitchProtocols = QByteArrayLiteral("HTTP/1.1 101 Switching Protocols");
-static const QByteArray headerGet = QByteArrayLiteral("GET /");
+static const QByteArray headerGet = QByteArrayLiteral("GET ");
 static const QByteArray headerHTTP = QByteArrayLiteral("HTTP/1.1");
 static const QByteArray headerHost = QByteArrayLiteral("Host: ");
 static const QByteArray headerUpgrade = QByteArrayLiteral("Upgrade: websocket");
@@ -376,7 +381,7 @@ void QWebSocketServer::sendMessage(const QString& message)
     sendFrame(Frame::TextFrame, message.toUtf8());
 }
 
-void QWebSocketServer::sendFrame(QWebSocketServer::Frame::Opcode opcode, const QByteArray& data)
+void QWebSocketServer::sendFrame(Frame::Opcode opcode, const QByteArray& data)
 {
     QHash< QTcpSocket*, Connection >::const_iterator it = m_connections.constBegin();
     while (it != m_connections.constEnd()) {
