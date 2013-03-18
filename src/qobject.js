@@ -108,6 +108,10 @@ function QObject(name, data, webChannel)
     for (i in data.properties) {
         bindGetterSetter(data.properties[i]);
     }
+
+    for (i in data.enums) {
+        object[i] = data.enums[i];
+    }
 }
 
 window.setupQObjectWebChannel = function(webChannel, doneCallback)
