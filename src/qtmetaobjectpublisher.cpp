@@ -59,6 +59,7 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
         return data;
     }
     QStringList qtSignals, qtMethods, qtProperties;
+    QVariantMap qtEnums;
     const QMetaObject* metaObject = object->metaObject();
     for (int i = 0; i < metaObject->propertyCount(); ++i)
         qtProperties.append(metaObject->property(i).name());
@@ -71,8 +72,17 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
         if (method.methodType() == QMetaMethod::Signal)
             qtSignals << signature << name;
     }
+    for (int i = 0; i < metaObject->enumeratorCount(); ++i) {
+        QMetaEnum enumerator = metaObject->enumerator(i);
+        QVariantMap values;
+        for (int k = 0; k < enumerator.keyCount(); ++k) {
+            values[enumerator.key(k)] = enumerator.value(k);
+        }
+        qtEnums[enumerator.name()] = values;
+    }
     data["signals"] = qtSignals;
     data["methods"] = qtMethods;
     data["properties"] = qtProperties;
+    data["enums"] = qtEnums;
     return data;
 }
