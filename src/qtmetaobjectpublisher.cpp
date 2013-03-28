@@ -44,7 +44,6 @@
 #include <QStringList>
 #include <QMetaObject>
 #include <QMetaProperty>
-#include <QDebug>
 
 QtMetaObjectPublisher::QtMetaObjectPublisher(QObject *parent)
     : QObject(parent)
