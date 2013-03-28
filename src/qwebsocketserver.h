@@ -73,6 +73,7 @@ signals:
 
 public slots:
     void sendMessage(const QString& message);
+    void ping();
 
 private slots:
     void newConnection();

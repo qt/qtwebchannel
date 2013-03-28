@@ -65,12 +65,14 @@ public:
 signals:
     void baseUrlChanged(const QString& baseUrl);
     void rawMessageReceived(const QString& rawMessage);
+    void pongReceived();
     void initialized();
 
     void failed(const QString& reason);
 
 public slots:
     void sendRawMessage(const QString& rawMessage);
+    void ping();
 
 private slots:
     void onInitialized();

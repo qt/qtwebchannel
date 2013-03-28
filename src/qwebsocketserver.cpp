@@ -281,7 +281,7 @@ bool QWebSocketServer::readFrameData(QTcpSocket* socket, Frame& frame)
         frame.state = Frame::ReadData;
         frame.data.reserve(frame.length);
     }
-    if (frame.state == Frame::ReadData && bytesAvailable) {
+    if (frame.state == Frame::ReadData && (bytesAvailable || !frame.length)) {
         frame.data.append(socket->read(qMin(frame.length - frame.data.size(), bytesAvailable)));
         if (frame.data.size() == frame.length) {
             frame.state = Frame::ReadStart;
@@ -412,4 +412,9 @@ void QWebSocketServer::sendFrame(QTcpSocket* socket, Frame::Opcode opcode, const
     }
     socket->write(header);
     socket->write(data);
+}
+
+void QWebSocketServer::ping()
+{
+    sendFrame(Frame::Ping, QByteArray());
 }
