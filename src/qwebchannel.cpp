@@ -113,7 +113,7 @@ void QWebChannelPrivate::init()
         return;
     }
 
-    m_baseUrl = QString("localhost:%1%2").arg(port()).arg(QString::fromLatin1(m_secret));
+    m_baseUrl = QString("127.0.0.1:%1%2").arg(port()).arg(QString::fromLatin1(m_secret));
     emit initialized();
 }
 
