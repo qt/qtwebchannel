@@ -56,7 +56,7 @@ MetaObjectPublisherImpl
      */
     function handleRequest(data, webChannel)
     {
-        var message = JSON.parse(data);
+        var message = typeof(data) === "string" ? JSON.parse(data) : data;
         if (!message.data) {
             return false;
         }
