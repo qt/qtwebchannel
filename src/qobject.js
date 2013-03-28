@@ -64,7 +64,7 @@ function QObject(name, data, webChannel)
             }
 
             webChannel.exec({"type": "Qt.invokeMethod", "object": object.__id__, "method": method, "args": args}, function(response) {
-                if (response.length && callback) {
+                if ((response != undefined) && callback) {
                     (callback)(response);
                 }
             });
