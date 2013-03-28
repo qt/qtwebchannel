@@ -132,6 +132,8 @@ QWebChannel::QWebChannel(QObject *parent)
             SIGNAL(failed(QString)));
     connect(d, SIGNAL(initialized()),
             SLOT(onInitialized()));
+    connect(d, SIGNAL(pongReceived()),
+            SIGNAL(pongReceived()));
     d->initLater();
 }
 
@@ -166,6 +168,11 @@ void QWebChannel::onInitialized()
 void QWebChannel::sendRawMessage(const QString& message)
 {
     d->sendMessage(message);
+}
+
+void QWebChannel::ping()
+{
+    d->ping();
 }
 
 #include <qwebchannel.moc>
