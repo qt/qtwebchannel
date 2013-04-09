@@ -42,6 +42,13 @@
 var QWebChannel = function(baseUrl, initCallback)
 {
     var channel = this;
+    // support multiple channels listening to the same socket
+    // the responses to channel.exec must be distinguishable
+    // see: http://stackoverflow.com/a/2117523/35250
+    this.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
     ///TODO: use ssl?
     var socketUrl = "ws://" + baseUrl;
     this.socket = new WebSocket(socketUrl, "QWebChannel");
@@ -73,8 +80,10 @@ var QWebChannel = function(baseUrl, initCallback)
             jsonData.data = {};
         }
         if (jsonData.response) {
-            channel.execCallbacks[jsonData.id](jsonData.data);
-            delete channel.execCallbacks[jsonData.id];
+            if (jsonData.id[0] === channel.id) {
+                channel.execCallbacks[jsonData.id[1]](jsonData.data);
+                delete channel.execCallbacks[jsonData.id];
+            }
         } else if (channel.subscriptions[jsonData.id]) {
             channel.subscriptions[jsonData.id].forEach(function(callback) {
                 (callback)(jsonData.data); }
@@ -102,6 +111,6 @@ var QWebChannel = function(baseUrl, initCallback)
         }
         var id = channel.execId++;
         channel.execCallbacks[id] = callback;
-        channel.send({"id": id, "data": data});
+        channel.send({"id": [channel.id, id], "data": data});
     };
 };
