@@ -107,7 +107,7 @@ var QWebChannel = function(baseUrl, initCallback)
     {
         if (channel.execId === Number.MAX_VALUE) {
             // wrap
-            channel.exedId = Number.MIN_VALUE;
+            channel.execId = Number.MIN_VALUE;
         }
         var id = channel.execId++;
         channel.execCallbacks[id] = callback;
