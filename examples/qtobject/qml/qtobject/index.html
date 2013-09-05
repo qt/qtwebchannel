@@ -6,7 +6,7 @@
             window.output = function(x) {
                 document.querySelector("#out").innerHTML += x + "\n";
             }
-            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]);
+            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
             new QWebChannel(baseUrl, function(channel) {
                 setupQObjectWebChannel(channel, function() {
                     testObject1.sig1.connect(function(a, b, c) { output("1 sig1" + a + b + c); });
