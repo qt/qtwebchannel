@@ -64,7 +64,7 @@
         window.onload = function() {
             out("Starting...");
 
-            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/]+)/.exec(location.search)[1]);
+            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
             new QWebChannel(baseUrl, function(webChannel) {
                 window.navigator.webChannel = webChannel;
                 out("Ready");
