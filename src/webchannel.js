@@ -113,4 +113,9 @@ var QWebChannel = function(baseUrl, initCallback)
         channel.execCallbacks[id] = callback;
         channel.send({"id": [channel.id, id], "data": data});
     };
+
+    this.debug = function(message)
+    {
+        channel.send({"data" : {"type" : "Qt.Debug", "message" : message}});
+    };
 };
