@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<TestObject>("Qt.labs", 1, 0, "TestObject");
 
     QtQuick2ApplicationViewer viewer;
-    viewer.setMainQmlFile(QStringLiteral("qml/qtobject/main.qml"));
+    viewer.setMainQmlFile(app.applicationDirPath() + QStringLiteral("/qml/qtobject/main.qml"));
     viewer.showExpanded();
 
     return app.exec();
