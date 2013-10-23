@@ -149,6 +149,7 @@ private:
 
     void sendFrame(Frame::Opcode opcode, const QByteArray& data);
     void sendFrame(QTcpSocket* socket, Frame::Opcode opcode, const QByteArray& data);
+    QByteArray frameHeader(Frame::Opcode opcode, const int dataSize) const;
 
     QTcpServer* m_server;
     QHash<QTcpSocket*, Connection> m_connections;
