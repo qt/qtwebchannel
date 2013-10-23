@@ -152,6 +152,8 @@ static const QByteArray headerSecVersion = QByteArrayLiteral("Sec-WebSocket-Vers
 static const QByteArray headerSecAccept = QByteArrayLiteral("Sec-WebSocket-Accept: ");
 static const QByteArray headerOrigin = QByteArrayLiteral("Origin: ");
 static const QByteArray headerMagicKey = QByteArrayLiteral("258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+static const QByteArray headerEOL = QByteArrayLiteral("\r\n");
+static const QByteArray httpBadRequest = QByteArrayLiteral("HTTP/1.1 400 Bad Request\r\n");
 
 void QWebSocketServer::readSocketData()
 {
@@ -344,7 +346,7 @@ void QWebSocketServer::close(QTcpSocket* socket, const HeaderData& header)
         //TODO: implement this properly - see http://tools.ietf.org/html/rfc6455#page-36
         socket->write(frameHeader(Frame::Frame::ConnectionClose, 0));
     } else {
-        socket->write("HTTP/1.1 400 Bad Request\r\n");
+        socket->write(httpBadRequest);
     }
     socket->close();
 }
@@ -352,25 +354,25 @@ void QWebSocketServer::close(QTcpSocket* socket, const HeaderData& header)
 void QWebSocketServer::upgrade(QTcpSocket* socket, HeaderData& header)
 {
     socket->write(headerSwitchProtocols);
-    socket->write("\r\n");
+    socket->write(headerEOL);
 
     socket->write(headerUpgrade);
-    socket->write("\r\n");
+    socket->write(headerEOL);
 
     socket->write(headerConnection);
-    socket->write("\r\n");
+    socket->write(headerEOL);
 
     socket->write(headerSecAccept);
     socket->write(QCryptographicHash::hash( header.key + headerMagicKey, QCryptographicHash::Sha1 ).toBase64());
-    socket->write("\r\n");
+    socket->write(headerEOL);
 
     if (!header.protocol.isEmpty()) {
         socket->write(headerSecProtocol);
         socket->write(header.protocol);
-        socket->write("\r\n");
+        socket->write(headerEOL);
     }
 
-    socket->write("\r\n");
+    socket->write(headerEOL);
 
     header.wasUpgraded = true;
 }
