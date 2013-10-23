@@ -311,7 +311,7 @@ void QWebSocketServer::handleFrame(QTcpSocket* socket, Frame& frame)
         // do nothing
         break;
     case Frame::Ping:
-        sendFrame(socket, Frame::Pong, QByteArray());
+        socket->write(frameHeader(Frame::Pong, 0));
         break;
     case Frame::Pong:
         emit pongReceived();
@@ -343,7 +343,7 @@ void QWebSocketServer::close(QTcpSocket* socket, const HeaderData& header)
 {
     if (header.wasUpgraded) {
         //TODO: implement this properly - see http://tools.ietf.org/html/rfc6455#page-36
-        sendFrame(socket, Frame::ConnectionClose, QByteArray());
+        socket->write(frameHeader(Frame::Frame::ConnectionClose, 0));
     } else {
         socket->write("HTTP/1.1 400 Bad Request\r\n");
     }
@@ -383,17 +383,19 @@ void QWebSocketServer::sendMessage(const QString& message)
 
 void QWebSocketServer::sendFrame(Frame::Opcode opcode, const QByteArray& data)
 {
+    const QByteArray& header = frameHeader(opcode, data.size());
     QHash< QTcpSocket*, Connection >::const_iterator it = m_connections.constBegin();
     while (it != m_connections.constEnd()) {
         if (it.value().header.wasUpgraded) {
-            sendFrame(it.key(), opcode, data);
+            it.key()->write(header);
+            it.key()->write(data);
         }
         ++it;
     }
 }
 
 // see: http://tools.ietf.org/html/rfc6455#page-28
-void QWebSocketServer::sendFrame(QTcpSocket* socket, Frame::Opcode opcode, const QByteArray& data)
+QByteArray QWebSocketServer::frameHeader(QWebSocketServer::Frame::Opcode opcode, const int dataSize) const
 {
     // we only support single frames for now
     Q_ASSERT(opcode != Frame::ContinuationFrame);
@@ -401,17 +403,16 @@ void QWebSocketServer::sendFrame(QTcpSocket* socket, Frame::Opcode opcode, const
     QByteArray header;
     header.reserve(4);
     header.append(FIN_BIT | opcode);
-    if (data.size() < EXTENDED_PAYLOAD) {
-        header.append(static_cast<char>(data.size()));
-    } else if (data.size() < std::numeric_limits<quint16>::max()) {
+    if (dataSize < EXTENDED_PAYLOAD) {
+        header.append(static_cast<char>(dataSize));
+    } else if (dataSize < std::numeric_limits<quint16>::max()) {
         header.append(EXTENDED_PAYLOAD);
-        appendBytes(header, qToBigEndian<quint16>(data.size()));
+        appendBytes(header, qToBigEndian<quint16>(dataSize));
     } else {
         header.append(EXTENDED_LONG_PAYLOAD);
-        appendBytes(header, qToBigEndian<quint64>(data.size()));
+        appendBytes(header, qToBigEndian<quint64>(dataSize));
     }
-    socket->write(header);
-    socket->write(data);
+    return header;
 }
 
 void QWebSocketServer::ping()
