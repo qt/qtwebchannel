@@ -50,6 +50,10 @@ static const QString KEY_METHODS = QStringLiteral("methods");
 static const QString KEY_PROPERTIES = QStringLiteral("properties");
 static const QString KEY_ENUMS = QStringLiteral("enums");
 
+static const QString KEY_QOBJECT = QStringLiteral("__QObject*__");
+static const QString KEY_ID = QStringLiteral("id");
+static const QString KEY_DATA = QStringLiteral("data");
+
 QtMetaObjectPublisher::QtMetaObjectPublisher(QQuickItem *parent)
     : QQuickItem(parent)
 {
@@ -141,4 +145,55 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
     data[KEY_PROPERTIES] = QVariant::fromValue(qtProperties);
     data[KEY_ENUMS] = qtEnums;
     return data;
+}
+
+static QString objectId(QObject *object)
+{
+    return QString::number(quintptr(object), 16);
+}
+
+QVariant QtMetaObjectPublisher::wrapObject(QObject *object)
+{
+    if (!object)
+        return QVariant();
+
+    const QString& id = objectId(object);
+
+    const WrapMapCIt& p = m_wrappedObjects.constFind(id);
+    if (p != m_wrappedObjects.constEnd())
+        return p.value().second;
+
+    QVariantMap objectInfo;
+    objectInfo[KEY_QOBJECT] = true;
+    objectInfo[KEY_ID] = id;
+    objectInfo[KEY_DATA] = classInfoForObject(object);
+
+    m_wrappedObjects.insert(id, WrapInfo(object, objectInfo));
+    connect(object, SIGNAL(destroyed(QObject*)), SLOT(wrappedObjectDestroyed(QObject*)));
+
+    return objectInfo;
+}
+
+QObject *QtMetaObjectPublisher::unwrapObject(const QString& id) const
+{
+    const WrapMapCIt& p = m_wrappedObjects.constFind(id);
+    if (p != m_wrappedObjects.constEnd())
+        return p.value().first;
+    return 0;
+}
+
+void QtMetaObjectPublisher::wrappedObjectDestroyed(QObject* object)
+{
+    const QString& id = objectId(object);
+    m_wrappedObjects.remove(id);
+    emit wrappedObjectDestroyed(id);
+}
+
+void QtMetaObjectPublisher::deleteWrappedObject(QObject* object) const
+{
+    if (!m_wrappedObjects.contains(objectId(object))) {
+        qWarning() << "Not deleting non-wrapped object" << object;
+        return;
+    }
+    object->deleteLater();
 }
