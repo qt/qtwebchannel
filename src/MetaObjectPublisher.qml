@@ -78,6 +78,34 @@ MetaObjectPublisherImpl
     // object info map set.
     property bool propertyUpdatesInitialized: false
 
+    objectWrapper.onObjectDestroyed: { // (const QString& id)
+        // act as if object had sent `destroyed` signal
+        webChannel.sendMessage("Qt.signal", {
+            object: id,
+            signal: "destroyed",
+            args: []
+        });
+    }
+
+    /**
+     *    Wrap a result value if it's a Qt QObject
+     *
+     *    @return object info for wrapped Qt Object,
+     *     or the same value if no wrapping needed
+     *
+     */
+    function wrapResult(result)
+    {
+        if (typeof(result) === "object"
+            && result["objectName"] !== undefined)
+        {
+            var ret = wrapObject(result);
+            initializePropertyUpdates(ret.id, ret.data, result, webChannel);
+            return ret;
+        }
+        return result;
+    }
+
     function convertQMLArgsToJSArgs(qmlArgs)
     {
         // NOTE: QML arguments is a map not an array it seems...
@@ -106,12 +134,26 @@ MetaObjectPublisherImpl
         }
 
         if (payload.object) {
+            var isWrapped = false;
             var object = registeredObjects[payload.object];
+            if (!object) {
+                object = objectWrapper.unwrap(payload.object);
+                if (object)
+                    isWrapped = true;
+                else
+                    return false
+            }
 
             if (payload.type === "Qt.invokeMethod") {
                 var method = object[payload.method];
                 if (method !== undefined) {
-                    webChannel.respond(message.id, method.apply(method, payload.args));
+                    webChannel.respond(message.id,
+                        wrapResult(method.apply(method, payload.args)));
+                    return true;
+                }
+                if (isWrapped && payload.method === "deleteLater") {
+                    // invoke `deleteLater` on QObject indirectly
+                    objectWrapper.deleteObjectLater(object);
                     return true;
                 }
                 return false;
@@ -133,6 +175,11 @@ MetaObjectPublisherImpl
                         });
                         subscriberCountMap[payload.object][payload.signal] = true;
                     }
+                    return true;
+                }
+                // connecting to `destroyed` signal of QObject
+                if (isWrapped && payload.signal === "destroyed") {
+                    // is a no-op on this side
                     return true;
                 }
                 return false;
@@ -248,6 +295,13 @@ MetaObjectPublisherImpl
         var data = [];
         for (var objectName in pendingPropertyUpdates) {
             var object = registeredObjects[objectName];
+            if (!object) {
+                object = objectWrapper.unwrap(objectName);
+                if (!object) {
+                    console.error("Got property update for unknown object " + objectName);
+                    continue;
+                }
+            }
             var signals = pendingPropertyUpdates[objectName];
             var propertyMap = {};
             for(var signalName in signals) {

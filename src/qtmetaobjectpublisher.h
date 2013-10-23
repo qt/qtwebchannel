@@ -55,8 +55,16 @@ class QtMetaObjectPublisher : public QQuickItem
 public:
     explicit QtMetaObjectPublisher(QQuickItem *parent = 0);
 
+    Q_PROPERTY(QObjectWrapper *objectWrapper READ objectWrapper CONSTANT)
+
     Q_INVOKABLE QVariantMap classInfoForObjects(const QVariantMap &objects) const;
     Q_INVOKABLE QVariantMap classInfoForObject(QObject *object) const;
+    Q_INVOKABLE QVariant wrapObject(const QVariant &result);
+
+    QObjectWrapper *objectWrapper() const;
+
+private:
+    QObjectWrapper *m_objectWrapper;
 };
 
 #endif // QTMETAOBJECTPUBLISHER_H

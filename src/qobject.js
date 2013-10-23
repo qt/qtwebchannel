@@ -54,6 +54,26 @@ function QObject(name, data, webChannel)
 
     // ----------------------------------------------------------------------
 
+    function unwrapQObject( response )
+    {
+        if (!response["__QObject*__"]
+            || response["id"] === undefined
+            || response["data"] === undefined) {
+            return response;
+        }
+        var objectId = response.id;
+        if (webChannel.objectMap[objectId])
+            return webChannel.objectMap[objectId];
+
+        var qObject = new QObject( objectId, response.data, webChannel );
+        qObject.destroyed.connect(function() {
+            if (webChannel.objectMap[objectId] === qObject) {
+                delete webChannel.objectMap[objectId];
+            }
+        });
+        return qObject;
+    }
+
     function addSignal(signal, isPropertyNotifySignal)
     {
         object[signal] = {
@@ -126,7 +146,7 @@ function QObject(name, data, webChannel)
 
             webChannel.exec({"type": "Qt.invokeMethod", "object": object.__id__, "method": method, "args": args}, function(response) {
                 if ( (response !== undefined) && callback ) {
-                    (callback)(response);
+                    (callback)(unwrapQObject(response));
                 }
             });
         };
@@ -199,7 +219,7 @@ window.setupQObjectWebChannel = function(webChannel, doneCallback)
     webChannel.subscribe(
         "Qt.signal",
         function(payload) {
-            var object = webChannel.objectMap[payload.object];
+            var object = window[payload.object] || webChannel.objectMap[payload.object];
             if (object) {
                 object.signalEmitted(payload.signal, payload.args);
             } else {
@@ -213,7 +233,7 @@ window.setupQObjectWebChannel = function(webChannel, doneCallback)
         function(payload) {
             for(var i in payload) {
                 var data = payload[i];
-                var object = webChannel.objectMap[data.object];
+                var object = window[data.object] || webChannel.objectMap[data.object];
                 if (object) {
                     object.propertyUpdate(data.signals, data.propertyMap);
                 } else {

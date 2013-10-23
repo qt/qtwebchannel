@@ -40,6 +40,7 @@
 ****************************************************************************/
 
 #include "qtmetaobjectpublisher.h"
+#include "qobjectwrapper.h"
 
 #include <QStringList>
 #include <QMetaObject>
@@ -52,6 +53,7 @@ static const QString KEY_ENUMS = QStringLiteral("enums");
 
 QtMetaObjectPublisher::QtMetaObjectPublisher(QQuickItem *parent)
     : QQuickItem(parent)
+    , m_objectWrapper(new QObjectWrapper(this))
 {
 }
 
@@ -141,4 +143,16 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
     data[KEY_PROPERTIES] = QVariant::fromValue(qtProperties);
     data[KEY_ENUMS] = qtEnums;
     return data;
+}
+
+QVariant QtMetaObjectPublisher::wrapObject(const QVariant &result)
+{
+    if (static_cast<QMetaType::Type>(result.type()) == QMetaType::QObjectStar)
+        return objectWrapper()->wrap(result.value<QObject*>());
+    return result;
+}
+
+QObjectWrapper *QtMetaObjectPublisher::objectWrapper() const
+{
+    return m_objectWrapper;
 }

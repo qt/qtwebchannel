@@ -8,6 +8,7 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    qmlRegisterType<TestObjectFactory>("Qt.labs", 1, 0, "TestObjectFactory");
     qmlRegisterType<TestObject>("Qt.labs", 1, 0, "TestObject");
 
     QtQuick2ApplicationViewer viewer;

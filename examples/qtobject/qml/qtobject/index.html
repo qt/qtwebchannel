@@ -3,51 +3,84 @@
         <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
         <script type="text/javascript" src="qrc:///qwebchannel/qobject.js"></script>
         <script type="text/javascript">
-            window.output = function(x) {
+            //BEGIN HELPER
+            function output(x) {
                 document.querySelector("#out").innerHTML += x + "\n";
             }
+            function createLink(label, onclick) {
+                var link = document.createElement("a");
+                link.href = "#";
+                link.onclick = onclick
+                link.appendChild(document.createTextNode(label));
+                return link;
+            }
+            function addObject(object) {
+                object.timeout.connect(function() { output('timeout of object ' + object.objectName()); });
+                object.sig1.connect(function(a, b, c) {
+                    output('sig1 of object ' + object.objectName() + ": a = " + a + ", b = " + b + ", c = " + c);
+                });
+                object.sig2.connect(function() { output('sig2 of object ' + object.objectName()); });
+                object.prop1Changed.connect(function() {
+                    // note: notify signal doesn't have the new value, so you must use direct access
+                    output("prop1 of object " + object.objectName() + " changed, direct: " + object.prop1());
+                });
+                object.prop2Changed.connect(function(newVal) {
+                    output("prop2 of object " + object.objectName() + " changed, new val: " + newVal + ", direct: " + object.prop2());
+                });
+                var container = document.getElementById("objects");
+                var element = document.createElement("p");
+                element.appendChild(document.createTextNode(object.objectName() + ":"));
+                element.appendChild(createLink("debugMe", function() {
+                    object.debugMe('Debugging!', function(result) { output(result); });
+                }));
+                element.appendChild(createLink("manyArgs", function() {
+                    object.manyArgs(1, 0.5, 'asdf', function(result) { output(result); });
+                }));
+                element.appendChild(createLink("get prop1", function() {
+                    output(object.prop1());
+                }));
+                element.appendChild(createLink("set prop1", function() {
+                    object.prop1 = "Set prop1 on " + (new Date());
+                }));
+                element.appendChild(createLink("get prop2", function() {
+                    output(object.prop2());
+                }));
+                element.appendChild(createLink("set prop2", function() {
+                    object.prop2 = "Set prop2 on " + (new Date());
+                }));
+                element.appendChild(createLink("start timer", function() {
+                    object.startTimer(1000);
+                }));
+                container.appendChild(element);
+            }
+            var createdObjects = 0;
+            function createObject() {
+                testObjectFactory.createObject("myObj" + (createdObjects++), function(createdObject) {
+                    addObject(createdObject);
+                });
+            }
+
+            //END HELPER
+            //BEGIN SETUP
             var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
             new QWebChannel(baseUrl, function(channel) {
                 setupQObjectWebChannel(channel, function() {
-                    testObject1.sig1.connect(function(a, b, c) { output("1 sig1" + a + b + c); });
-                    testObject1.sig2.connect(function() { output("1 sig2"); });
-                    testObject2.sig1.connect(function(a, b, c) { output("2 sig1" + a + b + c); });
-                    testObject2.sig2.connect(function() { output("2 sig2"); });
-                    testObject3.sig1.connect(function(a, b, c) { output("3 sig1" + a + b + c); });
-                    testObject3.sig2.connect(function() { output("3 sig2"); });
+                    // do stuff with registered QObjects
+                    addObject(initialTestObject);
                 });
             });
+            //END SETUP
         </script>
+        <style type="text/css">
+            #objects a {
+                margin: 0 10px;
+            }
+        </style>
     </head>
     <body>
-    <p>TestObject 1:
-        <a href="#" onclick="testObject1.debugMe('Debugging!', function(result) { output(result); })">method 1</a>
-        <a href="#" onclick="testObject1.manyArgs(1, 0.5, 'asdf', function(result) { output(result); })">method 2</a>
-        <a href="#" onclick="testObject1.prop1(function(value) { output(value); })">Get prop1</a>
-        <a href="#" onclick="testObject1.prop1 = 'Different property'; testObject1.prop1(function(value) { output(value); })">Set prop1</a>
-        <a href="#" onclick="testObject1.prop2(function(value) { output(value); })">Get prop2</a>
-        <a href="#" onclick="testObject1.prop2 = 'Different property'; testObject1.prop2(function(value) { output(value); })">Set prop2</a>
-        <a href="#" onclick="testObject1.timeout.connect(function() { output('timeout 1'); }); testObject1.startTimer(1000);">Timer</a>
-    </p>
-    <p>TestObject 2:
-        <a href="#" onclick="testObject2.debugMe('Debugging!', function(result) { output(result); })">method 1</a>
-        <a href="#" onclick="testObject2.manyArgs(1, 0.5, 'asdf', function(result) { output(result); })">method 2</a>
-        <a href="#" onclick="testObject2.prop1(function(value) { output(value); })">Get prop1</a>
-        <a href="#" onclick="testObject2.prop1 = 'Different property'; testObject2.prop1(function(value) { output(value); })">Set prop1</a>
-        <a href="#" onclick="testObject2.prop2(function(value) { output(value); })">Get prop2</a>
-        <a href="#" onclick="testObject2.prop2 = 'Different property'; testObject2.prop2(function(value) { output(value); })">Set prop2</a>
-        <a href="#" onclick="testObject2.timeout.connect(function() { output('timeout 2'); }); testObject2.startTimer(1000);">Timer</a>
-    </p>
-    <p>TestObject 3:
-        <a href="#" onclick="testObject3.debugMe('Debugging!', function(result) { output(result); })">method 1</a>
-        <a href="#" onclick="testObject3.manyArgs(1, 0.5, 'asdf', function(result) { output(result); })">method 2</a>
-        <a href="#" onclick="testObject3.prop1(function(value) { output(value); })">Get prop1</a>
-        <a href="#" onclick="testObject3.prop1 = 'Different property'; testObject3.prop1(function(value) { output(value); })">Set prop1</a>
-        <a href="#" onclick="testObject3.prop2(function(value) { output(value); })">Get prop2</a>
-        <a href="#" onclick="testObject3.prop2 = 'Different property'; testObject3.prop2(function(value) { output(value); })">Set prop2</a>
-        <a href="#" onclick="testObject3.timeout.connect(function() { output('timeout 3'); }); testObject3.startTimer(1000);">Timer</a>
-    </p>
+        <div id="objects"></div>
         <br/>
+        <a href="#" onclick="createObject()">Create New Object</a><br/>
         <textarea id="out" style="height:80%; width: 80%"></textarea>
     </body>
 </html>
