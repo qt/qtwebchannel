@@ -3,7 +3,7 @@ include(src.pri)
 TEMPLATE = lib
 TARGET = qwebchannel
 TARGETPATH = Qt/labs/WebChannel
-QT += qml
+QT += qml quick
 CONFIG += qt plugin
 
 TARGET = $$qtLibraryTarget($$TARGET)

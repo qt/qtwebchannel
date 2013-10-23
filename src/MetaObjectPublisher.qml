@@ -44,17 +44,57 @@ import Qt.labs.WebChannel 1.0
 
 MetaObjectPublisherImpl
 {
+    id: publisher
+
+    // The web channel this publisher works on.
+    property var webChannel
+
     /**
      * This map contains the registered objects indexed by their name.
      */
     property variant registeredObjects
+    property var subscriberCountMap
+
+    // Map of object names to maps of signal names to an array of all their properties.
+    // The last value is an array as a signal can be the notify signal of multiple properties.
+    property var signalToPropertyMap
+
+    // Objects that changed their properties and are waiting for idle client.
+    // map of object name to map of signal name to arguments
+    property var pendingPropertyUpdates
+
+    // true when the client is idle, false otherwise
+    property bool clientIsIdle: false
+
+    // true when no property updates should be sent, false otherwise
+    property bool blockUpdates: false
+
+    // true when at least one client needs to be initialized,
+    // i.e. when a Qt.init came in which was not handled yet.
+    property bool pendingInit: false
+
+    // true when at least one client was initialized and thus
+    // the property updates have been initialized and the
+    // object info map set.
+    property bool propertyUpdatesInitialized: false
+
+    function convertQMLArgsToJSArgs(qmlArgs)
+    {
+        // NOTE: QML arguments is a map not an array it seems...
+        // so do the conversion manually
+        var args = [];
+        for(var i = 0; i < qmlArgs.length; ++i) {
+            args.push(qmlArgs[i]);
+        }
+        return args;
+    }
 
     /**
      * Handle the given WebChannel client request and potentially give a response.
      *
      * @return true if the request was handled, false otherwise.
      */
-    function handleRequest(data, webChannel)
+    function handleRequest(data)
     {
         var message = typeof(data) === "string" ? JSON.parse(data) : data;
         if (!message.data) {
@@ -64,60 +104,204 @@ MetaObjectPublisherImpl
         if (!payload.type) {
             return false;
         }
-        var object = payload.object ? registeredObjects[payload.object] : null;
 
-        if (payload.type === "Qt.invokeMethod" && object) {
-            var method = object[payload.method];
-            webChannel.respond(message.id, method.apply(method, payload.args));
-        } else if (payload.type === "Qt.connectToSignal" && object) {
-            object[payload.signal].connect(function() {
-                // NOTE: QML arguments is a map not an array it seems...
-                // so do the conversion manually
-                var args = [];
-                for(var i = 0; i < arguments.length; ++i) {
-                    args.push(arguments[i]);
+        if (payload.object) {
+            var object = registeredObjects[payload.object];
+
+            if (payload.type === "Qt.invokeMethod") {
+                var method = object[payload.method];
+                if (method !== undefined) {
+                    webChannel.respond(message.id, method.apply(method, payload.args));
+                    return true;
                 }
-                webChannel.sendMessage("Qt.signal", {
-                        object: payload.object,
-                        signal: payload.signal,
-                        args: args
-                });
-            });
-        } else if (payload.type === "Qt.getProperty" && object) {
-            webChannel.respond(message.id, object[payload.property]);
-        } else if (payload.type === "Qt.setProperty" && object) {
-            object[payload.property] = payload.value;
-        } else if (payload.type === "Qt.getObjects") {
-            webChannel.respond(message.id, registeredObjectInfos());
-        } else if (payload.type === "Qt.Debug") {
-            console.log("DEBUG: ", payload.message);
-        } else {
-            return false;
-        }
+                return false;
+            }
+            if (payload.type === "Qt.connectToSignal") {
+                if (object.hasOwnProperty(payload.signal)) {
+                    subscriberCountMap =  subscriberCountMap || {};
+                    subscriberCountMap[payload.object] = subscriberCountMap[payload.object] || {};
 
-        return true;
+                    // if no one is connected, connect.
+                    if (!subscriberCountMap[payload.object].hasOwnProperty(payload.signal)) {
+                         object[payload.signal].connect(function() {
+                            var args = convertQMLArgsToJSArgs(arguments);
+                            webChannel.sendMessage("Qt.signal", {
+                                object: payload.object,
+                                signal: payload.signal,
+                                args: args
+                            });
+                        });
+                        subscriberCountMap[payload.object][payload.signal] = true;
+                    }
+                    return true;
+                }
+                return false;
+            }
+            if (payload.type === "Qt.setProperty") {
+                object[payload.property] = payload.value;
+                return true;
+            }
+        }
+        if (payload.type === "Qt.idle") {
+            clientIsIdle = true;
+            return true;
+        }
+        if (payload.type === "Qt.init") {
+            if (!blockUpdates) {
+                initializeClients();
+            } else {
+                pendingInit = true;
+            }
+            return true;
+        }
+        if (payload.type === "Qt.Debug") {
+            console.log("DEBUG: ", payload.message);
+            return true;
+        }
+        return false;
     }
 
     function registerObjects(objects)
     {
+        if (propertyUpdatesInitialized) {
+            console.error("Registered new object after initialization. This does not work!");
+        }
         // joining a JS map and a QML one is not as easy as one would assume...
-        for(var name in registeredObjects) {
-            if (!objects[name]) {
-                objects[name] = registeredObjects[name];
+        // NOTE: the extra indirection via "merged" is required, using registeredObjects directly
+        //       does not work! this looks like a QML/v8 bug to me, but I could not find a
+        //       standalone testcase which reproduces this behavior :(
+        var merged = registeredObjects;
+        for(var name in objects) {
+            if (!merged.hasOwnProperty(name)) {
+                merged[name] = objects[name];
             }
         }
-        registeredObjects = objects;
+        registeredObjects = merged;
     }
 
-    function registeredObjectInfos()
+    function initializeClients()
     {
-        var objectInfos = {};
-        for(var name in registeredObjects) {
-            var object = registeredObjects[name];
-            if (object) {
-                objectInfos[name] = classInfoForObject(object);
+        var objectInfos = classInfoForObjects(registeredObjects);
+        webChannel.sendMessage("Qt.init", objectInfos);
+        if (!propertyUpdatesInitialized) {
+            for (var objectName in objectInfos) {
+                var objectInfo = objectInfos[objectName];
+                var object = registeredObjects[objectName];
+                initializePropertyUpdates(objectName, objectInfo, object);
+            }
+            propertyUpdatesInitialized = true;
+        }
+        pendingInit = false;
+    }
+
+    // This function goes through all properties of all objects and connects against
+    // their notify signal.
+    // When receiving a notify signal, it will send a Qt.propertyUpdate message to the
+    // server.
+    function initializePropertyUpdates(objectName, objectInfo, object)
+    {
+        for (var propertyIndex in objectInfo.properties) {
+            var propertyInfo = objectInfo.properties[propertyIndex];
+            var propertyName = propertyInfo[0];
+            var signalName = propertyInfo[1];
+
+            if (!signalName) // Property without NOTIFY signal
+                continue;
+
+            if (signalName === 1) {
+                /// signal name is optimized away, reconstruct the actual name
+                signalName = propertyName + "Changed";
+            }
+
+            signalToPropertyMap[objectName] = signalToPropertyMap[objectName] || {};
+            signalToPropertyMap[objectName][signalName] = signalToPropertyMap[objectName][signalName] || [];
+            var connectedProperties = signalToPropertyMap[objectName][signalName];
+            var numConnectedProperties = connectedProperties === undefined ? 0 : connectedProperties.length;
+
+            // Only connect for a property update once
+            if (numConnectedProperties === 0) {
+                (function(signalName) {
+                    object[signalName].connect(function() {
+                        pendingPropertyUpdates[objectName] = pendingPropertyUpdates[objectName] || {};
+                        pendingPropertyUpdates[objectName][signalName] = arguments;
+                    });
+                })(signalName);
+            }
+
+            if (connectedProperties.indexOf(propertyName) === -1) {
+                /// TODO: this ensures that a given property is only once in
+                ///       the list of connected properties.
+                ///       This happens when multiple clients are connected to
+                ///       a single webchannel. A better place for the initialization
+                ///       should be found.
+                connectedProperties.push(propertyName);
             }
         }
-        return objectInfos;
+    }
+
+    function sendPendingPropertyUpdates()
+    {
+        if (blockUpdates || !clientIsIdle) {
+            return;
+        }
+
+        var data = [];
+        for (var objectName in pendingPropertyUpdates) {
+            var object = registeredObjects[objectName];
+            var signals = pendingPropertyUpdates[objectName];
+            var propertyMap = {};
+            for(var signalName in signals) {
+                var propertyList = signalToPropertyMap[objectName][signalName];
+                for (var propertyIndex in propertyList) {
+                    var propertyName = propertyList[propertyIndex];
+                    var propertyValue = object[propertyName];
+                    propertyMap[propertyName] = propertyValue;
+                }
+                signals[signalName] = convertQMLArgsToJSArgs(signals[signalName]);
+            }
+            data.push({
+                object: objectName,
+                signals: signals,
+                propertyMap: propertyMap
+            });
+        }
+        pendingPropertyUpdates = {};
+        if (data.length > 0) {
+            webChannel.sendMessage("Qt.propertyUpdate", data);
+            clientIsIdle = false;
+        }
+    }
+
+    Component.onCompleted: {
+        // Initializing this in the property declaration is not possible and yields to "undefined"
+        signalToPropertyMap = {}
+        pendingPropertyUpdates = {}
+        registeredObjects = {}
+    }
+
+    onBlockUpdatesChanged: {
+        if (blockUpdates) {
+            return;
+        }
+
+        if (pendingInit) {
+            initializeClients();
+        } else {
+            sendPendingPropertyUpdates();
+        }
+    }
+
+    /**
+     * Aggregate property updates since we get multiple Qt.idle message when we have multiple
+     * clients. They all share the same QWebProcess though so we must take special care to
+     * prevent message flooding.
+     */
+    Timer {
+        id: propertyUpdateTimer
+        /// TODO: what is the proper value here?
+        interval: 50;
+        running: !publisher.blockUpdates && publisher.clientIsIdle;
+        repeat: true;
+        onTriggered: publisher.sendPendingPropertyUpdates()
     }
 }

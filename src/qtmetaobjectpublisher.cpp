@@ -45,9 +45,31 @@
 #include <QMetaObject>
 #include <QMetaProperty>
 
-QtMetaObjectPublisher::QtMetaObjectPublisher(QObject *parent)
-    : QObject(parent)
+static const QString KEY_SIGNALS = QStringLiteral("signals");
+static const QString KEY_METHODS = QStringLiteral("methods");
+static const QString KEY_PROPERTIES = QStringLiteral("properties");
+static const QString KEY_ENUMS = QStringLiteral("enums");
+
+QtMetaObjectPublisher::QtMetaObjectPublisher(QQuickItem *parent)
+    : QQuickItem(parent)
 {
+}
+
+QVariantMap QtMetaObjectPublisher::classInfoForObjects(const QVariantMap &objectMap) const
+{
+    QVariantMap ret;
+    QMap<QString, QVariant>::const_iterator it = objectMap.constBegin();
+    while (it != objectMap.constEnd()) {
+        QObject* object = it.value().value<QObject*>();
+        if (object) {
+            const QVariantMap &info = classInfoForObject(object);
+            if (!info.isEmpty()) {
+                ret[it.key()] = info;
+            }
+        }
+        ++it;
+    }
+    return ret;
 }
 
 QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
@@ -57,19 +79,54 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
         qWarning("null object given to MetaObjectPublisher - bad API usage?");
         return data;
     }
-    QStringList qtSignals, qtMethods, qtProperties;
+    QVariantList qtSignals, qtMethods;
+    QVariantList qtProperties;
     QVariantMap qtEnums;
     const QMetaObject* metaObject = object->metaObject();
-    for (int i = 0; i < metaObject->propertyCount(); ++i)
-        qtProperties.append(metaObject->property(i).name());
+    QSet<int> notifySignals;
+    QSet<QString> properties;
+    for (int i = 0; i < metaObject->propertyCount(); ++i) {
+        const QMetaProperty &prop = metaObject->property(i);
+        QVariantList propertyInfo;
+        const QString &propertyName = QString::fromLatin1(prop.name());
+        propertyInfo.append(propertyName);
+        properties << propertyName;
+        if (prop.hasNotifySignal()) {
+            notifySignals << prop.notifySignalIndex();
+            const int numParams = prop.notifySignal().parameterCount();
+            if (numParams > 1) {
+                qWarning("Notify signal for property '%s' has %d parameters, expected zero or one.",
+                         prop.name(), numParams);
+            }
+            propertyInfo.append(QString::fromLatin1(prop.notifySignal().name()));
+        } else {
+            if (!prop.isConstant()) {
+                qWarning("Property '%s'' of object '%s' has no notify signal and is not constant, "
+                         "value updates in HTML will be broken!",
+                         prop.name(), object->metaObject()->className());
+            }
+            propertyInfo.append(QString());
+        }
+        propertyInfo.append(prop.read(object));
+        qtProperties.append(QVariant::fromValue(propertyInfo));
+    }
     for (int i = 0; i < metaObject->methodCount(); ++i) {
-        QMetaMethod method = metaObject->method(i);
-        QString signature = method.methodSignature();
-        QString name = signature.left(signature.indexOf("("));
+        if (notifySignals.contains(i)) {
+            continue;
+        }
+        const QMetaMethod &method = metaObject->method(i);
+        //NOTE: This will not work for overloaded methods/signals.
+        //NOTE: this must be a string, otherwise it will be converted to '{}' in QML
+        const QString &name = QString::fromLatin1(method.name());
+        if (properties.contains(name)) {
+            // optimize: Don't send the getter method, it gets overwritten by the
+            // property on the client side anyways.
+            continue;
+        }
         if (method.access() == QMetaMethod::Public)
-            qtMethods << signature << name;
+            qtMethods << name;
         if (method.methodType() == QMetaMethod::Signal)
-            qtSignals << signature << name;
+            qtSignals << name;
     }
     for (int i = 0; i < metaObject->enumeratorCount(); ++i) {
         QMetaEnum enumerator = metaObject->enumerator(i);
@@ -79,9 +136,9 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
         }
         qtEnums[enumerator.name()] = values;
     }
-    data["signals"] = qtSignals;
-    data["methods"] = qtMethods;
-    data["properties"] = qtProperties;
-    data["enums"] = qtEnums;
+    data[KEY_SIGNALS] = qtSignals;
+    data[KEY_METHODS] = qtMethods;
+    data[KEY_PROPERTIES] = QVariant::fromValue(qtProperties);
+    data[KEY_ENUMS] = qtEnums;
     return data;
 }

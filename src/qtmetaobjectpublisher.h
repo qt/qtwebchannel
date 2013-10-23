@@ -44,15 +44,19 @@
 
 #include <QObject>
 #include <QVariantMap>
+#include <QQuickItem>
 
-class QtMetaObjectPublisher : public QObject
+class QObjectWrapper;
+
+// NOTE: QQuickItem inheritance required to enable QML item nesting (i.e. Timer in MetaObjectPublisher)
+class QtMetaObjectPublisher : public QQuickItem
 {
     Q_OBJECT
 public:
-    explicit QtMetaObjectPublisher(QObject *parent = 0);
+    explicit QtMetaObjectPublisher(QQuickItem *parent = 0);
 
+    Q_INVOKABLE QVariantMap classInfoForObjects(const QVariantMap &objects) const;
     Q_INVOKABLE QVariantMap classInfoForObject(QObject *object) const;
 };
 
 #endif // QTMETAOBJECTPUBLISHER_H
-
