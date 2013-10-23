@@ -105,6 +105,11 @@ var QWebChannel = function(baseUrl, initCallback)
     this.execId = 0;
     this.exec = function(data, callback)
     {
+        if (!callback) {
+            // if no callback is given, send directly
+            channel.send({data: data});
+            return;
+        }
         if (channel.execId === Number.MAX_VALUE) {
             // wrap
             channel.execId = Number.MIN_VALUE;
