@@ -47,28 +47,22 @@ import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 
 Rectangle {
+    TestObjectFactory {
+        id: factory
+    }
+    TestObject {
+        id: testObject
+        objectName: "initialTestObject"
+    }
+
     MetaObjectPublisher {
         id: publisher
         webChannel: webChannel
     }
 
-    TestObject {
-        id: testObject1
-        objectName: "object1"
-    }
-
-    TestObject {
-        id: testObject2
-        objectName: "object2"
-    }
-
-    TestObject {
-        id: testObject3
-        objectName: "object3"
-    }
-
     WebChannel {
         id: webChannel
+
         onRawMessageReceived: {
             if (!publisher.handleRequest(rawMessage, webChannel)) {
                 console.log("unhandled request: ", rawMessage);
@@ -77,9 +71,8 @@ Rectangle {
 
         onInitialized: {
             publisher.registerObjects({
-                "testObject1": testObject1,
-                "testObject2": testObject2,
-                "testObject3":testObject3
+                "testObjectFactory": factory,
+                "initialTestObject": testObject
             });
         }
     }

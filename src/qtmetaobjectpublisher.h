@@ -46,8 +46,6 @@
 #include <QVariantMap>
 #include <QQuickItem>
 
-class QObjectWrapper;
-
 // NOTE: QQuickItem inheritance required to enable QML item nesting (i.e. Timer in MetaObjectPublisher)
 class QtMetaObjectPublisher : public QQuickItem
 {
@@ -57,6 +55,30 @@ public:
 
     Q_INVOKABLE QVariantMap classInfoForObjects(const QVariantMap &objects) const;
     Q_INVOKABLE QVariantMap classInfoForObject(QObject *object) const;
+
+    /// wrap object and return class info
+    Q_INVOKABLE QVariant wrapObject(QObject *object);
+    /// Search object by id and return it, or null if it could not be found.
+    Q_INVOKABLE QObject *unwrapObject(const QString &id) const;
+    /// Invoke delete later on @p object, but only if it is a wrapped object.
+    Q_INVOKABLE void deleteWrappedObject(QObject *object) const;
+
+signals:
+    void wrappedObjectDestroyed(const QString& id);
+
+private slots:
+    void wrappedObjectDestroyed(QObject* object);
+
+private:
+    /// Pairs of QObject and generated object info
+    typedef QPair<QObject *, QVariantMap> WrapInfo;
+    /// Maps object id to wrap info
+    typedef QHash<QString, WrapInfo> WrapMap;
+    /// Const iterator for map
+    typedef WrapMap::const_iterator WrapMapCIt;
+
+    /// Map of wrapped objects
+    WrapMap m_wrappedObjects;
 };
 
 #endif // QTMETAOBJECTPUBLISHER_H
