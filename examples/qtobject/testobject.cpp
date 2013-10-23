@@ -34,3 +34,16 @@ QString TestObject::manyArgs(int a, float b, const QString& c) const
     qDebug() << a << b << c;
     return c;
 }
+
+TestObjectFactory::TestObjectFactory(QObject* parent)
+    : QObject(parent)
+{
+
+}
+
+TestObject* TestObjectFactory::createObject(const QString& name)
+{
+    TestObject* ret = new TestObject(this);
+    ret->setObjectName(name);
+    return ret;
+}

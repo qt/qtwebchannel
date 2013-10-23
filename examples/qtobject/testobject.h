@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QtDebug>
 #include <QTimer>
+
 class TestObject : public QObject
 {
     Q_OBJECT
@@ -38,6 +39,15 @@ private:
     QString p1;
     QString p2;
     QTimer timer;
+};
+
+class TestObjectFactory : public QObject
+{
+    Q_OBJECT
+public:
+    explicit TestObjectFactory(QObject* parent = 0);
+
+    Q_INVOKABLE TestObject* createObject(const QString& name);
 };
 
 #endif // TESTOBJECT_H
