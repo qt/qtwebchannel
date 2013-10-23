@@ -45,12 +45,10 @@
 #include "qtmetaobjectpublisher.h"
 
 #include "qwebchannel_plugin.h"
-#include "qobjectwrapper.h"
 
 void QWebChannelPlugin::registerTypes(const char *uri)
 {
     qmlRegisterType<QWebChannel>(uri, 1, 0, "WebChannelImpl");
     qmlRegisterType<QtMetaObjectPublisher>(uri, 1, 0, "MetaObjectPublisherImpl");
-    qmlRegisterType<QObjectWrapper>(uri, 1, 0, "QObjectWrapperImpl");
 }
 

@@ -40,7 +40,6 @@
 ****************************************************************************/
 
 #include "qtmetaobjectpublisher.h"
-#include "qobjectwrapper.h"
 
 #include <QStringList>
 #include <QMetaObject>
@@ -51,9 +50,12 @@ static const QString KEY_METHODS = QStringLiteral("methods");
 static const QString KEY_PROPERTIES = QStringLiteral("properties");
 static const QString KEY_ENUMS = QStringLiteral("enums");
 
+static const QString KEY_QOBJECT = QStringLiteral("__QObject*__");
+static const QString KEY_ID = QStringLiteral("id");
+static const QString KEY_DATA = QStringLiteral("data");
+
 QtMetaObjectPublisher::QtMetaObjectPublisher(QQuickItem *parent)
     : QQuickItem(parent)
-    , m_objectWrapper(new QObjectWrapper(this))
 {
 }
 
@@ -145,14 +147,53 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
     return data;
 }
 
-QVariant QtMetaObjectPublisher::wrapObject(const QVariant &result)
+static QString objectId(QObject *object)
 {
-    if (static_cast<QMetaType::Type>(result.type()) == QMetaType::QObjectStar)
-        return objectWrapper()->wrap(result.value<QObject*>());
-    return result;
+    return QString::number(quintptr(object), 16);
 }
 
-QObjectWrapper *QtMetaObjectPublisher::objectWrapper() const
+QVariant QtMetaObjectPublisher::wrapObject(QObject *object)
 {
-    return m_objectWrapper;
+    if (!object)
+        return QVariant();
+
+    const QString& id = objectId(object);
+
+    const WrapMapCIt& p = m_wrappedObjects.constFind(id);
+    if (p != m_wrappedObjects.constEnd())
+        return p.value().second;
+
+    QVariantMap objectInfo;
+    objectInfo[KEY_QOBJECT] = true;
+    objectInfo[KEY_ID] = id;
+    objectInfo[KEY_DATA] = classInfoForObject(object);
+
+    m_wrappedObjects.insert(id, WrapInfo(object, objectInfo));
+    connect(object, SIGNAL(destroyed(QObject*)), SLOT(wrappedObjectDestroyed(QObject*)));
+
+    return objectInfo;
+}
+
+QObject *QtMetaObjectPublisher::unwrapObject(const QString& id) const
+{
+    const WrapMapCIt& p = m_wrappedObjects.constFind(id);
+    if (p != m_wrappedObjects.constEnd())
+        return p.value().first;
+    return 0;
+}
+
+void QtMetaObjectPublisher::wrappedObjectDestroyed(QObject* object)
+{
+    const QString& id = objectId(object);
+    m_wrappedObjects.remove(id);
+    emit wrappedObjectDestroyed(id);
+}
+
+void QtMetaObjectPublisher::deleteWrappedObject(QObject* object) const
+{
+    if (!m_wrappedObjects.contains(objectId(object))) {
+        qWarning() << "Not deleting non-wrapped object" << object;
+        return;
+    }
+    object->deleteLater();
 }

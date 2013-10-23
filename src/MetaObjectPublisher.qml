@@ -78,15 +78,6 @@ MetaObjectPublisherImpl
     // object info map set.
     property bool propertyUpdatesInitialized: false
 
-    objectWrapper.onObjectDestroyed: { // (const QString& id)
-        // act as if object had sent `destroyed` signal
-        webChannel.sendMessage("Qt.signal", {
-            object: id,
-            signal: "destroyed",
-            args: []
-        });
-    }
-
     /**
      *    Wrap a result value if it's a Qt QObject
      *
@@ -137,7 +128,7 @@ MetaObjectPublisherImpl
             var isWrapped = false;
             var object = registeredObjects[payload.object];
             if (!object) {
-                object = objectWrapper.unwrap(payload.object);
+                object = unwrapObject(payload.object);
                 if (object)
                     isWrapped = true;
                 else
@@ -152,8 +143,8 @@ MetaObjectPublisherImpl
                     return true;
                 }
                 if (isWrapped && payload.method === "deleteLater") {
-                    // invoke `deleteLater` on QObject indirectly
-                    objectWrapper.deleteObjectLater(object);
+                    // invoke `deleteLater` on wrapped QObject indirectly
+                    deleteWrappedObject(object);
                     return true;
                 }
                 return false;
@@ -177,7 +168,7 @@ MetaObjectPublisherImpl
                     }
                     return true;
                 }
-                // connecting to `destroyed` signal of QObject
+                // connecting to `destroyed` signal of wrapped QObject
                 if (isWrapped && payload.signal === "destroyed") {
                     // is a no-op on this side
                     return true;
@@ -296,7 +287,7 @@ MetaObjectPublisherImpl
         for (var objectName in pendingPropertyUpdates) {
             var object = registeredObjects[objectName];
             if (!object) {
-                object = objectWrapper.unwrap(objectName);
+                object = unwrapObject(objectName);
                 if (!object) {
                     console.error("Got property update for unknown object " + objectName);
                     continue;
@@ -343,6 +334,18 @@ MetaObjectPublisherImpl
         } else {
             sendPendingPropertyUpdates();
         }
+    }
+
+    onWrappedObjectDestroyed: { // (const QString& id)
+        // act as if object had sent `destroyed` signal
+        webChannel.sendMessage("Qt.signal", {
+            object: id,
+            signal: "destroyed",
+            args: []
+        });
+        delete subscriberCountMap[id];
+        delete pendingPropertyUpdates[id];
+        delete signalToPropertyMap[id]
     }
 
     /**

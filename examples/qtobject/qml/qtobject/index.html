@@ -27,6 +27,9 @@
                 object.prop2Changed.connect(function(newVal) {
                     output("prop2 of object " + object.objectName() + " changed, new val: " + newVal + ", direct: " + object.prop2());
                 });
+                object.destroyed.connect(function() {
+                    output("object destroyed " + object.objectName());
+                });
                 var container = document.getElementById("objects");
                 var element = document.createElement("p");
                 element.appendChild(document.createTextNode(object.objectName() + ":"));
@@ -50,6 +53,9 @@
                 }));
                 element.appendChild(createLink("start timer", function() {
                     object.startTimer(1000);
+                }));
+                element.appendChild(createLink("delete", function() {
+                    object.deleteLater();
                 }));
                 container.appendChild(element);
             }
@@ -80,7 +86,7 @@
     <body>
         <div id="objects"></div>
         <br/>
-        <a href="#" onclick="createObject()">Create New Object</a><br/>
+        <a href="#" onclick="createObject()">Create New Object</a>. Note: Only created objects can be deleted, the initial object will stay.<br/>
         <textarea id="out" style="height:80%; width: 80%"></textarea>
     </body>
 </html>
