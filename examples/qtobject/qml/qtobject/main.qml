@@ -78,14 +78,7 @@ Rectangle {
             }
         }
 
-        function registerObjects(objects)
-        {
-            for (var name in objects) {
-                publisher.addObject(name, objects[name]);
-            }
-        }
-
-        onBaseUrlChanged: registerObjects({"testObject1": testObject1, "testObject2": testObject2, "testObject3":testObject3})
+        onBaseUrlChanged: publisher.registerObjects({"testObject1": testObject1, "testObject2": testObject2, "testObject3":testObject3})
     }
 
     width: 480
