@@ -49,6 +49,7 @@ import QtWebKit.experimental 1.0
 Rectangle {
     MetaObjectPublisher {
         id: publisher
+        webChannel: webChannel
     }
 
     TestObject {
