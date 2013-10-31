@@ -43,9 +43,11 @@ import QtQuick 2.0
 
 import Qt.labs.WebChannel 1.0
 
-MetaObjectPublisherPrivate {
-    function handleRequest(payload, webChannel) {
-        var object = publisher.namedObject(payload.object);
+MetaObjectPublisherPrivate
+{
+    function handleRequest(payload, webChannel)
+    {
+        var object = namedObject(payload.object);
         var ret = false;
         if (payload.type == "Qt.invokeMethod") {
             ret = (object[payload.method])(payload.args);
@@ -59,16 +61,16 @@ MetaObjectPublisherPrivate {
         } else if (payload.type == "Qt.setProperty") {
             object[payload.property] = payload.value;
         } else if (payload.type == "Qt.getObjects") {
-            var objects = {};
-            var objectNames = publisher.objectNames;
-            for (var i = 0; i < objectNames.length; ++i) {
-                var name = objectNames[i];
-                var object = publisher.namedObject(name);
-                objects[name] = publisher.classInfoForObject(object);
-            }
-            ret = objects;
+            ret = registeredClassInfo();
         }
 
         return ret;
+    }
+
+    function registerObjects(objects)
+    {
+        for (var name in objects) {
+            addObject(name, objects[name]);
+        }
     }
 }

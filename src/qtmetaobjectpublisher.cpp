@@ -50,7 +50,7 @@ QtMetaObjectPublisher::QtMetaObjectPublisher(QObject *parent) :
 {
 }
 
-QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object)
+QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
 {
     QVariantMap data;
     QStringList qtSignals, qtMethods, qtProperties;
@@ -70,4 +70,18 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object)
     data["methods"] = qtMethods;
     data["properties"] = qtProperties;
     return data;
+}
+
+QVariantMap QtMetaObjectPublisher::registeredClassInfo() const
+{
+    QVariantMap ret;
+
+    QMap< QString, QPointer< QObject > >::const_iterator it = objects.constBegin();
+    for (; it != objects.constEnd(); ++it) {
+        if (it.value()) {
+            ret[it.key()] = classInfoForObject(it.value());
+        }
+    }
+
+    return ret;
 }
