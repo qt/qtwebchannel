@@ -39,53 +39,66 @@
 **
 ****************************************************************************/
 
-function S4() {
-   return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-}
-function guid() {
-   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
-}
-
-var iframeElement = document.createElement("iframe");
-iframeElement.onload = function()
+var QWebChannel = function(baseUrl, initCallback)
 {
-    loadListeners.forEach(function(callback) { (callback)(webChannelPrivate); });
-};
+    var channel = this;
+    ///TODO: use ssl?
+    var socketUrl = "ws://" + baseUrl;
+    this.socket = new WebSocket(socketUrl);
+    this.send = function(data)
+    {
+        channel.socket.send(JSON.stringify(data));
+    };
 
-iframeElement.style.display = "none";
-iframeElement.src = baseUrl + "/iframe.html/" + guid();
-var callbacks = {};
-var loadListeners = [];
-var initialized = false;
-var webChannelPrivate = {
-    exec: function(message, callback) {
-        var id = guid();
-        iframeElement.contentWindow.postMessage(JSON.stringify({type: "EXEC", id: id, payload: message}), "*");
-        if (callback)
-            callbacks[id] = [ function(data) { (callback)(data); delete callbacks[id]; }];
-    },
+    this.socket.onopen = function()
+    {
+        initCallback(channel);
+    };
+    this.socket.onclose = function()
+    {
+        console.error("web channel closed");
+    };
+    this.socket.onerror = function(error)
+    {
+        console.error("web channel error: " + error);
+    };
+    this.socket.onmessage = function(message)
+    {
+        var jsonData = JSON.parse(message.data);
+        if (jsonData.id === undefined || jsonData.data === undefined) {
+            console.error("invalid message received:", message.data);
+            return;
+        }
+        if (jsonData.response) {
+            channel.execCallbacks[jsonData.id](jsonData.data);
+            delete channel.execCallbacks[jsonData.id];
+        } else if (channel.subscriptions[jsonData.id]) {
+            channel.subscriptions[jsonData.id].forEach(function(callback) {
+                (callback)(jsonData.data); }
+            );
+        }
+    };
 
-    subscribe: function(id, callback) {
-        iframeElement.contentWindow.postMessage(JSON.stringify({type: "SUBSCRIBE", id: id}), "*");
-        callbacks[id] = callbacks[id] || [];
-        callbacks[id].push(callback);
-    },
-};
+    this.subscriptions = {};
+    this.subscribe = function(id, callback)
+    {
+        if (channel.subscriptions[id]) {
+            channel.subscriptions[id].append(callback);
+        } else {
+            channel.subscriptions[id] = [callback];
+        }
+    };
 
-window.onmessage = function(event) {
-    if (baseUrl.indexOf(event.origin))
-        return;
-    var data = JSON.parse(event.data);
-
-    var callbacksForID = callbacks[data.id] || [];
-    callbacksForID.forEach(function(callback) { (callback)(data.payload); });
-};
-
-window[initFunction] = function(onLoad) {
-    if (initialized) {
-        onLoad(webChannelPrivate);
-        return;
-    }
-    loadListeners.push(onLoad);
-    document.body.appendChild(iframeElement);
+    this.execCallbacks = {};
+    this.execId = 0;
+    this.exec = function(data, callback)
+    {
+        if (channel.execId === Number.MAX_VALUE) {
+            // wrap
+            channel.exedId = Number.MIN_VALUE;
+        }
+        var id = channel.execId++;
+        channel.execCallbacks[id] = callback;
+        channel.send({"id": id, "data": data});
+    };
 };

@@ -43,48 +43,55 @@ import QtQuick 2.0
 
 import Qt.labs.WebChannel 1.0
 import QtWebKit 3.0
+import QtWebKit.experimental 1.0
 
 Rectangle {
-    width: 1000
-    height: 360
+    width: 500
+    height: 600
     WebChannel {
         id: webChannel
 
-        onExecute: {
-            console.log(requestData);
-            var data = JSON.parse(requestData);
-            txt.text = data.a;
-            response.send(JSON.stringify({b:'This is a response from QML'}));
+        onRawMessageReceived: {
+            console.log(rawMessage);
+            var msg = JSON.parse(rawMessage);
+            editor.text += msg.data.a + "\n";
+            sendMessage("b", "This is a response from QML");
         }
 
-        onBaseUrlChanged: {
+        onInitialized: {
             console.log(baseUrl);
+        }
+    }
+
+    TextEdit {
+        text: "enter data here\n"
+        id: editor
+        anchors.top: parent.top
+        width: parent.width
+        height: 400
+    }
+
+    Text {
+        id: txt
+        anchors.top: editor.bottom
+        width: parent.width
+        height: 100
+        text: "Click to send message to HTML client"
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                webChannel.sendMessage("foobar", editor.text);
+            }
         }
     }
 
     WebView {
         id: webView
-        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
+        width: parent.width
         anchors.top: txt.bottom
-        height: 2000
-        width: 2000
+        height: 100
+        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
+        experimental.preferences.developerExtrasEnabled: true
     }
 
-    TextEdit {
-        width: 1000
-        height: 100
-        id: editor
-        anchors.top: parent.top
-    }
-    Text {
-        id: txt
-        text: "Click"
-        anchors.top: editor.bottom
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                webChannel.broadcast("foobar", JSON.stringify(editor.text));
-            }
-        }
-    }
 }
