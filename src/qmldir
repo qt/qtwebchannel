@@ -1,3 +1,4 @@
 module Qt.labs.WebChannel
 plugin qwebchannel
 MetaObjectPublisher 1.0 MetaObjectPublisher.qml
+WebChannel 1.0 WebChannel.qml

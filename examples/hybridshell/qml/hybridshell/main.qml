@@ -51,27 +51,33 @@ Rectangle {
         id: shell
         onStdoutData: {
             console.log(data);
-            webChannel.broadcast("stdout", data);
+            webChannel.sendMessage("stdout", data);
         }
         onStderrData: {
-            webChannel.broadcast("stderr", data);
+            console.error(data);
+            webChannel.sendMessage("stderr", data);
         }
     }
 
     WebChannel {
         id: webChannel
-        onExecute: {
-            shell.exec(requestData);
+        onRawMessageReceived: {
+            shell.exec(JSON.parse(rawMessage).data);
         }
 
-        onBaseUrlChanged: shell.start()
+        onInitialized: {
+            shell.start()
+            webView.url = "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
+        }
     }
 
     width: 480
     height: 800
 
     WebView {
+        id: webView
         anchors.fill: parent
-        url: "index.html?webChannelBaseUrl=" + webChannel.baseUrl
+        url: "about:blank"
+        experimental.preferences.developerExtrasEnabled: true
     }
 }
