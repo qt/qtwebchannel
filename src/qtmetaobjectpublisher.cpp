@@ -40,13 +40,14 @@
 ****************************************************************************/
 
 #include "qtmetaobjectpublisher.h"
-#include <QVariantMap>
+
 #include <QStringList>
 #include <QMetaObject>
 #include <QMetaProperty>
+#include <QDebug>
 
-QtMetaObjectPublisher::QtMetaObjectPublisher(QObject *parent) :
-    QObject(parent)
+QtMetaObjectPublisher::QtMetaObjectPublisher(QObject *parent)
+    : QObject(parent)
 {
 }
 
@@ -70,18 +71,4 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
     data["methods"] = qtMethods;
     data["properties"] = qtProperties;
     return data;
-}
-
-QVariantMap QtMetaObjectPublisher::registeredClassInfo() const
-{
-    QVariantMap ret;
-
-    QMap< QString, QPointer< QObject > >::const_iterator it = objects.constBegin();
-    for (; it != objects.constEnd(); ++it) {
-        if (it.value()) {
-            ret[it.key()] = classInfoForObject(it.value());
-        }
-    }
-
-    return ret;
 }
