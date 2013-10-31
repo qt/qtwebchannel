@@ -39,16 +39,25 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
+import QtQuick 2.0
+import Qt.labs.WebChannel 1.0
 
-#include "qwebchannel.h"
-#include "qtmetaobjectpublisher.h"
-
-#include "qwebchannel_plugin.h"
-
-void QWebChannelPlugin::registerTypes(const char *uri)
+WebChannelImpl
 {
-    qmlRegisterType<QWebChannel>(uri, 1, 0, "WebChannelImpl");
-    qmlRegisterType<QtMetaObjectPublisher>(uri, 1, 0, "MetaObjectPublisherImpl");
-}
+    function respond(messageId, data)
+    {
+        sendRawMessage(JSON.stringify({
+            response: true,
+            id: messageId,
+            data: data
+        }));
+    }
 
+    function sendMessage(id, data)
+    {
+        sendRawMessage(JSON.stringify({
+            id: id,
+            data: data
+        }));
+    }
+}

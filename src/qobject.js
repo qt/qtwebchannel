@@ -39,7 +39,8 @@
 **
 ****************************************************************************/
 
-function QObject(name, data, webChannel) {
+function QObject(name, data, webChannel)
+{
     this.__id__ = name;
     this.__objectSignals__ = {};
 
@@ -56,28 +57,29 @@ function QObject(name, data, webChannel) {
             var args = [];
             var callback;
             for (var i = 0; i < arguments.length; ++i) {
-                if (typeof arguments[i] == "function")
+                if (typeof arguments[i] === "function")
                     callback = arguments[i];
                 else
                     args.push(arguments[i]);
             }
 
-            webChannel.exec(JSON.stringify({"type": "Qt.invokeMethod", "object": object.__id__, "method": method, "args": args}), function(response) {
+            webChannel.exec({"type": "Qt.invokeMethod", "object": object.__id__, "method": method, "args": args}, function(response) {
                 if (response.length && callback) {
-                    (callback)(JSON.parse(response));
+                    (callback)(response);
                 }
             });
         };
     });
 
-    function connectToSignal(signal) {
+    function connectToSignal(signal)
+    {
         object[signal].connect = function(callback) {
             if (typeof(callback) !== "function") {
                 console.error("Bad callback given to connect to signal " + signal);
                 return;
             }
             object.__objectSignals__[signal] = object.__objectSignals__[signal] || [];
-            webChannel.exec(JSON.stringify({"type": "Qt.connectToSignal", "object": object.__id__, "signal": signal}));
+            webChannel.exec({"type": "Qt.connectToSignal", "object": object.__id__, "signal": signal});
             object.__objectSignals__[signal].push(callback);
         };
     }
@@ -86,18 +88,19 @@ function QObject(name, data, webChannel) {
         connectToSignal(data.signals[i]);
     }
 
-    function bindGetterSetter(property) {
+    function bindGetterSetter(property)
+    {
         object.__defineSetter__(property, function(value) {
-            webChannel.exec(JSON.stringify({"type": "Qt.setProperty", "object": object.__id__, "property": property, "value": value }));
+            webChannel.exec({"type": "Qt.setProperty", "object": object.__id__, "property": property, "value": value });
         });
         object.__defineGetter__(property, function() {
             return (function(callback) {
-                webChannel.exec(JSON.stringify({"type": "Qt.getProperty", "object": object.__id__, "property": property}), function(response) {
+                webChannel.exec({"type": "Qt.getProperty", "object": object.__id__, "property": property}, function(response) {
                     if (typeof(callback) !== "function") {
                         console.error("Bad callback given to get property " + property);
                         return;
                     }
-                    callback(JSON.parse(response));
+                    callback(response);
                 });
             });
         });
@@ -107,26 +110,27 @@ function QObject(name, data, webChannel) {
     }
 }
 
-window.setupQObjectWebChannel = function(webChannel, doneCallback) {
+window.setupQObjectWebChannel = function(webChannel, doneCallback)
+{
     webChannel.subscribe(
         "Qt.signal",
         function(payload) {
-            var signalData = JSON.parse(payload);
-            var object = window[signalData.object];
-            var conns = (object ? object.__objectSignals__[signalData.signal] : []) || [];
-            conns.forEach(function(callback) {
-                callback.apply(callback, signalData.args);
-            });
+            var object = window[payload.object];
+            if (object) {
+                var connections = object.__objectSignals__[payload.signal];
+                if (connections) {
+                    connections.forEach(function(callback) {
+                        callback.apply(callback, payload.args);
+                    });
+                }
+            }
         }
     );
-    webChannel.exec(JSON.stringify({type:"Qt.getObjects"}), function(response) {
-        if (response.length) {
-            var objects = JSON.parse(response);
-            for (var objectName in objects) {
-                var data = objects[objectName];
-                var object = new QObject(objectName, data, webChannel);
-                window[objectName] = object;
-            }
+    webChannel.exec({type:"Qt.getObjects"}, function(payload) {
+        for (var objectName in payload) {
+            var data = payload[objectName];
+            var object = new QObject(objectName, data, webChannel);
+            window[objectName] = object;
         }
         if (doneCallback) {
             doneCallback();
