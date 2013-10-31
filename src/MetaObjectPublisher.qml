@@ -40,44 +40,67 @@
 ****************************************************************************/
 
 import QtQuick 2.0
-
 import Qt.labs.WebChannel 1.0
 
 MetaObjectPublisherPrivate
 {
+    /**
+     * This map contains the registered objects indexed by their name.
+     */
+    property variant registeredObjects
+
+    /**
+     * Handle the given WebChannel client request and write to the given response.
+     *
+     * @return true if the request was handled, false otherwise.
+     */
     function handleRequest(payload, webChannel, response)
     {
-        var object = namedObject(payload.object);
-        var ret;
-        if (payload.type == "Qt.invokeMethod") {
+        if (!payload.type) {
+            return false;
+        }
+        var object = payload.object ? registeredObjects[payload.object] : null;
+
+        var ret = undefined;
+        if (payload.type === "Qt.invokeMethod" && object) {
             ret = (object[payload.method])(payload.args);
-        } else if (payload.type == "Qt.connectToSignal") {
+        } else if (payload.type === "Qt.connectToSignal" && object) {
             object[payload.signal].connect(
                 function(a,b,c,d,e,f,g,h,i,j) {
                     webChannel.broadcast("Qt.signal", JSON.stringify({object: payload.object, signal: payload.signal, args: [a,b,c,d,e,f,g,h,i,j]}));
             });
-        } else if (payload.type == "Qt.getProperty") {
+        } else if (payload.type === "Qt.getProperty" && object) {
             ret = object[payload.property];
-        } else if (payload.type == "Qt.setProperty") {
+        } else if (payload.type === "Qt.setProperty" && object) {
             object[payload.property] = payload.value;
-        } else if (payload.type == "Qt.getObjects") {
-            ret = registeredClassInfo();
+        } else if (payload.type === "Qt.getObjects") {
+            var ret = {};
+            for (var name in registeredObjects) {
+                object = registeredObjects[name];
+                if (object) {
+                    ret[name] = classInfoForObject(object);
+                }
+            }
+        } else if (payload.type === "Qt.Debug") {
+            console.log("DEBUG: ", payload.message);
         } else {
             return false;
         }
 
-        if (ret) {
+        if (ret != undefined) {
             response.send(JSON.stringify(ret));
-        } else {
-            response.noop();
         }
         return true;
     }
 
     function registerObjects(objects)
     {
-        for (var name in objects) {
-            addObject(name, objects[name]);
+        // joining a JS map and a QML one is not as easy as one would assume...
+        for (var name in registeredObjects) {
+            if (!objects[name]) {
+                objects[name] = registeredObjects[name];
+            }
         }
+        registeredObjects = objects;
     }
 }
