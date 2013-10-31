@@ -18,6 +18,7 @@ void TestObject::setProp1(const QString& s)
     p1 = s;
     qWarning() << __func__ << p1;
     emit sig1(1, 0.5, QStringLiteral("asdf"));
+    emit prop1Changed();
 }
 
 void TestObject::setProp2(const QString& s)
@@ -25,6 +26,7 @@ void TestObject::setProp2(const QString& s)
     p2 = s;
     qWarning() << __func__ << p2;
     emit sig2();
+    emit prop2Changed(s);
 }
 
 QString TestObject::manyArgs(int a, float b, const QString& c) const

@@ -123,4 +123,6 @@ var QWebChannel = function(baseUrl, initCallback)
     {
         channel.send({"data" : {"type" : "Qt.Debug", "message" : message}});
     };
+
+    this.objectMap = {};
 };
