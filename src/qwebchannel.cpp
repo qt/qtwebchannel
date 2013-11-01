@@ -4,6 +4,9 @@
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
+** Copyright (C) 2013 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Contact: http://www.qt-project.org/legal
+**
 ** This file is part of the QWebChannel module on Qt labs.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
