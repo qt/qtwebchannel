@@ -1,0 +1,7 @@
+Sanity-Review+1: Qt Sanity Bot <qt_sanitybot@qt-project.org>
+Code-Review+2: Pierre Rossi <pierre.rossi@gmail.com>
+Submitted-by: Pierre Rossi <pierre.rossi@gmail.com>
+Submitted-at: Fri, 01 Nov 2013 13:57:44 +0100
+Reviewed-on: https://codereview.qt-project.org/69877
+Project: qt-labs/qwebchannel
+Branch: refs/heads/master
