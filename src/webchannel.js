@@ -57,7 +57,10 @@ var QWebChannel = function(baseUrl, initCallback)
     this.socket = new WebSocket(socketUrl, "QWebChannel");
     this.send = function(data)
     {
-        channel.socket.send(JSON.stringify(data));
+        if (typeof(data) !== "string") {
+            data = JSON.stringify(data);
+        }
+        channel.socket.send(data);
     };
 
     this.socket.onopen = function()
