@@ -12,6 +12,9 @@ TARGET = $$qtLibraryTarget($$TARGET)
 SOURCES += qwebchannel_plugin.cpp
 HEADERS += qwebchannel_plugin.h
 
+RESOURCES += \
+    resources.qrc
+
 OTHER_FILES = qmldir \
     qtc_packaging/debian_harmattan/rules \
     qtc_packaging/debian_harmattan/README \
@@ -24,20 +27,37 @@ OTHER_FILES = qmldir \
     MetaObjectPublisher.qml \
     WebChannel.qml
 
-!equals(_PRO_FILE_PWD_, $$OUT_PWD) {
-    copy_qmldir.target = $$OUT_PWD/qmldir
-    copy_qmldir.depends = $$_PRO_FILE_PWD_/qmldir
-    copy_qmldir.commands = $(COPY_FILE) \"$$replace(copy_qmldir.depends, /, $$QMAKE_DIR_SEP)\" \"$$replace(copy_qmldir.target, /, $$QMAKE_DIR_SEP)\"
-    QMAKE_EXTRA_TARGETS += copy_qmldir
-    PRE_TARGETDEPS += $$copy_qmldir.target
-}
-
 target.path = $$[QT_INSTALL_QML]/$$TARGETPATH
 
-qmldir.files += $$PWD/qmldir $$PWD/MetaObjectPublisher.qml $$PWD/WebChannel.qml
+# extra files that need to be deployed to $$TARGETPATH
+DEPLOY_FILES = \
+    qmldir \
+    MetaObjectPublisher.qml \
+    WebChannel.qml
+
+for(FILE, DEPLOY_FILES): qmldir.files += $$PWD/$$FILE
 qmldir.path +=  $$[QT_INSTALL_QML]/$$TARGETPATH
 
 INSTALLS += target qmldir
 
-RESOURCES += \
-    resources.qrc
+# copy files in order to run tests without calling make install first
+# this also requires a specific directory structure which is also created here
+unix {
+    MKDIR = mkdir -p
+    PLUGIN = lib$${TARGET}.so
+} else:win32 {
+    MKDIR = md
+    PLUGIN = lib$${TARGET}.dll
+}
+
+preparetests.target = $$OUT_PWD/$$TARGETPATH/$$PLUGIN
+preparetests.commands += $$quote($$MKDIR $$OUT_PWD/$$TARGETPATH $$escape_expand(\n\t))
+preparetests.commands += $$quote($$QMAKE_COPY \"$$OUT_PWD/$$PLUGIN\" $$OUT_PWD/$$TARGETPATH$$escape_expand(\n\t))
+
+for(FILE, DEPLOY_FILES) {
+    preparetests.depends += $$PWD/$$FILE
+    preparetests.commands += $$quote($$QMAKE_COPY \"$$PWD/$$FILE\" $$OUT_PWD/$$TARGETPATH$$escape_expand(\n\t))
+}
+
+QMAKE_EXTRA_TARGETS += preparetests
+PRE_TARGETDEPS += $$preparetests.target
