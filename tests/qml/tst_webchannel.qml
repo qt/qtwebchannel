@@ -72,6 +72,12 @@ TestCase {
         signalName: "onRawMessageReceived"
     }
 
+    SignalSpy {
+        id: pongSpy
+        target: webChannel
+        signalName: "onPongReceived"
+    }
+
     function loadUrl(url)
     {
         verify(webChannel.baseUrl != "", "webChannel.baseUrl is empty");
@@ -116,6 +122,14 @@ TestCase {
         webChannel.respond(msg.id, "barfoo");
         rawMessageSpy.wait(500);
         compare(rawMessageSpy.signalArguments[1][0], "received:barfoo");
+    }
+
+    function test_ping()
+    {
+        loadUrl("respond.html");
+        webChannel.ping();
+        pongSpy.wait(500);
+        compare(pongSpy.count, 1);
     }
     //END TESTS
 }
