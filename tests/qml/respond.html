@@ -1,0 +1,17 @@
+<html>
+    <head>
+        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
+        <script type="text/javascript">
+            //BEGIN SETUP
+            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
+            new QWebChannel(baseUrl, function(channel) {
+                channel.exec("foobar", function(response) {
+                    channel.send("received:"+response);
+                });
+            });
+            //END SETUP
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

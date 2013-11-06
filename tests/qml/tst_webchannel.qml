@@ -105,5 +105,17 @@ TestCase {
         rawMessageSpy.wait(500);
         compare(rawMessageSpy.signalArguments[0][0], "myMessagePong:foobar");
     }
+
+    function test_respondMessage()
+    {
+        loadUrl("respond.html");
+        rawMessageSpy.wait(500);
+        var msg = JSON.parse(rawMessageSpy.signalArguments[0][0]);
+        verify(msg.id);
+        compare(msg.data, "foobar");
+        webChannel.respond(msg.id, "barfoo");
+        rawMessageSpy.wait(500);
+        compare(rawMessageSpy.signalArguments[1][0], "received:barfoo");
+    }
     //END TESTS
 }
