@@ -74,6 +74,8 @@ Rectangle {
                 "testObjectFactory": factory,
                 "initialTestObject": testObject
             });
+
+            webView.url = "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
         }
     }
 
@@ -81,7 +83,8 @@ Rectangle {
     height: 800
 
     WebView {
-        url: webChannel.baseUrl ? "index.html?webChannelBaseUrl=" + webChannel.baseUrl : "about:blank"
+        id: webView
+        url: "about:blank"
         anchors.fill: parent
         experimental.preferences.developerExtrasEnabled: true
     }
