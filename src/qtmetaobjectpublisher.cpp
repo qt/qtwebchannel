@@ -105,14 +105,23 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
                 qWarning("Notify signal for property '%s' has %d parameters, expected zero or one.",
                          prop.name(), numParams);
             }
-            propertyInfo.append(QString::fromLatin1(prop.notifySignal().name()));
+            // optimize: compress the common propertyChanged notification names, just send a 1
+            const QByteArray &notifySignal = prop.notifySignal().name();
+            static const QByteArray changedSuffix = QByteArrayLiteral("Changed");
+            if (notifySignal.length() == changedSuffix.length() + propertyName.length() &&
+                notifySignal.endsWith(changedSuffix) && notifySignal.startsWith(prop.name()))
+            {
+                propertyInfo.append(1);
+            } else {
+                propertyInfo.append(QString::fromLatin1(notifySignal));
+            }
         } else {
             if (!prop.isConstant()) {
                 qWarning("Property '%s'' of object '%s' has no notify signal and is not constant, "
                          "value updates in HTML will be broken!",
                          prop.name(), object->metaObject()->className());
             }
-            propertyInfo.append(QString());
+            propertyInfo.append(0);
         }
         propertyInfo.append(prop.read(object));
         qtProperties.append(QVariant::fromValue(propertyInfo));
@@ -130,10 +139,10 @@ QVariantMap QtMetaObjectPublisher::classInfoForObject(QObject *object) const
             // property on the client side anyways.
             continue;
         }
-        if (method.access() == QMetaMethod::Public)
-            qtMethods << name;
         if (method.methodType() == QMetaMethod::Signal)
             qtSignals << name;
+        else if (method.access() == QMetaMethod::Public)
+            qtMethods << name;
     }
     for (int i = 0; i < metaObject->enumeratorCount(); ++i) {
         QMetaEnum enumerator = metaObject->enumerator(i);
