@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
+        <script type="text/javascript" src="qrc:///qwebchannel/qobject.js"></script>
+        <script type="text/javascript">
+            //BEGIN SETUP
+            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
+            new QWebChannel(baseUrl, function(channel) {
+                setupQObjectWebChannel(channel, function() {
+                    channel.exec({label: "init", value: myObj.myProperty()});
+                    myObj.myPropertyChanged.connect(function() {
+                        channel.exec({label: "changed", value: myObj.myProperty()});
+                    });
+                    channel.subscribe("setProperty", function(newValue) {
+                        myObj.myProperty = newValue;
+                    });
+                });
+            });
+            //END SETUP
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

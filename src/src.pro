@@ -9,8 +9,8 @@ CONFIG += qt plugin
 TARGET = $$qtLibraryTarget($$TARGET)
 
 # Input
-SOURCES += qwebchannel_plugin.cpp
-HEADERS += qwebchannel_plugin.h
+SOURCES += $$PWD/qwebchannel_plugin.cpp
+HEADERS += $$PWD/qwebchannel_plugin.h
 
 RESOURCES += \
     resources.qrc
