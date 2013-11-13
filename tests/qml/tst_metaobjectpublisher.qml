@@ -52,6 +52,11 @@ WebChannelTest {
             lastMethodArg = arg;
         }
     }
+    QtObject {
+        id: myOtherObj
+        property var foo: 1
+        property var bar: 1
+    }
 
     MetaObjectPublisher {
         id: publisher
@@ -70,7 +75,8 @@ WebChannelTest {
     function initTestCase()
     {
         publisher.registerObjects({
-            "myObj": myObj
+            "myObj": myObj,
+            "myOtherObj": myOtherObj
         });
     }
 
@@ -94,6 +100,7 @@ WebChannelTest {
 
     function test_property()
     {
+        myObj.myProperty = 1
         loadUrl("property.html");
         awaitInit();
         var msg = awaitMessage();
@@ -159,4 +166,26 @@ WebChannelTest {
         compare(msg.data.label, "signalReceived");
         compare(msg.data.value, "test");
     }
+
+    function test_grouping()
+    {
+        loadUrl("grouping.html");
+        awaitInit();
+        awaitIdle();
+
+        // change properties a lot, we expect this to be grouped into a single update notification
+        for (var i = 0; i < 10; ++i) {
+            myObj.myProperty = i;
+            myOtherObj.foo = i;
+            myOtherObj.bar = i;
+        }
+
+        var msg = awaitMessage();
+        verify(msg);
+        compare(msg.data.label, "gotPropertyUpdate");
+        compare(msg.data.values, [myObj.myProperty, myOtherObj.foo, myOtherObj.bar]);
+
+        awaitIdle();
+    }
+
 }

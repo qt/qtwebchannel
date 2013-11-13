@@ -101,7 +101,7 @@ var QWebChannel = function(baseUrl, initCallback)
     this.subscribe = function(id, callback)
     {
         if (channel.subscriptions[id]) {
-            channel.subscriptions[id].append(callback);
+            channel.subscriptions[id].push(callback);
         } else {
             channel.subscriptions[id] = [callback];
         }
