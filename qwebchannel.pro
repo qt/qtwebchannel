@@ -6,3 +6,4 @@ SUBDIRS = \
   tests
 
 examples.depends = src
+tests.depends = src

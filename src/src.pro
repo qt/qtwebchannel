@@ -9,8 +9,8 @@ CONFIG += qt plugin
 TARGET = $$qtLibraryTarget($$TARGET)
 
 # Input
-SOURCES += qwebchannel_plugin.cpp
-HEADERS += qwebchannel_plugin.h
+SOURCES += $$PWD/qwebchannel_plugin.cpp
+HEADERS += $$PWD/qwebchannel_plugin.h
 
 RESOURCES += \
     resources.qrc
@@ -52,6 +52,8 @@ for(FILE, DEPLOY_FILES) {
     preparetests.depends += $$PWD/$$FILE
     preparetests.commands += $$quote($$QMAKE_COPY \"$$PWD/$$FILE\" $$OUT_PWD/$$TARGETPATH$$escape_expand(\n\t))
 }
+
+preparetests.depends += $$PLUGIN
 
 QMAKE_EXTRA_TARGETS += preparetests
 PRE_TARGETDEPS += $$preparetests.target
