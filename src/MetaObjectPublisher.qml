@@ -55,16 +55,16 @@ MetaObjectPublisherImpl
     /**
      * This map contains the registered objects indexed by their name.
      */
-    property variant registeredObjects
-    property var subscriberCountMap
+    property variant registeredObjects: ({})
+    property var subscriberCountMap: ({})
 
     // Map of object names to maps of signal names to an array of all their properties.
     // The last value is an array as a signal can be the notify signal of multiple properties.
-    property var signalToPropertyMap
+    property var signalToPropertyMap: ({})
 
     // Objects that changed their properties and are waiting for idle client.
     // map of object name to map of signal name to arguments
-    property var pendingPropertyUpdates
+    property var pendingPropertyUpdates: ({})
 
     // true when the client is idle, false otherwise
     property bool clientIsIdle: false
@@ -318,13 +318,6 @@ MetaObjectPublisherImpl
             webChannel.sendMessage("Qt.propertyUpdate", data);
             clientIsIdle = false;
         }
-    }
-
-    Component.onCompleted: {
-        // Initializing this in the property declaration is not possible and yields to "undefined"
-        signalToPropertyMap = {}
-        pendingPropertyUpdates = {}
-        registeredObjects = {}
     }
 
     onBlockUpdatesChanged: {
