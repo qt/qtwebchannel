@@ -32,96 +32,31 @@
 ****************************************************************************/
 
 import QtQuick 2.0
-import QtTest 1.0
 
-import Qt.labs.WebChannel 1.0
-import QtWebKit 3.0
-
-TestCase {
+WebChannelTest {
     name: "WebChannel"
 
-    // only run after the webchannel has finished initialization
-    when: webChannel.baseUrl != ""
-
-    property var lastLoadStatus
-
-    WebView {
-        id: view
-
-        onLoadingChanged: {
-            // NOTE: we cannot use spy.signalArguments nor save the loadRequest anywhere, as it gets
-            // deleted after the slots connected to the signal have finished... i.e. it's a weak pointer,
-            // not a shared pointer. As such, we have to copy out the interesting data we need later on here...
-            lastLoadStatus = loadRequest.status
-        }
-
-        SignalSpy {
-            id: loadingSpy
-            target: view
-            signalName: "onLoadingChanged"
-        }
-    }
-
-    WebChannel {
-        id: webChannel
-    }
-
-    SignalSpy {
-        id: rawMessageSpy
-        target: webChannel
-        signalName: "onRawMessageReceived"
-    }
-
-    SignalSpy {
-        id: pongSpy
-        target: webChannel
-        signalName: "onPongReceived"
-    }
-
-    function loadUrl(url)
-    {
-        verify(webChannel.baseUrl != "", "webChannel.baseUrl is empty");
-        view.url = url + "?webChannelBaseUrl=" + webChannel.baseUrl;
-        // now wait for page to finish loading
-        do {
-            loadingSpy.wait(500);
-        } while (view.loading);
-        compare(lastLoadStatus, WebView.LoadSucceededStatus);
-    }
-
-    function cleanup()
-    {
-        view.url = "";
-        loadingSpy.clear();
-        rawMessageSpy.clear();
-    }
-
-    //BEGIN TESTS
     function test_receiveRawMessage()
     {
         loadUrl("receiveRaw.html");
-        rawMessageSpy.wait(500);
-        compare(rawMessageSpy.signalArguments[0][0], "foobar");
+        compare(awaitRawMessage(), "foobar");
     }
 
     function test_sendMessage()
     {
         loadUrl("send.html");
         webChannel.sendMessage("myMessage", "foobar");
-        rawMessageSpy.wait(500);
-        compare(rawMessageSpy.signalArguments[0][0], "myMessagePong:foobar");
+        compare(awaitRawMessage(), "myMessagePong:foobar");
     }
 
     function test_respondMessage()
     {
         loadUrl("respond.html");
-        rawMessageSpy.wait(500);
-        var msg = JSON.parse(rawMessageSpy.signalArguments[0][0]);
+        var msg = awaitMessage();
         verify(msg.id);
         compare(msg.data, "foobar");
         webChannel.respond(msg.id, "barfoo");
-        rawMessageSpy.wait(500);
-        compare(rawMessageSpy.signalArguments[1][0], "received:barfoo");
+        compare(awaitRawMessage(), "received:barfoo");
     }
 
     function test_ping()
@@ -131,5 +66,4 @@ TestCase {
         pongSpy.wait(500);
         compare(pongSpy.count, 1);
     }
-    //END TESTS
 }
