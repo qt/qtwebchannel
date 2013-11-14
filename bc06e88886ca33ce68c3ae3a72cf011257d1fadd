@@ -1,0 +1,8 @@
+Sanity-Review+1: Qt Sanity Bot <qt_sanitybot@qt-project.org>
+Code-Review+2: Pierre Rossi <pierre.rossi@gmail.com>
+Code-Review+1: Zeno Albisser <zeno.albisser@digia.com>
+Submitted-by: Milian Wolff <milian.wolff@kdab.com>
+Submitted-at: Thu, 14 Nov 2013 16:41:27 +0100
+Reviewed-on: https://codereview.qt-project.org/70558
+Project: qt-labs/qwebchannel
+Branch: refs/heads/master
