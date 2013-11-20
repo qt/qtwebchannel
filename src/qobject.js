@@ -292,4 +292,9 @@ window.setupQObjectWebChannel = function(webChannel, doneCallback)
     );
 
     webChannel.exec({type:"Qt.init"});
+
+    webChannel.debug = function(message)
+    {
+        webChannel.send({"data" : {"type" : "Qt.Debug", "message" : message}});
+    };
 };

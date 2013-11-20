@@ -159,7 +159,6 @@ MetaObjectPublisherImpl
             }
             if (payload.type === "Qt.connectToSignal") {
                 if (object.hasOwnProperty(payload.signal)) {
-                    subscriberCountMap =  subscriberCountMap || {};
                     subscriberCountMap[payload.object] = subscriberCountMap[payload.object] || {};
 
                     // if no one is connected, connect.
@@ -192,7 +191,6 @@ MetaObjectPublisherImpl
                 if (!object.hasOwnProperty(payload.signal)) {
                     return false;
                 }
-                subscriberCountMap = subscriberCountMap || {};
                 subscriberCountMap[payload.object] = subscriberCountMap[payload.object] || {};
 
                 if (!subscriberCountMap[payload.object].hasOwnProperty(payload.signal)) {
