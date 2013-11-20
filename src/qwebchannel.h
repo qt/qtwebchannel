@@ -46,6 +46,7 @@
 #define QWEBCHANNEL_H
 
 #include <QObject>
+#include <QJsonValue>
 
 class QWebChannelPrivate;
 
@@ -74,8 +75,10 @@ signals:
     void failed(const QString& reason);
 
 public slots:
-    void sendRawMessage(const QString& rawMessage);
-    void ping();
+    void sendMessage(const QJsonValue& id, const QJsonValue& data = QJsonValue()) const;
+    void respond(const QJsonValue& messageId, const QJsonValue& data = QJsonValue()) const;
+    void sendRawMessage(const QString& rawMessage) const;
+    void ping() const;
 
 private slots:
     void onInitialized();
