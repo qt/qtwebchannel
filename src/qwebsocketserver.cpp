@@ -377,12 +377,12 @@ void QWebSocketServer::upgrade(QTcpSocket* socket, HeaderData& header)
     header.wasUpgraded = true;
 }
 
-void QWebSocketServer::sendMessage(const QString& message)
+void QWebSocketServer::sendMessage(const QByteArray& message) const
 {
-    sendFrame(Frame::TextFrame, message.toUtf8());
+    sendFrame(Frame::TextFrame, message);
 }
 
-void QWebSocketServer::sendFrame(Frame::Opcode opcode, const QByteArray& data)
+void QWebSocketServer::sendFrame(Frame::Opcode opcode, const QByteArray& data) const
 {
     const QByteArray& header = frameHeader(opcode, data.size());
     QHash< QTcpSocket*, Connection >::const_iterator it = m_connections.constBegin();
@@ -416,7 +416,7 @@ QByteArray QWebSocketServer::frameHeader(QWebSocketServer::Frame::Opcode opcode,
     return header;
 }
 
-void QWebSocketServer::ping()
+void QWebSocketServer::ping() const
 {
     sendFrame(Frame::Ping, QByteArray());
 }
