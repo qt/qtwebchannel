@@ -71,8 +71,8 @@ signals:
     void pongReceived();
 
 public slots:
-    void sendMessage(const QString& message);
-    void ping();
+    void sendMessage(const QByteArray& message) const;
+    void ping() const;
 
 private slots:
     void newConnection();
@@ -147,8 +147,8 @@ private:
     bool readFrameData(QTcpSocket* socket, Frame& frame);
     void handleFrame(QTcpSocket* socket, Frame& frame);
 
-    void sendFrame(Frame::Opcode opcode, const QByteArray& data);
-    void sendFrame(QTcpSocket* socket, Frame::Opcode opcode, const QByteArray& data);
+    void sendFrame(Frame::Opcode opcode, const QByteArray& data) const;
+    void sendFrame(QTcpSocket* socket, Frame::Opcode opcode, const QByteArray& data) const;
     QByteArray frameHeader(Frame::Opcode opcode, const int dataSize) const;
 
     QTcpServer* m_server;
