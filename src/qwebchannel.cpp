@@ -47,6 +47,8 @@
 #include <QUuid>
 #include <QStringList>
 #include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "qwebsocketserver.h"
 
@@ -76,6 +78,9 @@ public:
         metaObject()->invokeMethod(this, "init", Qt::QueuedConnection);
         m_starting = true;
     }
+
+    using QWebSocketServer::sendMessage;
+    void sendMessage(const QJsonValue& id, const QJsonValue& data, bool response) const;
 
 signals:
     void failed(const QString& reason);
@@ -125,6 +130,20 @@ void QWebChannelPrivate::socketError()
     emit failed(errorString());
 }
 
+void QWebChannelPrivate::sendMessage(const QJsonValue& id, const QJsonValue& data, bool response) const
+{
+    QJsonObject obj;
+    if (response) {
+        obj[QStringLiteral("response")] = true;
+    }
+    obj[QStringLiteral("id")] = id;
+    if (!data.isNull()) {
+        obj[QStringLiteral("data")] = data;
+    }
+    QJsonDocument doc(obj);
+    sendMessage(doc.toJson(QJsonDocument::Compact));
+}
+
 QWebChannel::QWebChannel(QObject *parent)
 : QObject(parent)
 , d(new QWebChannelPrivate(this))
@@ -168,9 +187,19 @@ void QWebChannel::onInitialized()
     emit baseUrlChanged(d->m_baseUrl);
 }
 
+void QWebChannel::respond(const QJsonValue& messageId, const QJsonValue& data)
+{
+    d->sendMessage(messageId, data, true);
+}
+
+void QWebChannel::sendMessage(const QJsonValue& id, const QJsonValue& data)
+{
+    d->sendMessage(id, data, false);
+}
+
 void QWebChannel::sendRawMessage(const QString& message)
 {
-    d->sendMessage(message);
+    d->sendMessage(message.toUtf8());
 }
 
 void QWebChannel::ping()
