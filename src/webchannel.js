@@ -42,6 +42,8 @@
 **
 ****************************************************************************/
 
+"use strict";
+
 var QWebChannel = function(baseUrl, initCallback)
 {
     var channel = this;

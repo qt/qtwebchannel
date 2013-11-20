@@ -39,6 +39,8 @@
 **
 ****************************************************************************/
 
+"use strict";
+
 function QObject(name, data, webChannel)
 {
     this.__id__ = name;
