@@ -56,6 +56,11 @@ MetaObjectPublisherImpl
      * This map contains the registered objects indexed by their name.
      */
     property variant registeredObjects: ({})
+    /**
+     * Tracks how many connections are active to object signals.
+     *
+     * Maps objectName -> signalName -> {handler: functor, subscribers: int}.
+     */
     property var subscriberCountMap: ({})
 
     // Map of object names to maps of signal names to an array of all their properties.
@@ -159,15 +164,20 @@ MetaObjectPublisherImpl
 
                     // if no one is connected, connect.
                     if (!subscriberCountMap[payload.object].hasOwnProperty(payload.signal)) {
-                         object[payload.signal].connect(function() {
-                            var args = convertQMLArgsToJSArgs(arguments);
-                            webChannel.sendMessage("Qt.signal", {
-                                object: payload.object,
-                                signal: payload.signal,
-                                args: args
-                            });
-                        });
-                        subscriberCountMap[payload.object][payload.signal] = true;
+                        subscriberCountMap[payload.object][payload.signal] = {
+                            subscribers: 1,
+                            handler: function() {
+                                var args = convertQMLArgsToJSArgs(arguments);
+                                webChannel.sendMessage("Qt.signal", {
+                                    object: payload.object,
+                                    signal: payload.signal,
+                                    args: args
+                                });
+                            }
+                        };
+                        object[payload.signal].connect(subscriberCountMap[payload.object][payload.signal].handler);
+                    } else {
+                        ++subscriberCountMap[payload.object][payload.signal].subscribers;
                     }
                     return true;
                 }
@@ -177,6 +187,22 @@ MetaObjectPublisherImpl
                     return true;
                 }
                 return false;
+            }
+            if (payload.type === "Qt.disconnectFromSignal") {
+                if (!object.hasOwnProperty(payload.signal)) {
+                    return false;
+                }
+                subscriberCountMap = subscriberCountMap || {};
+                subscriberCountMap[payload.object] = subscriberCountMap[payload.object] || {};
+
+                if (!subscriberCountMap[payload.object].hasOwnProperty(payload.signal)) {
+                    return false
+                }
+                if (--subscriberCountMap[payload.object][payload.signal].subscribers === 0) {
+                    object[payload.signal].disconnect(subscriberCountMap[payload.object][payload.signal].handler);
+                    delete subscriberCountMap[payload.object][payload.signal];
+                }
+                return true;
             }
             if (payload.type === "Qt.setProperty") {
                 object[payload.property] = payload.value;

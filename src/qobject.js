@@ -102,8 +102,28 @@ function QObject(name, data, webChannel)
                         signal: signal
                     });
                 }
+            },
+            disconnect: function(callback) {
+                if (typeof(callback) !== "function") {
+                    console.error("Bad callback given to disconnect from signal " + signal);
+                    return;
+                }
+                object.__objectSignals__[signal] = object.__objectSignals__[signal] || [];
+                var idx = object.__objectSignals__[signal].indexOf(callback);
+                if (idx === -1) {
+                    console.error("Cannot find connection for given callback to signal" + signal, callback);
+                    return;
+                }
+                object.__objectSignals__[signal].splice(idx, 1);
+                if (!isPropertyNotifySignal && object.__objectSignals__[signal].length === 0) {
+                    // only required for "pure" signals, handled separately for properties in propertyUpdate
+                    webChannel.exec({
+                        type: "Qt.disconnectFromSignal",
+                        object: object.__id__,
+                        signal: signal
+                    });
+                }
             }
-            // TODO: disconnect eventually
         };
     }
 
