@@ -71,6 +71,12 @@ function QObject(name, data, webChannel)
         qObject.destroyed.connect(function() {
             if (webChannel.objectMap[objectId] === qObject) {
                 delete webChannel.objectMap[objectId];
+                // reset the now deleted QObject to an empty {} object
+                // just assigning {} though would not have the desired effect, but the
+                // below also ensures all external references will see the empty map
+                for (var prop in qObject) {
+                    delete qObject[prop];
+                }
             }
         });
         return qObject;
