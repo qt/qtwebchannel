@@ -57,6 +57,24 @@ WebChannelTest {
         property var foo: 1
         property var bar: 1
     }
+    QtObject {
+        id: myFactory
+        function create(id)
+        {
+            return component.createObject(myFactory, {objectName: id});
+        }
+    }
+
+    Component {
+        id: component
+        QtObject {
+            property var myProperty : 0
+            function myMethod(arg) {
+                mySignal(arg, myProperty);
+            }
+            signal mySignal(var arg1, var arg2)
+        }
+    }
 
     MetaObjectPublisher {
         id: publisher
@@ -76,7 +94,8 @@ WebChannelTest {
     {
         publisher.registerObjects({
             "myObj": myObj,
-            "myOtherObj": myOtherObj
+            "myOtherObj": myOtherObj,
+            "myFactory": myFactory
         });
     }
 
@@ -188,4 +207,60 @@ WebChannelTest {
         awaitIdle();
     }
 
+    function test_wrapper()
+    {
+        loadUrl("wrapper.html");
+        awaitInit();
+
+        var msg = awaitMessage();
+        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.object, "myFactory");
+        compare(msg.data.method, "create");
+
+        awaitIdle();
+
+        msg = awaitMessage();
+        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.signal, "destroyed");
+        verify(msg.data.object);
+        var objId = msg.data.object;
+        var obj = publisher.unwrapObject(objId);
+        verify(obj);
+        compare(obj.objectName, "testObj");
+
+        msg = awaitMessage();
+        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.object, objId);
+        compare(msg.data.signal, "mySignal");
+
+        msg = awaitMessage();
+        compare(msg.data.type, "Qt.setProperty");
+        compare(msg.data.object, objId);
+        compare(obj.myProperty, 42);
+
+        msg = awaitMessage();
+        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.object, objId);
+        compare(msg.data.method, "myMethod");
+        compare(msg.data.args, ["foobar"]);
+
+        msg = awaitMessage();
+        compare(msg.data.label, "signalReceived");
+        compare(msg.data.args, ["foobar", 42]);
+
+        // pass QObject* on the fly and trigger deleteLater from client side
+        webChannel.sendMessage("triggerDelete");
+        awaitIdle();
+
+        msg = awaitMessage();
+        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.object, objId);
+        compare(msg.data.method, "deleteLater");
+        verify(!publisher.unwrapObject(objId));
+
+        webChannel.sendMessage("report");
+        msg = awaitMessage();
+        compare(msg.data.label, "report");
+        compare(msg.data.obj, {});
+    }
 }
