@@ -85,7 +85,10 @@ WebChannelTest {
             onRawMessageReceived: {
                 var message = JSON.parse(rawMessage);
                 verify(message);
-                publisher.handleRequest(message);
+                var handled = publisher.handleRequest(message);
+                if (message.data && message.data.type) {
+                    verify(handled);
+                }
             }
         }
     }
@@ -262,5 +265,41 @@ WebChannelTest {
         msg = awaitMessage();
         compare(msg.data.label, "report");
         compare(msg.data.obj, {});
+    }
+
+    function test_disconnect()
+    {
+        loadUrl("disconnect.html");
+        awaitInit();
+
+        var msg = awaitMessage();
+        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.signal, "mySignal");
+        compare(msg.data.object, "myObj");
+        verify(publisher.subscriberCountMap["myObj"].hasOwnProperty("mySignal"));
+
+        awaitIdle();
+
+        myObj.mySignal(42);
+
+        msg = awaitMessage();
+        compare(msg.data.label, "mySignalReceived");
+        compare(msg.data.args, [42]);
+
+        msg = awaitMessage();
+        compare(msg.data.type, "Qt.disconnectFromSignal");
+        compare(msg.data.object, "myObj");
+        compare(msg.data.signal, "mySignal");
+
+        verify(!publisher.subscriberCountMap["myObj"].hasOwnProperty("mySignal"));
+
+        myObj.mySignal(0);
+
+        // apparently one cannot expect failure in QML, so trigger another message
+        // and verify no mySignalReceived was triggered by the above emission
+        webChannel.sendMessage("report");
+
+        msg = awaitMessage();
+        compare(msg.data.label, "report");
     }
 }
