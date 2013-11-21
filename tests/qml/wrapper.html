@@ -16,7 +16,6 @@
                         obj.myMethod("foobar");
                     });
                     channel.subscribe("triggerDelete", function() {
-                        console.log(testObj);
                         testObj.deleteLater();
                     });
                     channel.subscribe("report", function() {

@@ -4,6 +4,9 @@
 ** All rights reserved.
 ** Contact: Nokia Corporation (qt-info@nokia.com)
 **
+** Copyright (C) 2013 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Contact: http://www.qt-project.org/legal
+**
 ** This file is part of the QWebChannel module on Qt labs.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
@@ -82,45 +85,47 @@ function QObject(name, data, webChannel)
         return qObject;
     }
 
-    function addSignal(signal, isPropertyNotifySignal)
+    function addSignal(signalData, isPropertyNotifySignal)
     {
-        object[signal] = {
+        var signalName = signalData[0];
+        var signalIndex = signalData[1];
+        object[signalName] = {
             connect: function(callback) {
                 if (typeof(callback) !== "function") {
-                    console.error("Bad callback given to connect to signal " + signal);
+                    console.error("Bad callback given to connect to signal " + signalName);
                     return;
                 }
 
-                object.__objectSignals__[signal] = object.__objectSignals__[signal] || [];
-                object.__objectSignals__[signal].push(callback);
+                object.__objectSignals__[signalIndex] = object.__objectSignals__[signalIndex] || [];
+                object.__objectSignals__[signalIndex].push(callback);
 
                 if (!isPropertyNotifySignal) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
                     webChannel.exec({
                         type: "Qt.connectToSignal",
                         object: object.__id__,
-                        signal: signal
+                        signal: signalIndex
                     });
                 }
             },
             disconnect: function(callback) {
                 if (typeof(callback) !== "function") {
-                    console.error("Bad callback given to disconnect from signal " + signal);
+                    console.error("Bad callback given to disconnect from signal " + signalName);
                     return;
                 }
-                object.__objectSignals__[signal] = object.__objectSignals__[signal] || [];
-                var idx = object.__objectSignals__[signal].indexOf(callback);
+                object.__objectSignals__[signalIndex] = object.__objectSignals__[signalIndex] || [];
+                var idx = object.__objectSignals__[signalIndex].indexOf(callback);
                 if (idx === -1) {
-                    console.error("Cannot find connection for given callback to signal" + signal, callback);
+                    console.error("Cannot find connection of signal " + signalName + " to " + callback.name);
                     return;
                 }
-                object.__objectSignals__[signal].splice(idx, 1);
-                if (!isPropertyNotifySignal && object.__objectSignals__[signal].length === 0) {
+                object.__objectSignals__[signalIndex].splice(idx, 1);
+                if (!isPropertyNotifySignal && object.__objectSignals__[signalIndex].length === 0) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
                     webChannel.exec({
                         type: "Qt.disconnectFromSignal",
                         object: object.__id__,
-                        signal: signal
+                        signal: signalIndex
                     });
                 }
             }
@@ -160,9 +165,11 @@ function QObject(name, data, webChannel)
         invokeSignalCallbacks(signalName, signalArgs);
     }
 
-    function addMethod(method)
+    function addMethod(methodData)
     {
-        object[method] = function() {
+        var methodName = methodData[0];
+        var methodIdx = methodData[1];
+        object[methodName] = function() {
             var args = [];
             var callback;
             for (var i = 0; i < arguments.length; ++i) {
@@ -172,7 +179,7 @@ function QObject(name, data, webChannel)
                     args.push(arguments[i]);
             }
 
-            webChannel.exec({"type": "Qt.invokeMethod", "object": object.__id__, "method": method, "args": args}, function(response) {
+            webChannel.exec({"type": "Qt.invokeMethod", "object": object.__id__, "method": methodIdx, "args": args}, function(response) {
                 if ( (response !== undefined) && callback ) {
                     (callback)(unwrapQObject(response));
                 }
@@ -183,16 +190,16 @@ function QObject(name, data, webChannel)
     function bindGetterSetter(propertyInfo)
     {
         var propertyName = propertyInfo[0];
-        var notifySignal = propertyInfo[1];
+        var notifySignalData = propertyInfo[1];
         // initialize property cache with current value
         object.__propertyCache__[propertyName] = propertyInfo[2]
 
-        if (notifySignal) {
-            if (notifySignal === 1) {
-                /// signal name is optimized away, reconstruct the actual name
-                notifySignal = propertyName + "Changed";
+        if (notifySignalData) {
+            if (notifySignalData[0] === 1) {
+                // signal name is optimized away, reconstruct the actual name
+                notifySignalData[0] = propertyName + "Changed";
             }
-            addSignal(notifySignal, true);
+            addSignal(notifySignalData, true);
         }
 
         object.__defineSetter__(propertyName, function(value) {
@@ -263,7 +270,7 @@ window.setupQObjectWebChannel = function(webChannel, doneCallback)
                 var data = payload[i];
                 var object = window[data.object] || webChannel.objectMap[data.object];
                 if (object) {
-                    object.propertyUpdate(data.signals, data.propertyMap);
+                    object.propertyUpdate(data.signals, data.properties);
                 } else {
                     console.warn("Unhandled property update: " + data.object + "::" + data.signal);
                 }

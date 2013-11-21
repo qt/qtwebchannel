@@ -17,15 +17,13 @@ RESOURCES += \
 
 OTHER_FILES = qmldir \
     webchannel.js \
-    qobject.js \
-    MetaObjectPublisher.qml
+    qobject.js
 
 target.path = $$[QT_INSTALL_QML]/$$TARGETPATH
 
 # extra files that need to be deployed to $$TARGETPATH
 DEPLOY_FILES = \
-    qmldir \
-    MetaObjectPublisher.qml
+    qmldir
 
 for(FILE, DEPLOY_FILES): qmldir.files += $$PWD/$$FILE
 qmldir.path +=  $$[QT_INSTALL_QML]/$$TARGETPATH
