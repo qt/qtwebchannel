@@ -6,4 +6,6 @@ SOURCES += \
 HEADERS += \
     $$PWD/qwebchannel.h \
     $$PWD/qtmetaobjectpublisher.h \
-    $$PWD/qwebsocketserver.h
+    $$PWD/qwebsocketserver.h \
+    $$PWD/variantargument.h \
+    $$PWD/signalhandler.h
