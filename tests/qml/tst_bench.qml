@@ -78,12 +78,12 @@ WebChannelTest {
     MetaObjectPublisher {
         id: publisher
         webChannel: test.webChannel
+    }
 
-        Connections {
-            target: webChannel
-            onRawMessageReceived: {
-                publisher.handleRequest(JSON.parse(rawMessage));
-            }
+    Connections {
+        target: test.webChannel
+        onRawMessageReceived: {
+            publisher.handleRequest(JSON.parse(rawMessage));
         }
     }
 
@@ -107,19 +107,13 @@ WebChannelTest {
 
     function benchmark_initializeClients()
     {
-        publisher.propertyUpdatesInitialized = false;
-        publisher.signalToPropertyMap = {}
-        publisher.subscriberCountMap = {}
-
-        publisher.initializeClients()
+        publisher.bench_initializeClients();
     }
 
     function benchmark_propertyUpdates()
     {
-        if (!publisher.propertyUpdatesInitialized) {
-            // required to make the benchmark work standalone
-            publisher.initializeClients()
-        }
+        // required to make the benchmark work standalone
+        publisher.bench_ensureUpdatesInitialized();
 
         for (var o in objects) {
             objects[o].p0++;
@@ -133,14 +127,12 @@ WebChannelTest {
             objects[o].p8++;
             objects[o].p9++;
         }
-        publisher.clientIsIdle = true
-        publisher.sendPendingPropertyUpdates()
+        publisher.bench_sendPendingPropertyUpdates();
     }
 
     function benchmark_registerObjects()
     {
-        publisher.propertyUpdatesInitialized = false;
-        publisher.registerObjects(objects);
+        publisher.bench_registerObects(objects);
     }
 
     function benchmark_init_baseline()
