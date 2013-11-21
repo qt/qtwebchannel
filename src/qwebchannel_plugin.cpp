@@ -49,6 +49,6 @@
 void QWebChannelPlugin::registerTypes(const char *uri)
 {
     qmlRegisterType<QWebChannel>(uri, 1, 0, "WebChannel");
-    qmlRegisterType<QtMetaObjectPublisher>(uri, 1, 0, "MetaObjectPublisherImpl");
+    qmlRegisterType<QtMetaObjectPublisher>(uri, 1, 0, "MetaObjectPublisher");
 }
 
