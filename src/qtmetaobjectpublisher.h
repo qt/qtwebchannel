@@ -46,42 +46,68 @@
 #define QTMETAOBJECTPUBLISHER_H
 
 #include <QObject>
-#include <QVariantMap>
-#include <QQuickItem>
 
-// NOTE: QQuickItem inheritance required to enable QML item nesting (i.e. Timer in MetaObjectPublisher)
-class QtMetaObjectPublisher : public QQuickItem
+class QWebChannel;
+typedef QMap<QString, QVariant> QVariantMap;
+
+struct QtMetaObjectPublisherPrivate;
+
+class QtMetaObjectPublisher : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QWebChannel *webChannel READ webChannel WRITE setWebChannel NOTIFY webChannelChanged);
+    Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged);
+
 public:
-    explicit QtMetaObjectPublisher(QQuickItem *parent = 0);
+    explicit QtMetaObjectPublisher(QObject *parent = 0);
+    virtual ~QtMetaObjectPublisher();
 
     Q_INVOKABLE QVariantMap classInfoForObjects(const QVariantMap &objects) const;
     Q_INVOKABLE QVariantMap classInfoForObject(QObject *object) const;
 
-    /// wrap object and return class info
-    Q_INVOKABLE QVariant wrapObject(QObject *object);
-    /// Search object by id and return it, or null if it could not be found.
-    Q_INVOKABLE QObject *unwrapObject(const QString &id) const;
-    /// Invoke delete later on @p object, but only if it is a wrapped object.
-    Q_INVOKABLE void deleteWrappedObject(QObject *object) const;
+    /**
+     * Register a map of string ID to QObject* objects.
+     *
+     * The properties, signals and public methods of the QObject are
+     * published to the remote client, where an object with the given identifier
+     * is constructed.
+     *
+     * TODO: This must be called, before clients are initialized.
+     */
+    Q_INVOKABLE void registerObjects(const QVariantMap &objects);
+
+    /**
+     * Handle the given WebChannel client request and potentially give a response.
+     *
+     * @return true if the request was handled, false otherwise.
+     */
+    Q_INVOKABLE bool handleRequest(const QJsonObject &message);
+
+    QWebChannel *webChannel() const;
+    void setWebChannel(QWebChannel *webChannel);
+
+    /**
+     * When updates are blocked, no property updates are transmitted to remote clients.
+     */
+    bool blockUpdates() const;
+    void setBlockUpdates(bool block);
+
+    /// TODO: cleanup: rewrite tests in C++ and access PIMPL data from there
+    Q_INVOKABLE void bench_ensureUpdatesInitialized();
+    Q_INVOKABLE void bench_sendPendingPropertyUpdates();
+    Q_INVOKABLE void bench_registerObects(const QVariantMap &objects);
+    Q_INVOKABLE void bench_initializeClients();
+    Q_INVOKABLE bool test_clientIsIdle() const;
 
 signals:
-    void wrappedObjectDestroyed(const QString& id);
-
-private slots:
-    void wrappedObjectDestroyed(QObject* object);
+    void webChannelChanged(QWebChannel *channel);
+    void blockUpdatesChanged(bool block);
 
 private:
-    /// Pairs of QObject and generated object info
-    typedef QPair<QObject *, QVariantMap> WrapInfo;
-    /// Maps object id to wrap info
-    typedef QHash<QString, WrapInfo> WrapMap;
-    /// Const iterator for map
-    typedef WrapMap::const_iterator WrapMapCIt;
+    QScopedPointer<QtMetaObjectPublisherPrivate> d;
+    friend struct QtMetaObjectPublisherPrivate;
 
-    /// Map of wrapped objects
-    WrapMap m_wrappedObjects;
+    Q_PRIVATE_SLOT(d, void sendPendingPropertyUpdates());
 };
 
 #endif // QTMETAOBJECTPUBLISHER_H
