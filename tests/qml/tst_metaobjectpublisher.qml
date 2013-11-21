@@ -59,9 +59,11 @@ WebChannelTest {
     }
     QtObject {
         id: myFactory
+        property var lastObj
         function create(id)
         {
-            return component.createObject(myFactory, {objectName: id});
+            lastObj = component.createObject(myFactory, {objectName: id});
+            return lastObj;
         }
     }
 
@@ -79,16 +81,16 @@ WebChannelTest {
     MetaObjectPublisher {
         id: publisher
         webChannel: test.webChannel
+    }
 
-        Connections {
-            target: webChannel
-            onRawMessageReceived: {
-                var message = JSON.parse(rawMessage);
-                verify(message);
-                var handled = publisher.handleRequest(message);
-                if (message.data && message.data.type) {
-                    verify(handled);
-                }
+    Connections {
+        target: test.webChannel
+        onRawMessageReceived: {
+            var message = JSON.parse(rawMessage);
+            verify(message);
+            var handled = publisher.handleRequest(message);
+            if (message.data && message.data.type) {
+                verify(handled);
             }
         }
     }
@@ -117,7 +119,18 @@ WebChannelTest {
         verify(msg);
         verify(msg.data);
         compare(msg.data.type, "Qt.idle");
-        verify(publisher.clientIsIdle)
+        verify(publisher.test_clientIsIdle())
+    }
+
+    function awaitMessageSkipIdle()
+    {
+        var msg;
+        do {
+            msg = awaitMessage();
+            verify(msg);
+            verify(msg.data);
+        } while (msg.data.type === "Qt.idle");
+        return msg;
     }
 
     function test_property()
@@ -178,7 +191,6 @@ WebChannelTest {
         var msg = awaitMessage();
         compare(msg.data.type, "Qt.connectToSignal");
         compare(msg.data.object, "myObj");
-        compare(msg.data.signal, "mySignal");
 
         awaitIdle();
 
@@ -215,54 +227,45 @@ WebChannelTest {
         loadUrl("wrapper.html");
         awaitInit();
 
-        var msg = awaitMessage();
+        var msg = awaitMessageSkipIdle();
         compare(msg.data.type, "Qt.invokeMethod");
         compare(msg.data.object, "myFactory");
-        compare(msg.data.method, "create");
+        verify(myFactory.lastObj);
+        compare(myFactory.lastObj.objectName, "testObj");
 
-        awaitIdle();
-
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.type, "Qt.connectToSignal");
-        compare(msg.data.signal, "destroyed");
         verify(msg.data.object);
         var objId = msg.data.object;
-        var obj = publisher.unwrapObject(objId);
-        verify(obj);
-        compare(obj.objectName, "testObj");
 
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.type, "Qt.connectToSignal");
         compare(msg.data.object, objId);
-        compare(msg.data.signal, "mySignal");
 
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.type, "Qt.setProperty");
         compare(msg.data.object, objId);
-        compare(obj.myProperty, 42);
+        compare(myFactory.lastObj.myProperty, 42);
 
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.type, "Qt.invokeMethod");
         compare(msg.data.object, objId);
-        compare(msg.data.method, "myMethod");
         compare(msg.data.args, ["foobar"]);
 
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.label, "signalReceived");
         compare(msg.data.args, ["foobar", 42]);
 
         // pass QObject* on the fly and trigger deleteLater from client side
         webChannel.sendMessage("triggerDelete");
-        awaitIdle();
 
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.type, "Qt.invokeMethod");
         compare(msg.data.object, objId);
-        compare(msg.data.method, "deleteLater");
-        verify(!publisher.unwrapObject(objId));
 
         webChannel.sendMessage("report");
-        msg = awaitMessage();
+
+        msg = awaitMessageSkipIdle();
         compare(msg.data.label, "report");
         compare(msg.data.obj, {});
     }
@@ -274,9 +277,7 @@ WebChannelTest {
 
         var msg = awaitMessage();
         compare(msg.data.type, "Qt.connectToSignal");
-        compare(msg.data.signal, "mySignal");
         compare(msg.data.object, "myObj");
-        verify(publisher.subscriberCountMap["myObj"].hasOwnProperty("mySignal"));
 
         awaitIdle();
 
@@ -289,9 +290,6 @@ WebChannelTest {
         msg = awaitMessage();
         compare(msg.data.type, "Qt.disconnectFromSignal");
         compare(msg.data.object, "myObj");
-        compare(msg.data.signal, "mySignal");
-
-        verify(!publisher.subscriberCountMap["myObj"].hasOwnProperty("mySignal"));
 
         myObj.mySignal(0);
 
