@@ -1,0 +1,8 @@
+Sanity-Review+1: Qt Sanity Bot <qt_sanitybot@qt-project.org>
+Code-Review+2: Pierre Rossi <pierre.rossi@gmail.com>
+Code-Review+1: Arvid Nilsson <anilsson@blackberry.com>
+Submitted-by: Milian Wolff <milian.wolff@kdab.com>
+Submitted-at: Mon, 25 Nov 2013 14:58:01 +0100
+Reviewed-on: https://codereview.qt-project.org/71769
+Project: qt-labs/qwebchannel
+Branch: refs/heads/master
