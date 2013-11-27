@@ -47,6 +47,7 @@
 #include <QStringList>
 #include <QMetaObject>
 #include <QMetaProperty>
+#include <QDebug>
 
 static const QString KEY_SIGNALS = QStringLiteral("signals");
 static const QString KEY_METHODS = QStringLiteral("methods");
