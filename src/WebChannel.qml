@@ -46,18 +46,40 @@ WebChannelImpl
 {
     function respond(messageId, data)
     {
+        var seenBefore = [];
         sendRawMessage(JSON.stringify({
             response: true,
             id: messageId,
             data: data
+        }, function (key, value) {
+            if (typeof value === 'object' && value) {
+                if (seenBefore.indexOf(value) !== -1) {
+                    // Circular Reference. Log and discard.
+                    console.warn('Circular reference detected at key "' + key + '", discarding.');
+                    return;
+                }
+                seenBefore.push(value);
+            }
+            return value;
         }));
     }
 
     function sendMessage(id, data)
     {
+        var seenBefore = [];
         sendRawMessage(JSON.stringify({
             id: id,
             data: data
+        }, function (key, value) {
+            if (typeof value === 'object' && value) {
+                if (seenBefore.indexOf(value) !== -1) {
+                    // Circular Reference. Log and discard.
+                    console.warn('Circular reference detected at key "' + key + '", discarding.');
+                    return;
+                }
+                seenBefore.push(value);
+            }
+            return value;
         }));
     }
 }
