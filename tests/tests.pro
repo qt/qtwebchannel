@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 
-SUBDIRS = \
-  qml
+qtHaveModule(quick) {
+    SUBDIRS += qml
+}

@@ -41,8 +41,7 @@
 
 import QtQuick 2.0
 
-import Qt.labs 1.0
-import Qt.labs.WebChannel 1.0
+import QtWebChannel 1.0
 import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 

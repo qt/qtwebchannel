@@ -1,20 +1,19 @@
 /****************************************************************************
 **
-** Copyright (C) 2011 Nokia Corporation and/or its subsidiary(-ies).
-** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
-**
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
 ** Copyright (C) 2013 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: http://www.qt-project.org/legal
-**
-** This file is part of the QWebChannel module on Qt labs.
+*
+** This file is part of the QtWebChannel module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** No Commercial Usage
-** This file contains pre-release code and may not be distributed.
-** You may use this file in accordance with the terms and conditions
-** contained in the Technology Preview License Agreement accompanying
-** this package.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
@@ -24,18 +23,17 @@
 ** ensure the GNU Lesser General Public License version 2.1 requirements
 ** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights.  These rights are described in the Nokia Qt LGPL Exception
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
-** If you have questions regarding the use of this file, please contact
-** Nokia at qt-info@nokia.com.
-**
-**
-**
-**
-**
-**
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -48,19 +46,21 @@
 #include <QObject>
 #include <QVariant>
 
+#include "qwebchannelglobal.h"
+
 class QWebChannel;
 
-struct QtMetaObjectPublisherPrivate;
+struct QMetaObjectPublisherPrivate;
 
-class QtMetaObjectPublisher : public QObject
+class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QWebChannel *webChannel READ webChannel WRITE setWebChannel NOTIFY webChannelChanged);
     Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged);
 
 public:
-    explicit QtMetaObjectPublisher(QObject *parent = 0);
-    virtual ~QtMetaObjectPublisher();
+    explicit QMetaObjectPublisher(QObject *parent = 0);
+    virtual ~QMetaObjectPublisher();
 
     Q_INVOKABLE QVariantMap classInfoForObjects(const QVariantMap &objects) const;
     Q_INVOKABLE QVariantMap classInfoForObject(QObject *object) const;
@@ -104,11 +104,11 @@ signals:
     void blockUpdatesChanged(bool block);
 
 protected:
-    virtual void timerEvent(QTimerEvent *);
+    void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
 
 private:
-    QScopedPointer<QtMetaObjectPublisherPrivate> d;
-    friend struct QtMetaObjectPublisherPrivate;
+    QScopedPointer<QMetaObjectPublisherPrivate> d;
+    friend struct QMetaObjectPublisherPrivate;
 };
 
-#endif // QTMETAOBJECTPUBLISHER_H
+#endif // QMETAOBJECTPUBLISHER_H

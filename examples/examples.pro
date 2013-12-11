@@ -1,5 +1,7 @@
 TEMPLATE = subdirs
 
-SUBDIRS = \
-  hybridshell \
-  qtobject
+qtHaveModule(quick) {
+    SUBDIRS += \
+        hybridshell \
+        qtobject
+}
