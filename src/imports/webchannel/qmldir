@@ -1,0 +1,3 @@
+module QtWebChannel
+plugin declarative_webchannel
+typeinfo plugins.qmltypes
