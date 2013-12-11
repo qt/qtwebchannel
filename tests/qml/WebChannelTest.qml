@@ -3,7 +3,7 @@
 ** Copyright (C) 2013 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: http://www.qt-project.org/legal
 **
-** This file is part of the QWebChannel module on Qt labs.
+** This file is part of the QtWebChannel module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** No Commercial Usage
@@ -34,7 +34,7 @@
 import QtQuick 2.0
 import QtTest 1.0
 
-import Qt.labs.WebChannel 1.0
+import QtWebChannel 1.0
 import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 
@@ -86,7 +86,7 @@ TestCase {
     function loadUrl(url)
     {
         verify(webChannel.baseUrl != "", "webChannel.baseUrl is empty");
-        view.url = url + "?webChannelBaseUrl=" + webChannel.baseUrl;
+        view.url = "data/" + url + "?webChannelBaseUrl=" + webChannel.baseUrl;
         // now wait for page to finish loading
         do {
             loadingSpy.wait(500);

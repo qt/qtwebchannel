@@ -4,7 +4,7 @@
 ** Copyright (C) 2013 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: http://www.qt-project.org/legal
 *
-** This file is part of the QtCore module of the Qt Toolkit.
+** This file is part of the QtWebChannel module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -40,64 +40,30 @@
 **
 ****************************************************************************/
 
-#ifndef VARIANTARGUMENT_H
-#define VARIANTARGUMENT_H
+#include <qqml.h>
+#include <QtQml/QQmlExtensionPlugin>
 
-#include <QVariant>
-#include <QMetaType>
+#include "qwebchannel.h"
+#include "qmetaobjectpublisher.h"
 
-/**
- * RAII QVariant to Q[Generic]Argument conversion
- */
-class VariantArgument
+QT_USE_NAMESPACE
+
+class QWebChannelPlugin : public QQmlExtensionPlugin
 {
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
+
 public:
-    explicit VariantArgument()
-    : m_data(0)
-    , m_paramType(0)
-    {
-    }
-
-    /// TODO: test with C++ methods that don't take a QVariant as arg
-    ///       also test conversions
-    void setValue(const QVariant &value, int paramType)
-    {
-        if (m_data) {
-            QMetaType::destroy(m_paramType, m_data);
-            m_name.clear();
-            m_data = 0;
-        }
-
-        m_paramType = paramType;
-
-        if (value.isValid()) {
-            m_name = value.typeName();
-            m_data = QMetaType::create(m_paramType, value.constData());
-        }
-    }
-
-    ~VariantArgument()
-    {
-        if (m_data) {
-            QMetaType::destroy(m_paramType, m_data);
-            m_data = 0;
-        }
-    }
-
-    operator QGenericArgument() const
-    {
-        if (!m_data) {
-            return QGenericArgument();
-        }
-        return QGenericArgument(m_name.constData(), m_data);
-    }
-
-private:
-    Q_DISABLE_COPY(VariantArgument)
-
-    QByteArray m_name;
-    void* m_data;
-    int m_paramType;
+    void registerTypes(const char *uri);
 };
 
-#endif // VARIANTARGUMENT_H
+void QWebChannelPlugin::registerTypes(const char *uri)
+{
+    int major = 1;
+    int minor = 0;
+    qmlRegisterType<QWebChannel>(uri, major, minor, "WebChannel");
+    qmlRegisterType<QMetaObjectPublisher>(uri, major, minor, "MetaObjectPublisher");
+
+}
+
+#include "plugin.moc"
