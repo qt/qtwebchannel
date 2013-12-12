@@ -1,0 +1,8 @@
+Code-Review+2: Simon Hausmann <simon.hausmann@digia.com>
+Sanity-Review+1: Simon Hausmann <simon.hausmann@digia.com>
+Sanity-Review-1: Qt Sanity Bot <qt_sanitybot@qt-project.org>
+Submitted-by: Milian Wolff <milian.wolff@kdab.com>
+Submitted-at: Thu, 12 Dec 2013 13:41:18 +0100
+Reviewed-on: https://codereview.qt-project.org/73746
+Project: qt-labs/qwebchannel
+Branch: refs/heads/master
