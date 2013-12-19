@@ -122,11 +122,11 @@ void QMetaObjectPublisherPrivate::initializeClients()
     {
         const QHash<QString, QObject *>::const_iterator end = registeredObjects.constEnd();
         for (QHash<QString, QObject *>::const_iterator it = registeredObjects.constBegin(); it != end; ++it) {
-            const QVariantMap &info = q->classInfoForObject(it.value());
+            const QJsonObject &info = q->classInfoForObject(it.value());
             if (!propertyUpdatesInitialized) {
                 initializePropertyUpdates(it.value(), info);
             }
-            objectInfos[it.key()] = QJsonObject::fromVariantMap(info);
+            objectInfos[it.key()] = info;
         }
     }
     webChannel->sendMessage(TYPE_INIT, objectInfos);
@@ -134,16 +134,16 @@ void QMetaObjectPublisherPrivate::initializeClients()
     pendingInit = false;
 }
 
-void QMetaObjectPublisherPrivate::initializePropertyUpdates(const QObject *const object, const QVariantMap &objectInfo)
+void QMetaObjectPublisherPrivate::initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo)
 {
-    foreach (const QVariant &propertyInfoVar, objectInfo[KEY_PROPERTIES].toList()) {
-        const QVariantList &propertyInfo = propertyInfoVar.toList();
+    foreach (const QJsonValue &propertyInfoVar, objectInfo[KEY_PROPERTIES].toArray()) {
+        const QJsonArray &propertyInfo = propertyInfoVar.toArray();
         if (propertyInfo.size() < 2) {
             qWarning() << "Invalid property info encountered:" << propertyInfoVar;
             continue;
         }
         const QString &propertyName = propertyInfo.at(0).toString();
-        const QVariantList &signalData = propertyInfo.at(1).toList();
+        const QJsonArray &signalData = propertyInfo.at(1).toArray();
 
         if (signalData.isEmpty()) {
             // Property without NOTIFY signal
@@ -259,7 +259,7 @@ bool QMetaObjectPublisherPrivate::invokeMethod(QObject *const object, const int 
                   arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
 
     // and send the return value to the client
-    webChannel->respond(id, QJsonValue::fromVariant(wrapResult(returnValue)));
+    webChannel->respond(id, wrapResult(returnValue));
 
     return true;
 }
@@ -305,10 +305,10 @@ void QMetaObjectPublisherPrivate::objectDestroyed(const QObject *object)
     wrappedObjects.remove(object);
 }
 
-QVariant QMetaObjectPublisherPrivate::wrapResult(const QVariant &result)
+QJsonValue QMetaObjectPublisherPrivate::wrapResult(const QVariant &result)
 {
     if (QObject *object = result.value<QObject *>()) {
-        QVariantMap &objectInfo = wrappedObjects[object];
+        QJsonObject &objectInfo = wrappedObjects[object];
         if (!objectInfo.isEmpty()) {
             // already registered, use cached information
             Q_ASSERT(registeredObjectIds.contains(object));
@@ -332,7 +332,7 @@ QVariant QMetaObjectPublisherPrivate::wrapResult(const QVariant &result)
     }
 
     // no need to wrap this
-    return result;
+    return QJsonValue::fromVariant(result);
 }
 
 void QMetaObjectPublisherPrivate::deleteWrappedObject(QObject *object) const
@@ -355,14 +355,14 @@ QMetaObjectPublisher::~QMetaObjectPublisher()
 
 }
 
-QVariantMap QMetaObjectPublisher::classInfoForObjects(const QVariantMap &objectMap) const
+QJsonObject QMetaObjectPublisher::classInfoForObjects(const QVariantMap &objectMap) const
 {
-    QVariantMap ret;
+    QJsonObject ret;
     QMap<QString, QVariant>::const_iterator it = objectMap.constBegin();
     while (it != objectMap.constEnd()) {
         QObject *object = it.value().value<QObject *>();
         if (object) {
-            const QVariantMap &info = classInfoForObject(object);
+            const QJsonObject &info = classInfoForObject(object);
             if (!info.isEmpty()) {
                 ret[it.key()] = info;
             }
@@ -372,25 +372,29 @@ QVariantMap QMetaObjectPublisher::classInfoForObjects(const QVariantMap &objectM
     return ret;
 }
 
-QVariantMap QMetaObjectPublisher::classInfoForObject(QObject *object) const
+QJsonObject QMetaObjectPublisher::classInfoForObject(QObject *object) const
 {
-    QVariantMap data;
+    QJsonObject data;
     if (!object) {
         qWarning("null object given to MetaObjectPublisher - bad API usage?");
         return data;
     }
-    QVariantList qtSignals, qtMethods;
-    QVariantList qtProperties;
-    QVariantMap qtEnums;
+
+    QJsonArray qtSignals;
+    QJsonArray qtMethods;
+    QJsonArray qtProperties;
+    QJsonObject qtEnums;
+
     const QMetaObject *metaObject = object->metaObject();
     QSet<int> notifySignals;
     QSet<QString> identifiers;
     for (int i = 0; i < metaObject->propertyCount(); ++i) {
         const QMetaProperty &prop = metaObject->property(i);
-        QVariantList propertyInfo;
+        QJsonArray propertyInfo;
         const QString &propertyName = QString::fromLatin1(prop.name());
         propertyInfo.append(propertyName);
         identifiers << propertyName;
+        QJsonArray signalInfo;
         if (prop.hasNotifySignal()) {
             notifySignals << prop.notifySignalIndex();
             const int numParams = prop.notifySignal().parameterCount();
@@ -404,20 +408,19 @@ QVariantMap QMetaObjectPublisher::classInfoForObject(QObject *object) const
             if (notifySignal.length() == changedSuffix.length() + propertyName.length() &&
                 notifySignal.endsWith(changedSuffix) && notifySignal.startsWith(prop.name()))
             {
-                propertyInfo.append(QVariant::fromValue(QVariantList() << 1 << prop.notifySignalIndex()));
+                signalInfo.append(1);
             } else {
-                propertyInfo.append(QVariant::fromValue(QVariantList() << QString::fromLatin1(notifySignal) << prop.notifySignalIndex()));
+                signalInfo.append(QString::fromLatin1(notifySignal));
             }
-        } else {
-            if (!prop.isConstant()) {
-                qWarning("Property '%s'' of object '%s' has no notify signal and is not constant, "
-                         "value updates in HTML will be broken!",
-                         prop.name(), object->metaObject()->className());
-            }
-            propertyInfo.append(QVariant::fromValue(QVariantList()));
+            signalInfo.append(prop.notifySignalIndex());
+        } else if (!prop.isConstant()) {
+            qWarning("Property '%s'' of object '%s' has no notify signal and is not constant, "
+                     "value updates in HTML will be broken!",
+                     prop.name(), object->metaObject()->className());
         }
-        propertyInfo.append(prop.read(object));
-        qtProperties.append(QVariant::fromValue(propertyInfo));
+        propertyInfo.append(signalInfo);
+        propertyInfo.append(QJsonValue::fromVariant(prop.read(object)));
+        qtProperties.append(propertyInfo);
     }
     for (int i = 0; i < metaObject->methodCount(); ++i) {
         if (notifySignals.contains(i)) {
@@ -434,7 +437,9 @@ QVariantMap QMetaObjectPublisher::classInfoForObject(QObject *object) const
         }
         identifiers << name;
         // send data as array to client with format: [name, index]
-        const QVariant data = QVariant::fromValue(QVariantList() << name << i);
+        QJsonArray data;
+        data.append(name);
+        data.append(i);
         if (method.methodType() == QMetaMethod::Signal) {
             qtSignals.append(data);
         } else if (method.access() == QMetaMethod::Public) {
@@ -443,7 +448,7 @@ QVariantMap QMetaObjectPublisher::classInfoForObject(QObject *object) const
     }
     for (int i = 0; i < metaObject->enumeratorCount(); ++i) {
         QMetaEnum enumerator = metaObject->enumerator(i);
-        QVariantMap values;
+        QJsonObject values;
         for (int k = 0; k < enumerator.keyCount(); ++k) {
             values[QString::fromLatin1(enumerator.key(k))] = enumerator.value(k);
         }
@@ -451,7 +456,7 @@ QVariantMap QMetaObjectPublisher::classInfoForObject(QObject *object) const
     }
     data[KEY_SIGNALS] = qtSignals;
     data[KEY_METHODS] = qtMethods;
-    data[KEY_PROPERTIES] = QVariant::fromValue(qtProperties);
+    data[KEY_PROPERTIES] = qtProperties;
     data[KEY_ENUMS] = qtEnums;
     return data;
 }

@@ -45,6 +45,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QJsonObject>
 
 #include "qwebchannelglobal.h"
 
@@ -62,8 +63,8 @@ public:
     explicit QMetaObjectPublisher(QObject *parent = 0);
     virtual ~QMetaObjectPublisher();
 
-    Q_INVOKABLE QVariantMap classInfoForObjects(const QVariantMap &objects) const;
-    Q_INVOKABLE QVariantMap classInfoForObject(QObject *object) const;
+    Q_INVOKABLE QJsonObject classInfoForObjects(const QVariantMap &objects) const;
+    Q_INVOKABLE QJsonObject classInfoForObject(QObject *object) const;
 
     /**
      * Register a map of string ID to QObject* objects.
