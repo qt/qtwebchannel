@@ -54,6 +54,7 @@
 #include <QDebug>
 #include <QPointer>
 #include <QEvent>
+#include <QJsonDocument>
 
 namespace {
 const QString KEY_SIGNALS = QStringLiteral("signals");
@@ -645,6 +646,17 @@ bool QMetaObjectPublisher::handleRequest(const QJsonObject &message)
         }
     }
     return false;
+}
+
+void QMetaObjectPublisher::handleRawMessage(const QString &message)
+{
+    QJsonParseError error;
+    const QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &error);
+    if (error.error) {
+        qWarning() << "Could not parse raw input message as JSON: " << error.errorString() << "Message was: " << message;
+    } else if (doc.isObject() && !handleRequest(doc.object())) {
+        qWarning() << "Could not handle raw message as meta object request: " << message;
+    }
 }
 
 QWebChannel *QMetaObjectPublisher::webChannel() const
