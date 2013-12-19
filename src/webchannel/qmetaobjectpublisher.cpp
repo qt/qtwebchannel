@@ -83,8 +83,6 @@ QString objectId(const QObject *object)
     return QString::number(quintptr(object), 16);
 }
 
-const int s_destroyedSignalIndex = QObject::staticMetaObject.indexOfMethod("destroyed(QObject*)");
-
 /// TODO: what is the proper value here?
 const int PROPERTY_UPDATE_INTERVAL = 50;
 }
