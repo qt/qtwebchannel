@@ -245,12 +245,16 @@ int SignalHandler<Receiver>::qt_metacall(QMetaObject::Call call, int methodId, v
 
     if (call == QMetaObject::InvokeMetaMethod) {
         if (methodId == 0) {
-            Q_ASSERT(sender());
-            Q_ASSERT(senderSignalIndex() != -1);
-            dispatch(sender(), senderSignalIndex(), args);
-            static const int destroyedIndex = metaObject()->indexOfSignal("destroyed(QObject*)");
-            if (senderSignalIndex() == destroyedIndex) {
-                ConnectionHash::iterator it = m_connectionsCounter.find(sender());
+            const QObject *object = sender();
+            Q_ASSERT(object);
+            const int signalIndex = senderSignalIndex();
+            Q_ASSERT(signalIndex != -1);
+
+            dispatch(object, signalIndex, args);
+
+            if (signalIndex == s_destroyedSignalIndex) {
+                // disconnect on QObject::destroyed
+                ConnectionHash::iterator it = m_connectionsCounter.find(object);
                 Q_ASSERT(it != m_connectionsCounter.end());
                 foreach (const ConnectionPair &connection, *it) {
                     QObject::disconnect(connection.first);
