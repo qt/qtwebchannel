@@ -80,7 +80,7 @@ struct Q_WEBCHANNEL_EXPORT QMetaObjectPublisherPrivate
      * When receiving a notify signal, it will store the information in pendingPropertyUpdates which
      * gets send via a Qt.propertyUpdate message to the server when the grouping timer timeouts.
      */
-    void initializePropertyUpdates(const QObject *const object, const QVariantMap &objectInfo);
+    void initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo);
 
     /**
      * Send the clients the new property values since the last time this function was invoked.
@@ -121,7 +121,7 @@ struct Q_WEBCHANNEL_EXPORT QMetaObjectPublisherPrivate
      *
      * TODO: support wrapping of initially-registered objects
      */
-    QVariant wrapResult(const QVariant &result);
+    QJsonValue wrapResult(const QVariant &result);
 
     /**
      * Invoke delete later on @p object.
@@ -165,7 +165,7 @@ struct Q_WEBCHANNEL_EXPORT QMetaObjectPublisherPrivate
     PendingPropertyUpdates pendingPropertyUpdates;
 
     // Maps wrapped object to class info
-    QHash<const QObject *, QVariantMap> wrappedObjects;
+    QHash<const QObject *, QJsonObject> wrappedObjects;
 
     // Aggregate property updates since we get multiple Qt.idle message when we have multiple
     // clients. They all share the same QWebProcess though so we must take special care to

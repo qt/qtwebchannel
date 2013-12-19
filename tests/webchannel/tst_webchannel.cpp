@@ -95,54 +95,120 @@ void TestWebChannel::testInfoForObject()
     TestObject obj;
     obj.setObjectName("myTestObject");
     QMetaObjectPublisher publisher;
-    const QVariantMap info = publisher.classInfoForObject(&obj);
+    const QJsonObject info = publisher.classInfoForObject(&obj);
 
-    QCOMPARE(info.keys(), QList<QString>() << "enums" << "methods" << "properties" << "signals");
+    QCOMPARE(info.keys(), QStringList() << "enums" << "methods" << "properties" << "signals");
 
     { // enums
-        QVariantMap expected;
-        QVariantMap fooEnum;
+        QJsonObject fooEnum;
         fooEnum["Asdf"] = TestObject::Asdf;
         fooEnum["Bar"] = TestObject::Bar;
+        QJsonObject expected;
         expected["Foo"] = fooEnum;
-        QCOMPARE(info["enums"].toMap(), expected);
+        QCOMPARE(info["enums"].toObject(), expected);
     }
 
     { // methods & slots
-        QVariantList expected;
-        expected << QVariant::fromValue(QVariantList() << "deleteLater" << obj.metaObject()->indexOfMethod("deleteLater()"));
-        expected << QVariant::fromValue(QVariantList() << "slot1" << obj.metaObject()->indexOfMethod("slot1()"));
-        expected << QVariant::fromValue(QVariantList() << "slot2" << obj.metaObject()->indexOfMethod("slot2(QString)"));
-        expected << QVariant::fromValue(QVariantList() << "method1" << obj.metaObject()->indexOfMethod("method1()"));
-        QCOMPARE(info["methods"].toList(), expected);
+        QJsonArray expected;
+        {
+            QJsonArray method;
+            method.append(QStringLiteral("deleteLater"));
+            method.append(obj.metaObject()->indexOfMethod("deleteLater()"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
+            method.append(QStringLiteral("slot1"));
+            method.append(obj.metaObject()->indexOfMethod("slot1()"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
+            method.append(QStringLiteral("slot2"));
+            method.append(obj.metaObject()->indexOfMethod("slot2(QString)"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
+            method.append(QStringLiteral("method1"));
+            method.append(obj.metaObject()->indexOfMethod("method1()"));
+            expected.append(method);
+        }
+        QCOMPARE(info["methods"].toArray(), expected);
     }
 
     { // signals
-        QVariantList expected;
-        expected << QVariant::fromValue(QVariantList() << "destroyed" << obj.metaObject()->indexOfMethod("destroyed(QObject*)"));
-        expected << QVariant::fromValue(QVariantList() << "sig1" << obj.metaObject()->indexOfMethod("sig1()"));
-        expected << QVariant::fromValue(QVariantList() << "sig2" << obj.metaObject()->indexOfMethod("sig2(QString)"));
-        QCOMPARE(info["signals"].toList(), expected);
+        QJsonArray expected;
+        {
+            QJsonArray signal;
+            signal.append(QStringLiteral("destroyed"));
+            signal.append(obj.metaObject()->indexOfMethod("destroyed(QObject*)"));
+            expected.append(signal);
+        }
+        {
+            QJsonArray signal;
+            signal.append(QStringLiteral("sig1"));
+            signal.append(obj.metaObject()->indexOfMethod("sig1()"));
+            expected.append(signal);
+        }
+        {
+            QJsonArray signal;
+            signal.append(QStringLiteral("sig2"));
+            signal.append(obj.metaObject()->indexOfMethod("sig2(QString)"));
+            expected.append(signal);
+        }
+        QCOMPARE(info["signals"].toArray(), expected);
     }
 
     { // properties
-        QVariantList expected;
-        expected << QVariant::fromValue(QVariantList() << "objectName"
-                                                       << QVariant::fromValue(QVariantList()
-                                                            << 1 << obj.metaObject()->indexOfMethod("objectNameChanged(QString)"))
-                                                       << obj.objectName());
-        expected << QVariant::fromValue(QVariantList() << "foo"
-                                                       << QVariant::fromValue(QVariantList())
-                                                       << obj.foo());
-        expected << QVariant::fromValue(QVariantList() << "asdf"
-                                                       << QVariant::fromValue(QVariantList()
-                                                            << 1 << obj.metaObject()->indexOfMethod("asdfChanged()"))
-                                                       << obj.asdf());
-        expected << QVariant::fromValue(QVariantList() << "bar"
-                                                       << QVariant::fromValue(QVariantList()
-                                                            << "theBarHasChanged" << obj.metaObject()->indexOfMethod("theBarHasChanged()"))
-                                                       << obj.bar());
-        QCOMPARE(info["properties"].toList(), expected);
+        QJsonArray expected;
+        {
+            QJsonArray property;
+            property.append(QStringLiteral("objectName"));
+            {
+                QJsonArray signal;
+                signal.append(1);
+                signal.append(obj.metaObject()->indexOfMethod("objectNameChanged(QString)"));
+                property.append(signal);
+            }
+            property.append(obj.objectName());
+            expected.append(property);
+        }
+        {
+            QJsonArray property;
+            property.append(QStringLiteral("foo"));
+            {
+                QJsonArray signal;
+                property.append(signal);
+            }
+            property.append(obj.foo());
+            expected.append(property);
+        }
+        {
+            QJsonArray property;
+            property.append(QStringLiteral("asdf"));
+            {
+                QJsonArray signal;
+                signal.append(1);
+                signal.append(obj.metaObject()->indexOfMethod("asdfChanged()"));
+                property.append(signal);
+            }
+            property.append(obj.asdf());
+            expected.append(property);
+        }
+        {
+            QJsonArray property;
+            property.append(QStringLiteral("bar"));
+            {
+                QJsonArray signal;
+                signal.append(QStringLiteral("theBarHasChanged"));
+                signal.append(obj.metaObject()->indexOfMethod("theBarHasChanged()"));
+                property.append(signal);
+            }
+            property.append(obj.bar());
+            expected.append(property);
+        }
+        QCOMPARE(info["properties"].toArray(), expected);
     }
 }
 
