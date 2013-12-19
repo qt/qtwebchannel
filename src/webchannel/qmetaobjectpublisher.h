@@ -103,6 +103,15 @@ signals:
     void webChannelChanged(QWebChannel *channel);
     void blockUpdatesChanged(bool block);
 
+public slots:
+    /**
+     * Helper slot which you can connect directly to WebChannel's rawMessageReceived signal.
+     *
+     * This slot then tries to parse the message as JSON and if it succeeds, calls handleRequest
+     * with the obtained JSON object.
+     */
+    void handleRawMessage(const QString &message);
+
 protected:
     void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
 
