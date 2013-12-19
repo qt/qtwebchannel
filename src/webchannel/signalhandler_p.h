@@ -158,8 +158,8 @@ void SignalHandler<Receiver>::connectTo(const QObject *object, const int signalI
         return;
     } // otherwise not yet connected, do so now
 
-    const int memberOffset = QObject::staticMetaObject.methodCount();
-    QMetaObject::Connection connection = QMetaObject::connect(object, signal.methodIndex(), this, memberOffset, Qt::DirectConnection, 0);
+    static const int memberOffset = QObject::staticMetaObject.methodCount();
+    QMetaObject::Connection connection = QMetaObject::connect(object, signal.methodIndex(), this, memberOffset + signalIndex, Qt::DirectConnection, 0);
     if (!connection) {
         qWarning() << "SignalHandler: QMetaObject::connect returned false. Unable to connect to" << object << signal.name() << signal.methodSignature();
         return;
@@ -244,25 +244,24 @@ int SignalHandler<Receiver>::qt_metacall(QMetaObject::Call call, int methodId, v
         return methodId;
 
     if (call == QMetaObject::InvokeMetaMethod) {
-        if (methodId == 0) {
-            const QObject *object = sender();
-            Q_ASSERT(object);
-            const int signalIndex = senderSignalIndex();
-            Q_ASSERT(signalIndex != -1);
+        const QObject *object = sender();
+        Q_ASSERT(object);
+        Q_ASSERT(senderSignalIndex() == methodId);
+        Q_ASSERT(m_connectionsCounter.contains(object));
+        Q_ASSERT(m_connectionsCounter.value(object).contains(methodId));
 
-            dispatch(object, signalIndex, args);
+        dispatch(object, methodId, args);
 
-            if (signalIndex == s_destroyedSignalIndex) {
-                // disconnect on QObject::destroyed
-                ConnectionHash::iterator it = m_connectionsCounter.find(object);
-                Q_ASSERT(it != m_connectionsCounter.end());
-                foreach (const ConnectionPair &connection, *it) {
-                    QObject::disconnect(connection.first);
-                }
-                m_connectionsCounter.erase(it);
+        if (methodId == s_destroyedSignalIndex) {
+            // disconnect on QObject::destroyed
+            ConnectionHash::iterator it = m_connectionsCounter.find(object);
+            Q_ASSERT(it != m_connectionsCounter.end());
+            foreach (const ConnectionPair &connection, *it) {
+                QObject::disconnect(connection.first);
             }
+            m_connectionsCounter.erase(it);
         }
-        --methodId;
+        return -1;
     }
     return methodId;
 }
