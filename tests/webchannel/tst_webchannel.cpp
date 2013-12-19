@@ -44,6 +44,7 @@
 
 #include <qwebchannel.h>
 #include <qmetaobjectpublisher.h>
+#include <qmetaobjectpublisher_p.h>
 
 #include <QtTest>
 
@@ -142,6 +143,101 @@ void TestWebChannel::testInfoForObject()
                                                             << "theBarHasChanged" << obj.metaObject()->indexOfMethod("theBarHasChanged()"))
                                                        << obj.bar());
         QCOMPARE(info["properties"].toList(), expected);
+    }
+}
+
+static QVariantMap createObjects(QObject *parent)
+{
+    const int num = 100;
+    QVariantMap objects;
+    for (int i = 0; i < num; ++i) {
+        objects[QStringLiteral("obj%1").arg(i)] = QVariant::fromValue(new BenchObject(parent));
+    }
+    return objects;
+}
+
+void TestWebChannel::benchClassInfo()
+{
+    QWebChannel channel;
+    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
+    QVERIFY(initSpy.wait());
+
+    QMetaObjectPublisher publisher;
+    publisher.setWebChannel(&channel);
+
+    QObject parent;
+    const QVariantMap objects = createObjects(&parent);
+
+    QBENCHMARK {
+        publisher.classInfoForObjects(objects);
+    }
+}
+
+void TestWebChannel::benchInitializeClients()
+{
+    QWebChannel channel;
+    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
+    QVERIFY(initSpy.wait());
+
+    QMetaObjectPublisher publisher;
+    publisher.setWebChannel(&channel);
+
+    QObject parent;
+    const QVariantMap objects = createObjects(&parent);
+    publisher.registerObjects(objects);
+
+    QBENCHMARK {
+        publisher.d->initializeClients();
+
+        publisher.d->propertyUpdatesInitialized = false;
+        publisher.d->signalToPropertyMap.clear();
+        publisher.d->signalHandler.clear();
+    }
+}
+
+void TestWebChannel::benchPropertyUpdates()
+{
+    QWebChannel channel;
+    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
+    QVERIFY(initSpy.wait());
+
+    QMetaObjectPublisher publisher;
+    publisher.setWebChannel(&channel);
+
+    QObject parent;
+    const QVariantMap objects = createObjects(&parent);
+    QVector<BenchObject*> objectList;
+    foreach (const QVariant &var, objects) {
+        objectList << var.value<BenchObject*>();
+    }
+
+    publisher.registerObjects(objects);
+    publisher.d->initializeClients();
+
+    QBENCHMARK {
+        foreach (BenchObject *obj, objectList) {
+            obj->change();
+        }
+
+        publisher.d->clientIsIdle = true;
+        publisher.d->sendPendingPropertyUpdates();
+    }
+}
+
+void TestWebChannel::benchRegisterObjects()
+{
+    QWebChannel channel;
+    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
+    QVERIFY(initSpy.wait());
+
+    QMetaObjectPublisher publisher;
+    publisher.setWebChannel(&channel);
+
+    QObject parent;
+    const QVariantMap objects = createObjects(&parent);
+
+    QBENCHMARK {
+        publisher.registerObjects(objects);
     }
 }
 

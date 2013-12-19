@@ -41,20 +41,14 @@
 ****************************************************************************/
 
 #include "qmetaobjectpublisher.h"
+#include "qmetaobjectpublisher_p.h"
 #include "qwebchannel.h"
 
-#include "variantargument_p.h"
-#include "signalhandler_p.h"
-
-#include <QStringList>
-#include <QMetaObject>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QBasicTimer>
-#include <QDebug>
-#include <QPointer>
 #include <QEvent>
 #include <QJsonDocument>
+#include <QDebug>
+#include <QJsonObject>
+#include <QJsonArray>
 
 namespace {
 const QString KEY_SIGNALS = QStringLiteral("signals");
@@ -93,130 +87,15 @@ QString objectId(const QObject *object)
 const int PROPERTY_UPDATE_INTERVAL = 50;
 }
 
-struct QMetaObjectPublisherPrivate
+QMetaObjectPublisherPrivate::QMetaObjectPublisherPrivate(QMetaObjectPublisher *q)
+    : q(q)
+    , signalHandler(this)
+    , clientIsIdle(false)
+    , blockUpdates(false)
+    , pendingInit(false)
+    , propertyUpdatesInitialized(false)
 {
-    QMetaObjectPublisherPrivate(QMetaObjectPublisher *q)
-        : q(q)
-        , signalHandler(this)
-        , clientIsIdle(false)
-        , blockUpdates(false)
-        , pendingInit(false)
-        , propertyUpdatesInitialized(false)
-    {
-    }
-
-    /**
-     * Set the client to idle or busy, based on the value of @p isIdle.
-     *
-     * When the value changed, start/stop the property update timer accordingly.
-     */
-    void setClientIsIdle(bool isIdle);
-
-    /**
-     * Initialize clients by sending them the class information of the registered objects.
-     *
-     * Furthermore, if that was not done already, connect to their property notify signals.
-     */
-    void initializeClients();
-
-    /**
-     * Go through all properties of the given object and connect to their notify signal.
-     *
-     * When receiving a notify signal, it will store the information in pendingPropertyUpdates which
-     * gets send via a Qt.propertyUpdate message to the server when the grouping timer timeouts.
-     */
-    void initializePropertyUpdates(const QObject *const object, const QVariantMap &objectInfo);
-
-    /**
-     * Send the clients the new property values since the last time this function was invoked.
-     *
-     * This is a grouped batch of all properties for which their notify signal was emitted.
-     * The list of signals as well as the arguments they contained, are also transmitted to
-     * the remote clients.
-     *
-     * @sa timer, initializePropertyUpdates
-     */
-    void sendPendingPropertyUpdates();
-
-    /**
-     * Invoke the method of index @p methodIndex on @p object with the arguments @p args.
-     *
-     * The return value of the method invocation is then transmitted to the calling client
-     * via a webchannel response to the message identified by @p id.
-     */
-    bool invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args, const QJsonValue &id);
-
-    /**
-     * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
-     */
-    void signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments);
-
-    /**
-     * Callback for registered or wrapped objects which erases all data related to @p object.
-     *
-     * @sa signalEmitted
-     */
-    void objectDestroyed(const QObject *object);
-
-    /**
-     * Given a QVariant containing a QObject*, wrap the object and register for property updates
-     * return the objects class information.
-     *
-     * All other input types are returned as-is.
-     *
-     * TODO: support wrapping of initially-registered objects
-     */
-    QVariant wrapResult(const QVariant &result);
-
-    /**
-     * Invoke delete later on @p object.
-     */
-    void deleteWrappedObject(QObject *object) const;
-
-    QMetaObjectPublisher *q;
-    QPointer<QWebChannel> webChannel;
-    SignalHandler<QMetaObjectPublisherPrivate> signalHandler;
-
-    // true when the client is idle, false otherwise
-    bool clientIsIdle;
-
-    // true when no property updates should be sent, false otherwise
-    bool blockUpdates;
-
-    // true when at least one client needs to be initialized,
-    // i.e. when a Qt.init came in which was not handled yet.
-    bool pendingInit;
-
-    // true when at least one client was initialized and thus
-    // the property updates have been initialized and the
-    // object info map set.
-    bool propertyUpdatesInitialized;
-
-    // Map of registered objects indexed by their id.
-    QHash<QString, QObject *> registeredObjects;
-
-    // Map the registered objects to their id.
-    QHash<const QObject *, QString> registeredObjectIds;
-
-    // Map of object names to maps of signal indices to a set of all their properties.
-    // The last value is a set as a signal can be the notify signal of multiple properties.
-    typedef QHash<int, QSet<QString> > SignalToPropertyNameMap;
-    QHash<const QObject *, SignalToPropertyNameMap> signalToPropertyMap;
-
-    // Objects that changed their properties and are waiting for idle client.
-    // map of object name to map of signal index to arguments
-    typedef QHash<int, QVariantList> SignalToArgumentsMap;
-    typedef QHash<const QObject *, SignalToArgumentsMap> PendingPropertyUpdates;
-    PendingPropertyUpdates pendingPropertyUpdates;
-
-    // Maps wrapped object to class info
-    QHash<const QObject *, QVariantMap> wrappedObjects;
-
-    // Aggregate property updates since we get multiple Qt.idle message when we have multiple
-    // clients. They all share the same QWebProcess though so we must take special care to
-    // prevent message flooding.
-    QBasicTimer timer;
-};
+}
 
 void QMetaObjectPublisherPrivate::setClientIsIdle(bool isIdle)
 {
@@ -233,6 +112,10 @@ void QMetaObjectPublisherPrivate::setClientIsIdle(bool isIdle)
 
 void QMetaObjectPublisherPrivate::initializeClients()
 {
+    if (!webChannel) {
+        return;
+    }
+
     QJsonObject objectInfos;
     {
         const QHash<QString, QObject *>::const_iterator end = registeredObjects.constEnd();
@@ -696,33 +579,6 @@ void QMetaObjectPublisher::setBlockUpdates(bool block)
     }
 
     emit blockUpdatesChanged(block);
-}
-
-void QMetaObjectPublisher::bench_ensureUpdatesInitialized()
-{
-    if (!d->propertyUpdatesInitialized) {
-        d->initializeClients();
-    }
-}
-
-void QMetaObjectPublisher::bench_sendPendingPropertyUpdates()
-{
-    d->clientIsIdle = true;
-    d->sendPendingPropertyUpdates();
-}
-
-void QMetaObjectPublisher::bench_initializeClients()
-{
-    d->propertyUpdatesInitialized = false;
-    d->signalToPropertyMap.clear();
-    d->signalHandler.clear();
-    d->initializeClients();
-}
-
-void QMetaObjectPublisher::bench_registerObjects(const QVariantMap &objects)
-{
-    d->propertyUpdatesInitialized = false;
-    registerObjects(objects);
 }
 
 bool QMetaObjectPublisher::test_clientIsIdle() const
