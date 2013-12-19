@@ -116,10 +116,10 @@ int main(int argc, char** argv)
     QObject::connect(&channel, SIGNAL(rawMessageReceived(QString)),
                      &publisher, SLOT(handleRawMessage(QString)));
 
-    Dialog* dialog = new Dialog(&channel);
+    Dialog dialog(&channel);
 
     QVariantMap objects;
-    objects[QStringLiteral("dialog")] = QVariant::fromValue(dialog);
+    objects[QStringLiteral("dialog")] = QVariant::fromValue(&dialog);
     publisher.registerObjects(objects);
 
     return app.exec();
