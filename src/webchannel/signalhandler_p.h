@@ -49,6 +49,8 @@
 #include <QMetaMethod>
 #include <QDebug>
 
+static const int s_destroyedSignalIndex = QObject::staticMetaObject.indexOfMethod("destroyed(QObject*)");
+
 /**
  * The signal handler is similar to QSignalSpy, but geared towards the usecase of the web channel.
  *
@@ -60,11 +62,7 @@ template<class Receiver>
 class SignalHandler : public QObject
 {
 public:
-    SignalHandler(Receiver *receiver, QObject *parent = 0)
-        : QObject(parent)
-        , m_receiver(receiver)
-    {
-    }
+    SignalHandler(Receiver *receiver, QObject *parent = 0);
 
     /**
      * Connect to a signal of @p object identified by @p signalIndex.
@@ -102,6 +100,8 @@ private:
      */
     void dispatch(const QObject *object, const int signalIdx, void **argumentData);
 
+    void setupSignalArgumentTypes(const QMetaObject *metaObject, const QMetaMethod &signal);
+
     Receiver *m_receiver;
 
     // maps meta object -> signalIndex -> list of arguments
@@ -125,6 +125,16 @@ private:
     typedef QHash<const QObject*, SignalConnectionHash> ConnectionHash;
     ConnectionHash m_connectionsCounter;
 };
+
+template<class Receiver>
+SignalHandler<Receiver>::SignalHandler(Receiver *receiver, QObject *parent)
+    : QObject(parent)
+    , m_receiver(receiver)
+{
+    // we must know the arguments of a destroyed signal for the global static meta object of QObject
+    // otherwise, we might end up with missing m_signalArgumentTypes information in dispatch
+    setupSignalArgumentTypes(&QObject::staticMetaObject, QObject::staticMetaObject.method(s_destroyedSignalIndex));
+}
 
 /**
  * Find and return the signal of index @p signalIndex in the meta object of @p object and return it.
@@ -167,31 +177,37 @@ void SignalHandler<Receiver>::connectTo(const QObject *object, const int signalI
     connectionCounter.first = connection;
     connectionCounter.second = 1;
 
-    if (!m_signalArgumentTypes.value(metaObject).contains(signal.methodIndex())) {
-        // find the type ids of the signal parameters, see also QSignalSpy::initArgs
-        QVector<int> args;
-        args.reserve(signal.parameterCount());
-        for (int i = 0; i < signal.parameterCount(); ++i) {
-            int tp = signal.parameterType(i);
-            if (tp == QMetaType::UnknownType && object) {
-                void *argv[] = { &tp, &i };
-                QMetaObject::metacall(const_cast<QObject *>(object),
-                                    QMetaObject::RegisterMethodArgumentMetaType,
-                                    signal.methodIndex(), argv);
-                if (tp == -1) {
-                    tp = QMetaType::UnknownType;
-                }
-            }
-            if (tp == QMetaType::UnknownType) {
-                Q_ASSERT(tp != QMetaType::Void); // void parameter => metaobject is corrupt
-                qWarning("Don't know how to handle '%s', use qRegisterMetaType to register it.",
-                        signal.parameterNames().at(i).constData());
-            }
-            args << tp;
-        }
+    setupSignalArgumentTypes(metaObject, signal);
+}
 
-        m_signalArgumentTypes[metaObject][signal.methodIndex()] = args;
+template<class Receiver>
+void SignalHandler<Receiver>::setupSignalArgumentTypes(const QMetaObject *metaObject, const QMetaMethod &signal)
+{
+    if (m_signalArgumentTypes.value(metaObject).contains(signal.methodIndex())) {
+        return;
     }
+    // find the type ids of the signal parameters, see also QSignalSpy::initArgs
+    QVector<int> args;
+    args.reserve(signal.parameterCount());
+    for (int i = 0; i < signal.parameterCount(); ++i) {
+        int tp = signal.parameterType(i);
+        if (tp == QMetaType::UnknownType) {
+            void *argv[] = { &tp, &i };
+            metaObject->static_metacall(QMetaObject::RegisterMethodArgumentMetaType,
+                                        signal.methodIndex(), argv);
+            if (tp == -1) {
+                tp = QMetaType::UnknownType;
+            }
+        }
+        if (tp == QMetaType::UnknownType) {
+            Q_ASSERT(tp != QMetaType::Void); // void parameter => metaobject is corrupt
+            qWarning("Don't know how to handle '%s', use qRegisterMetaType to register it.",
+                    signal.parameterNames().at(i).constData());
+        }
+        args << tp;
+    }
+
+    m_signalArgumentTypes[metaObject][signal.methodIndex()] = args;
 }
 
 template<class Receiver>
