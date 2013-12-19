@@ -93,10 +93,6 @@ public:
     void setBlockUpdates(bool block);
 
     /// TODO: cleanup: rewrite tests in C++ and access PIMPL data from there
-    Q_INVOKABLE void bench_ensureUpdatesInitialized();
-    Q_INVOKABLE void bench_sendPendingPropertyUpdates();
-    Q_INVOKABLE void bench_registerObjects(const QVariantMap &objects);
-    Q_INVOKABLE void bench_initializeClients();
     Q_INVOKABLE bool test_clientIsIdle() const;
 
 signals:
@@ -118,6 +114,7 @@ protected:
 private:
     QScopedPointer<QMetaObjectPublisherPrivate> d;
     friend struct QMetaObjectPublisherPrivate;
+    friend class TestWebChannel;
 };
 
 #endif // QMETAOBJECTPUBLISHER_H

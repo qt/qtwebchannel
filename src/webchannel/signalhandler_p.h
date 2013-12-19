@@ -272,7 +272,9 @@ void SignalHandler<Receiver>::clear()
         }
     }
     m_connectionsCounter.clear();
+    const SignalArgumentHash keep = m_signalArgumentTypes.take(&QObject::staticMetaObject);
     m_signalArgumentTypes.clear();
+    m_signalArgumentTypes[&QObject::staticMetaObject] = keep;
 }
 
 #endif // SIGNALHANDLER_H

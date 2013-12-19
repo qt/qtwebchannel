@@ -100,41 +100,6 @@ WebChannelTest {
         publisher.registerObjects(objects);
     }
 
-    function benchmark_classInfo()
-    {
-        publisher.classInfoForObjects(objects);
-    }
-
-    function benchmark_initializeClients()
-    {
-        publisher.bench_initializeClients();
-    }
-
-    function benchmark_propertyUpdates()
-    {
-        // required to make the benchmark work standalone
-        publisher.bench_ensureUpdatesInitialized();
-
-        for (var o in objects) {
-            objects[o].p0++;
-            objects[o].p1++;
-            objects[o].p2++;
-            objects[o].p3++;
-            objects[o].p4++;
-            objects[o].p5++;
-            objects[o].p6++;
-            objects[o].p7++;
-            objects[o].p8++;
-            objects[o].p9++;
-        }
-        publisher.bench_sendPendingPropertyUpdates();
-    }
-
-    function benchmark_registerObjects()
-    {
-        publisher.bench_registerObjects(objects);
-    }
-
     function benchmark_init_baseline()
     {
         loadUrl("bench_init.html");
