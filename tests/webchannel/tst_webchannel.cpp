@@ -164,6 +164,7 @@ void TestWebChannel::testInfoForObject()
         QJsonArray expected;
         {
             QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("objectName"));
             property.append(QStringLiteral("objectName"));
             {
                 QJsonArray signal;
@@ -176,6 +177,7 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("foo"));
             property.append(QStringLiteral("foo"));
             {
                 QJsonArray signal;
@@ -186,6 +188,7 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("asdf"));
             property.append(QStringLiteral("asdf"));
             {
                 QJsonArray signal;
@@ -198,6 +201,7 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("bar"));
             property.append(QStringLiteral("bar"));
             {
                 QJsonArray signal;

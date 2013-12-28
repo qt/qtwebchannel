@@ -153,9 +153,9 @@ struct Q_WEBCHANNEL_EXPORT QMetaObjectPublisherPrivate
     // Map the registered objects to their id.
     QHash<const QObject *, QString> registeredObjectIds;
 
-    // Map of object names to maps of signal indices to a set of all their properties.
+    // Map of objects to maps of signal indices to a set of all their property indices.
     // The last value is a set as a signal can be the notify signal of multiple properties.
-    typedef QHash<int, QSet<QString> > SignalToPropertyNameMap;
+    typedef QHash<int, QSet<int> > SignalToPropertyNameMap;
     QHash<const QObject *, SignalToPropertyNameMap> signalToPropertyMap;
 
     // Objects that changed their properties and are waiting for idle client.
