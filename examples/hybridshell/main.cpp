@@ -41,11 +41,10 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    qmlRegisterType<Shell>("Qt.labs", 1, 0, "HybridShell");
+    qmlRegisterType<Shell>("QtWebChannel.Examples", 1, 0, "HybridShell");
 
     QQuickView viewer;
-    viewer.engine()->addImportPath(app.applicationDirPath() + QStringLiteral("/../../src/"));
-    viewer.setSource(QUrl::fromLocalFile(QStringLiteral(SOURCE_DIR) + QStringLiteral("/main.qml")));
+    viewer.setSource(QStringLiteral("qrc:/main.qml"));
     viewer.show();
 
     return app.exec();

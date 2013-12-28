@@ -42,6 +42,7 @@
 import QtQuick 2.0
 
 import QtWebChannel 1.0
+import QtWebChannel.Examples 1.0
 import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 
@@ -63,7 +64,7 @@ Rectangle {
         id: webChannel
 
         onRawMessageReceived: {
-            if (!publisher.handleRequest(rawMessage, webChannel)) {
+            if (!publisher.handleRawMessage(rawMessage)) {
                 console.log("unhandled request: ", rawMessage);
             }
         }
@@ -74,7 +75,7 @@ Rectangle {
                 "initialTestObject": testObject
             });
 
-            webView.url = "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
+            webView.url = "qrc:/index.html?webChannelBaseUrl=" + webChannel.baseUrl;
         }
     }
 

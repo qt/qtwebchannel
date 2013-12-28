@@ -42,6 +42,7 @@
 import QtQuick 2.0
 
 import QtWebChannel 1.0
+import QtWebChannel.Examples 1.0
 import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 
@@ -66,12 +67,12 @@ Rectangle {
 
         onInitialized: {
             shell.start()
-            webView.url = "index.html?webChannelBaseUrl=" + webChannel.baseUrl;
+            webView.url = "qrc:/index.html?webChannelBaseUrl=" + webChannel.baseUrl;
         }
     }
 
     width: 480
-    height: 800
+    height: 600
 
     WebView {
         id: webView
