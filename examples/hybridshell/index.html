@@ -37,7 +37,7 @@
             background-image: -webkit-linear-gradient(left,#eeeeee, #cccccc)
         }
         </style>
-        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
+        <script type="text/javascript" src="qrc:///qwebchannel/qwebchannel.js"></script>
         <script type="text/javascript">
         function out(line)
         {
@@ -69,7 +69,7 @@
                 window.navigator.webChannel = webChannel;
                 out("Ready");
                 webChannel.subscribe("stdout", out);
-            });
+            }, true);
         }
         </script>
     </head>
