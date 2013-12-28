@@ -138,29 +138,25 @@ WebChannelTest {
         myObj.myProperty = 1
         loadUrl("property.html");
         awaitInit();
-        var msg = awaitMessage();
+        var msg = awaitMessageSkipIdle();
         compare(msg.data.label, "init");
         compare(msg.data.value, 1);
         compare(myObj.myProperty, 1);
 
-        awaitIdle();
-
         // change property, should be propagated to HTML client and a message be send there
         myObj.myProperty = 2;
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.label, "changed");
         compare(msg.data.value, 2);
         compare(myObj.myProperty, 2);
 
-        awaitIdle();
-
         // now trigger a write from the client side
         webChannel.sendMessage("setProperty", 3);
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(myObj.myProperty, 3);
 
         // the above write is also propagated to the HTML client
-        msg = awaitMessage();
+        msg = awaitMessageSkipIdle();
         compare(msg.data.label, "changed");
         compare(msg.data.value, 3);
 
