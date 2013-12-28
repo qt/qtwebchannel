@@ -1,6 +1,6 @@
 <html>
     <head>
-        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
+        <script type="text/javascript" src="qrc:///qwebchannel/qwebchannel.js"></script>
         <script type="text/javascript">
             //BEGIN SETUP
             var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
@@ -8,7 +8,7 @@
                 channel.subscribe("myMessage", function(payload) {
                     channel.send("myMessagePong:" + payload);
                 });
-            });
+            }, true);
             //END SETUP
         </script>
     </head>

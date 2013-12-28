@@ -1,19 +1,16 @@
 <html>
     <head>
-        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
-        <script type="text/javascript" src="qrc:///qwebchannel/qobject.js"></script>
+        <script type="text/javascript" src="qrc:///qwebchannel/qwebchannel.js"></script>
         <script type="text/javascript">
             //BEGIN SETUP
             var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
             new QWebChannel(baseUrl, function(channel) {
-                setupQObjectWebChannel(channel, function() {
-                    myObj.mySignal.connect(function(arg) {
-                        channel.exec({label: "mySignalReceived", args: [arg]});
-                        myObj.mySignal.disconnect(this);
-                    });
-                    channel.subscribe("report", function() {
-                        channel.exec({label: "report"});
-                    });
+                myObj.mySignal.connect(function(arg) {
+                    channel.exec({label: "mySignalReceived", args: [arg]});
+                    myObj.mySignal.disconnect(this);
+                });
+                channel.subscribe("report", function() {
+                    channel.exec({label: "report"});
                 });
             });
             //END SETUP

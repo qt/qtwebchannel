@@ -1,26 +1,23 @@
 <html>
     <head>
-        <script type="text/javascript" src="qrc:///qwebchannel/webchannel.js"></script>
-        <script type="text/javascript" src="qrc:///qwebchannel/qobject.js"></script>
+        <script type="text/javascript" src="qrc:///qwebchannel/qwebchannel.js"></script>
         <script type="text/javascript">
             //BEGIN SETUP
             var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
             new QWebChannel(baseUrl, function(channel) {
-                setupQObjectWebChannel(channel, function() {
-                    myFactory.create("testObj", function(obj) {
-                        window[obj.objectName()] = obj;
-                        obj.mySignal.connect(function(arg1, arg2) {
-                            channel.exec({label: "signalReceived", args: [arg1, arg2]});
-                        });
-                        obj.myProperty = 42;
-                        obj.myMethod("foobar");
+                myFactory.create("testObj", function(obj) {
+                    window[obj.objectName()] = obj;
+                    obj.mySignal.connect(function(arg1, arg2) {
+                        channel.exec({label: "signalReceived", args: [arg1, arg2]});
                     });
-                    channel.subscribe("triggerDelete", function() {
-                        testObj.deleteLater();
-                    });
-                    channel.subscribe("report", function() {
-                        channel.exec({label:"report", obj: testObj})
-                    });
+                    obj.myProperty = 42;
+                    obj.myMethod("foobar");
+                });
+                channel.subscribe("triggerDelete", function() {
+                    testObj.deleteLater();
+                });
+                channel.subscribe("report", function() {
+                    channel.exec({label:"report", obj: testObj})
                 });
             });
             //END SETUP

@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/qwebchannel/">
-        <file>webchannel.js</file>
-        <file>qobject.js</file>
+        <file>qwebchannel.js</file>
     </qresource>
 </RCC>

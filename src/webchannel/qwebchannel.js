@@ -42,6 +42,157 @@
 
 "use strict";
 
+var QWebChannel = function(baseUrl, initCallback, rawChannel)
+{
+    var channel = this;
+    // support multiple channels listening to the same socket
+    // the responses to channel.exec must be distinguishable
+    // see: http://stackoverflow.com/a/2117523/35250
+    this.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
+    ///TODO: use ssl?
+    var socketUrl = "ws://" + baseUrl;
+    this.socket = new WebSocket(socketUrl, "QWebChannel");
+    this.send = function(data)
+    {
+        if (typeof(data) !== "string") {
+            data = JSON.stringify(data);
+        }
+        channel.socket.send(data);
+    };
+
+    this.socket.onopen = function()
+    {
+        if (rawChannel) {
+            initCallback(channel);
+        } else {
+            channel.initMetaObjectPublisher(initCallback);
+        }
+    };
+    this.socket.onclose = function()
+    {
+        console.error("web channel closed");
+    };
+    this.socket.onerror = function(error)
+    {
+        console.error("web channel error: " + error);
+    };
+    this.socket.onmessage = function(message)
+    {
+        var jsonData = JSON.parse(message.data);
+        if (jsonData.id === undefined) {
+            console.error("invalid message received:", message.data);
+            return;
+        }
+        if (jsonData.data === undefined) {
+            jsonData.data = {};
+        }
+        if (jsonData.response) {
+            if (jsonData.id[0] === channel.id) {
+                channel.execCallbacks[jsonData.id[1]](jsonData.data);
+                delete channel.execCallbacks[jsonData.id];
+            }
+        } else if (channel.subscriptions[jsonData.id]) {
+            channel.subscriptions[jsonData.id].forEach(function(callback) {
+                (callback)(jsonData.data); }
+            );
+        }
+    };
+
+    this.subscriptions = {};
+    this.subscribe = function(id, callback)
+    {
+        if (channel.subscriptions[id]) {
+            channel.subscriptions[id].push(callback);
+        } else {
+            channel.subscriptions[id] = [callback];
+        }
+    };
+
+    this.execCallbacks = {};
+    this.execId = 0;
+    this.exec = function(data, callback)
+    {
+        if (!callback) {
+            // if no callback is given, send directly
+            channel.send({data: data});
+            return;
+        }
+        if (channel.execId === Number.MAX_VALUE) {
+            // wrap
+            channel.execId = Number.MIN_VALUE;
+        }
+        var id = channel.execId++;
+        channel.execCallbacks[id] = callback;
+        channel.send({"id": [channel.id, id], "data": data});
+    };
+
+    this.objectMap = {};
+
+    this.initMetaObjectPublisher = function(doneCallback)
+    {
+        // prevent multiple initialization which might happen with multiple webchannel clients.
+        var initialized = false;
+
+        console.log(channel);
+        channel.subscribe(
+            "Qt.signal",
+            function(payload) {
+                var object = window[payload.object] || channel.objectMap[payload.object];
+                if (object) {
+                    object.signalEmitted(payload.signal, payload.args);
+                } else {
+                    console.warn("Unhandled signal: " + payload.object + "::" + payload.signal);
+                }
+            }
+        );
+
+        channel.subscribe(
+            "Qt.propertyUpdate",
+            function(payload) {
+                for (var i in payload) {
+                    var data = payload[i];
+                    var object = window[data.object] || channel.objectMap[data.object];
+                    if (object) {
+                        object.propertyUpdate(data.signals, data.properties);
+                    } else {
+                        console.warn("Unhandled property update: " + data.object + "::" + data.signal);
+                    }
+                }
+                setTimeout(function() { channel.exec({type: "Qt.idle"}); }, 0);
+            }
+        );
+
+        channel.subscribe(
+            "Qt.init",
+            function(payload) {
+                if (initialized) {
+                    return;
+                }
+                initialized = true;
+                for (var objectName in payload) {
+                    var data = payload[objectName];
+                    var object = new QObject(objectName, data, channel);
+                    window[objectName] = object;
+                }
+                if (doneCallback) {
+                    doneCallback(channel);
+                }
+                setTimeout(function() { channel.exec({type: "Qt.idle"}); }, 0);
+            }
+        );
+
+        channel.debug = function(message)
+        {
+            channel.send({"data" : {"type" : "Qt.Debug", "message" : message}});
+        };
+
+        channel.exec({type:"Qt.init"});
+    }
+};
+
 function QObject(name, data, webChannel)
 {
     this.__id__ = name;
@@ -244,63 +395,3 @@ function QObject(name, data, webChannel)
         object[name] = data.enums[name];
     }
 }
-
-window.setupQObjectWebChannel = function(webChannel, doneCallback)
-{
-    // prevent multiple initialization which might happen with multiple webchannel clients.
-    var initialized = false;
-
-    webChannel.subscribe(
-        "Qt.signal",
-        function(payload) {
-            var object = window[payload.object] || webChannel.objectMap[payload.object];
-            if (object) {
-                object.signalEmitted(payload.signal, payload.args);
-            } else {
-                console.warn("Unhandled signal: " + payload.object + "::" + payload.signal);
-            }
-        }
-    );
-
-    webChannel.subscribe(
-        "Qt.propertyUpdate",
-        function(payload) {
-            for (var i in payload) {
-                var data = payload[i];
-                var object = window[data.object] || webChannel.objectMap[data.object];
-                if (object) {
-                    object.propertyUpdate(data.signals, data.properties);
-                } else {
-                    console.warn("Unhandled property update: " + data.object + "::" + data.signal);
-                }
-            }
-            setTimeout(function() { webChannel.exec({type: "Qt.idle"}); }, 0);
-        }
-    );
-
-    webChannel.subscribe(
-        "Qt.init",
-        function(payload) {
-            if (initialized) {
-                return;
-            }
-            initialized = true;
-            for (var objectName in payload) {
-                var data = payload[objectName];
-                var object = new QObject(objectName, data, webChannel);
-                window[objectName] = object;
-            }
-            if (doneCallback) {
-                doneCallback();
-            }
-            setTimeout(function() { webChannel.exec({type: "Qt.idle"}); }, 0);
-        }
-    );
-
-    webChannel.exec({type:"Qt.init"});
-
-    webChannel.debug = function(message)
-    {
-        webChannel.send({"data" : {"type" : "Qt.Debug", "message" : message}});
-    };
-};

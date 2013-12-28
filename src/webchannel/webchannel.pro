@@ -8,8 +8,7 @@ RESOURCES += \
     resources.qrc
 
 OTHER_FILES = \
-    webchannel.js \
-    qobject.js
+    qwebchannel.js
 
 PUBLIC_HEADERS += \
     qwebchannel.h \
