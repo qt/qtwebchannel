@@ -51,14 +51,40 @@
 #include <QBasicTimer>
 #include <QPointer>
 
-class QMetaObjectPublisher;
 class QWebChannel;
 
 #include "qwebchannelglobal.h"
 
-struct Q_WEBCHANNEL_EXPORT QMetaObjectPublisherPrivate
+class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
-    QMetaObjectPublisherPrivate(QMetaObjectPublisher *q);
+    Q_OBJECT
+
+public:
+    QMetaObjectPublisher(QWebChannel *webChannel);
+    virtual ~QMetaObjectPublisher();
+
+    /**
+     * Register @p object nuder the given @p id.
+     *
+     * The properties, signals and public methods of the QObject are
+     * published to the remote client, where an object with the given identifier
+     * is constructed.
+     *
+     * TODO: This must be called, before clients are initialized.
+     */
+    void registerObject(const QString &id, QObject *object);
+
+    /**
+     * Handle the given WebChannel client request and potentially give a response.
+     *
+     * @return true if the request was handled, false otherwise.
+     */
+    bool handleRequest(const QJsonObject &message);
+
+    /**
+     * Serialize the QMetaObject of @p object and return it in JSON form.
+     */
+    QJsonObject classInfoForObject(const QObject *object) const;
 
     /**
      * Set the client to idle or busy, based on the value of @p isIdle.
@@ -128,9 +154,33 @@ struct Q_WEBCHANNEL_EXPORT QMetaObjectPublisherPrivate
      */
     void deleteWrappedObject(QObject *object) const;
 
-    QMetaObjectPublisher *q;
-    QPointer<QWebChannel> webChannel;
-    SignalHandler<QMetaObjectPublisherPrivate> signalHandler;
+    /**
+     * When updates are blocked, no property updates are transmitted to remote clients.
+     */
+    void setBlockUpdates(bool block);
+
+public slots:
+    /**
+     * Helper slot which you can connect directly to WebChannel's rawMessageReceived signal.
+     *
+     * This slot then tries to parse the message as JSON and if it succeeds, calls handleRequest
+     * with the obtained JSON object.
+     */
+    void handleRawMessage(const QString &message);
+
+signals:
+    void blockUpdatesChanged(bool block);
+
+protected:
+    void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
+
+private:
+    friend class QmlWebChannel;
+    friend class QWebChannel;
+    friend class TestWebChannel;
+
+    QWebChannel *webChannel;
+    SignalHandler<QMetaObjectPublisher> signalHandler;
 
     // true when the client is idle, false otherwise
     bool clientIsIdle;

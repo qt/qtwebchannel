@@ -40,28 +40,21 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
-#include <QtQml/QQmlExtensionPlugin>
+#ifndef QWEBCHANNEL_P_H
+#define QWEBCHANNEL_P_H
 
-#include "qmlwebchannel.h"
+#include "qwebchannelglobal.h"
 
-QT_USE_NAMESPACE
+class QJsonValue;
+class QWebChannelSocket;
+class QMetaObjectPublisher;
 
-class QWebChannelPlugin : public QQmlExtensionPlugin
+struct Q_WEBCHANNEL_EXPORT QWebChannelPrivate
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
+    QWebChannelSocket *socket;
+    QMetaObjectPublisher *publisher;
 
-public:
-    void registerTypes(const char *uri);
+    void sendJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const;
 };
 
-void QWebChannelPlugin::registerTypes(const char *uri)
-{
-    int major = 1;
-    int minor = 0;
-    qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
-
-}
-
-#include "plugin.moc"
+#endif // QWEBCHANNEL_P_H

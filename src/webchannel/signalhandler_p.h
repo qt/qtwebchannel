@@ -141,7 +141,7 @@ SignalHandler<Receiver>::SignalHandler(Receiver *receiver, QObject *parent)
  *
  * The return value is also verified to ensure it is a signal.
  */
-QMetaMethod findSignal(const QMetaObject *metaObject, const int signalIndex)
+inline QMetaMethod findSignal(const QMetaObject *metaObject, const int signalIndex)
 {
     QMetaMethod signal = metaObject->method(signalIndex);
     if (!signal.isValid()) {

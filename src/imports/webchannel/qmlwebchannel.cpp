@@ -40,28 +40,36 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
-#include <QtQml/QQmlExtensionPlugin>
-
 #include "qmlwebchannel.h"
 
-QT_USE_NAMESPACE
+#include "qwebchannel_p.h"
+#include "qmetaobjectpublisher_p.h"
 
-class QWebChannelPlugin : public QQmlExtensionPlugin
+QmlWebChannel::QmlWebChannel(QObject *parent)
+    : QWebChannel(parent)
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
-
-public:
-    void registerTypes(const char *uri);
-};
-
-void QWebChannelPlugin::registerTypes(const char *uri)
-{
-    int major = 1;
-    int minor = 0;
-    qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
 
 }
 
-#include "plugin.moc"
+QmlWebChannel::~QmlWebChannel()
+{
+
+}
+
+void QmlWebChannel::registerObjects(const QVariantMap &objects)
+{
+    QMap<QString, QVariant>::const_iterator it = objects.constBegin();
+    for (; it != objects.constEnd(); ++it) {
+        QObject *object = it.value().value<QObject*>();
+        if (!object) {
+            qWarning("Invalid QObject given to register under name %s", qPrintable(it.key()));
+            continue;
+        }
+        d->publisher->registerObject(it.key(), object);
+    }
+}
+
+bool QmlWebChannel::test_clientIsIdle() const
+{
+    return d->publisher->clientIsIdle;
+}

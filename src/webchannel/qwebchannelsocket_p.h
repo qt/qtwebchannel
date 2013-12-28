@@ -40,28 +40,35 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
-#include <QtQml/QQmlExtensionPlugin>
+#ifndef QWEBCHANNELSOCKET_P_H
+#define QWEBCHANNELSOCKET_P_H
 
-#include "qmlwebchannel.h"
+#include "qwebsocketserver_p.h"
 
-QT_USE_NAMESPACE
-
-class QWebChannelPlugin : public QQmlExtensionPlugin
+class QWebChannelSocket : public QWebSocketServer
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
-
 public:
-    void registerTypes(const char *uri);
+    QByteArray m_secret;
+    QString m_baseUrl;
+
+    bool m_useSecret;
+    bool m_starting;
+
+    QWebChannelSocket(QObject *parent);
+
+    void initLater();
+
+signals:
+    void failed(const QString &reason);
+    void initialized();
+
+protected:
+    bool isValid(const HeaderData &connection) Q_DECL_OVERRIDE;
+
+private slots:
+    void init();
+    void socketError();
 };
 
-void QWebChannelPlugin::registerTypes(const char *uri)
-{
-    int major = 1;
-    int minor = 0;
-    qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
-
-}
-
-#include "plugin.moc"
+#endif // QWEBCHANNELSOCKET_P_H

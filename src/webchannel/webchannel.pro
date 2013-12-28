@@ -11,17 +11,20 @@ OTHER_FILES = \
     qwebchannel.js
 
 PUBLIC_HEADERS += \
-    qwebchannel.h \
-    qmetaobjectpublisher.h
+    qwebchannel.h
 
 PRIVATE_HEADERS += \
+    qwebchannel_p.h \
+    qmetaobjectpublisher_p.h \
     qwebsocketserver_p.h \
+    qwebchannelsocket_p.h \
     variantargument_p.h \
     signalhandler_p.h
 
 SOURCES += \
     qwebchannel.cpp \
     qmetaobjectpublisher.cpp \
-    qwebsocketserver.cpp
+    qwebsocketserver.cpp \
+    qwebchannelsocket.cpp
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS

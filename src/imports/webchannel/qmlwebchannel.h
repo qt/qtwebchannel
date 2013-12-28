@@ -40,28 +40,24 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
-#include <QtQml/QQmlExtensionPlugin>
+#ifndef QMLWEBCHANNEL_H
+#define QMLWEBCHANNEL_H
 
-#include "qmlwebchannel.h"
+#include <qwebchannel.h>
 
-QT_USE_NAMESPACE
-
-class QWebChannelPlugin : public QQmlExtensionPlugin
+class QmlWebChannel : public QWebChannel
 {
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
 
 public:
-    void registerTypes(const char *uri);
+    QmlWebChannel(QObject *parent = 0);
+    virtual ~QmlWebChannel();
+
+    // TODO: replace by list property
+    Q_INVOKABLE void registerObjects(const QVariantMap &objects);
+
+    // TODO: remove this by replacing QML with C++ tests
+    Q_INVOKABLE bool test_clientIsIdle() const;
 };
 
-void QWebChannelPlugin::registerTypes(const char *uri)
-{
-    int major = 1;
-    int minor = 0;
-    qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
-
-}
-
-#include "plugin.moc"
+#endif // QMLWEBCHANNEL_H

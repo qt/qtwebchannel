@@ -78,26 +78,9 @@ WebChannelTest {
         }
     }
 
-    MetaObjectPublisher {
-        id: publisher
-        webChannel: test.webChannel
-    }
-
-    Connections {
-        target: test.webChannel
-        onRawMessageReceived: {
-            var message = JSON.parse(rawMessage);
-            verify(message);
-            var handled = publisher.handleRequest(message);
-            if (message.data && message.data.type) {
-                verify(handled);
-            }
-        }
-    }
-
     function initTestCase()
     {
-        publisher.registerObjects({
+        webChannel.registerObjects({
             "myObj": myObj,
             "myOtherObj": myOtherObj,
             "myFactory": myFactory
@@ -119,7 +102,7 @@ WebChannelTest {
         verify(msg);
         verify(msg.data);
         compare(msg.data.type, "Qt.idle");
-        verify(publisher.test_clientIsIdle())
+        verify(webChannel.test_clientIsIdle())
     }
 
     function awaitMessageSkipIdle()
