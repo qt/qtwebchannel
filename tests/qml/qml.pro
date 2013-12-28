@@ -1,4 +1,4 @@
-QT += testlib declarative
+QT += testlib
 TEMPLATE = app
 TARGET = qml
 
