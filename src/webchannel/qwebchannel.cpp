@@ -41,93 +41,14 @@
 ****************************************************************************/
 
 #include "qwebchannel.h"
+#include "qwebchannel_p.h"
+#include "qmetaobjectpublisher_p.h"
+#include "qwebchannelsocket_p.h"
 
-#include <QUuid>
-#include <QStringList>
-#include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "qwebsocketserver_p.h"
-
-class QWebChannelPrivate : public QWebSocketServer
-{
-    Q_OBJECT
-public:
-    QByteArray m_secret;
-    bool m_useSecret;
-
-    QString m_baseUrl;
-    bool m_starting;
-
-    QWebChannelPrivate(QObject* parent)
-    : QWebSocketServer(parent)
-    , m_useSecret(true)
-    , m_starting(false)
-    {
-        connect(this, SIGNAL(error(QAbstractSocket::SocketError)),
-                SLOT(socketError()));
-    }
-
-    void initLater()
-    {
-        if (m_starting)
-            return;
-        metaObject()->invokeMethod(this, "init", Qt::QueuedConnection);
-        m_starting = true;
-    }
-
-    void sendJSONMessage(const QJsonValue& id, const QJsonValue& data, bool response) const;
-
-signals:
-    void failed(const QString& reason);
-    void initialized();
-
-protected:
-    bool isValid(const HeaderData& connection) Q_DECL_OVERRIDE;
-
-private slots:
-    void init();
-    void socketError();
-};
-
-bool QWebChannelPrivate::isValid(const HeaderData& connection)
-{
-    if (!QWebSocketServer::isValid(connection)) {
-        return false;
-    }
-    return connection.protocol == QByteArrayLiteral("QWebChannel")
-            && connection.path == m_secret;
-}
-
-void QWebChannelPrivate::init()
-{
-    close();
-
-    m_starting = false;
-    if (m_useSecret) {
-        m_secret = QUuid::createUuid().toByteArray();
-        // replace { by /
-        m_secret[0] = '/';
-        // chop of trailing }
-        m_secret.chop(1);
-    }
-
-    if (!listen(QHostAddress::LocalHost)) {
-        emit failed(errorString());
-        return;
-    }
-
-    m_baseUrl = QStringLiteral("127.0.0.1:%1%2").arg(port()).arg(QString::fromLatin1(m_secret));
-    emit initialized();
-}
-
-void QWebChannelPrivate::socketError()
-{
-    emit failed(errorString());
-}
-
-void QWebChannelPrivate::sendJSONMessage(const QJsonValue& id, const QJsonValue& data, bool response) const
+void QWebChannelPrivate::sendJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const
 {
     QJsonObject obj;
     if (response) {
@@ -138,22 +59,31 @@ void QWebChannelPrivate::sendJSONMessage(const QJsonValue& id, const QJsonValue&
         obj[QStringLiteral("data")] = data;
     }
     QJsonDocument doc(obj);
-    sendMessage(doc.toJson(QJsonDocument::Compact));
+    socket->sendMessage(doc.toJson(QJsonDocument::Compact));
 }
 
 QWebChannel::QWebChannel(QObject *parent)
 : QObject(parent)
-, d(new QWebChannelPrivate(this))
+, d(new QWebChannelPrivate)
 {
-    connect(d, SIGNAL(textDataReceived(QString)),
+    d->socket = new QWebChannelSocket(this);
+
+    connect(d->socket, SIGNAL(textDataReceived(QString)),
             SIGNAL(rawMessageReceived(QString)));
-    connect(d, SIGNAL(failed(QString)),
+    connect(d->socket, SIGNAL(failed(QString)),
             SIGNAL(failed(QString)));
-    connect(d, SIGNAL(initialized()),
+    connect(d->socket, SIGNAL(initialized()),
             SLOT(onInitialized()));
-    connect(d, SIGNAL(pongReceived()),
+    connect(d->socket, SIGNAL(pongReceived()),
             SIGNAL(pongReceived()));
-    d->initLater();
+
+    d->socket->initLater();
+
+    d->publisher = new QMetaObjectPublisher(this);
+    connect(d->publisher, SIGNAL(blockUpdatesChanged(bool)),
+            SIGNAL(blockUpdatesChanged(bool)));
+    connect(d->socket, SIGNAL(textDataReceived(QString)),
+            d->publisher, SLOT(handleRawMessage(QString)));
 }
 
 QWebChannel::~QWebChannel()
@@ -162,26 +92,49 @@ QWebChannel::~QWebChannel()
 
 QString QWebChannel::baseUrl() const
 {
-    return d->m_baseUrl;
+    return d->socket->m_baseUrl;
 }
 
 void QWebChannel::setUseSecret(bool s)
 {
-    if (d->m_useSecret == s)
+    if (d->socket->m_useSecret == s)
         return;
-    d->m_useSecret = s;
-    d->initLater();
+    d->socket->m_useSecret = s;
+    d->socket->initLater();
 }
 
 bool QWebChannel::useSecret() const
 {
-    return d->m_useSecret;
+    return d->socket->m_useSecret;
+}
+
+void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
+{
+    const QHash<QString, QObject *>::const_iterator end = objects.constEnd();
+    for (QHash<QString, QObject *>::const_iterator it = objects.constBegin(); it != end; ++it) {
+        d->publisher->registerObject(it.key(), it.value());
+    }
+}
+
+void QWebChannel::registerObject(const QString &id, QObject *object)
+{
+    d->publisher->registerObject(id, object);
+}
+
+bool QWebChannel::blockUpdates() const
+{
+    return d->publisher->blockUpdates;
+}
+
+void QWebChannel::setBlockUpdates(bool block)
+{
+    d->publisher->setBlockUpdates(block);
 }
 
 void QWebChannel::onInitialized()
 {
     emit initialized();
-    emit baseUrlChanged(d->m_baseUrl);
+    emit baseUrlChanged(d->socket->m_baseUrl);
 }
 
 void QWebChannel::respond(const QJsonValue& messageId, const QJsonValue& data) const
@@ -196,12 +149,12 @@ void QWebChannel::sendMessage(const QJsonValue& id, const QJsonValue& data) cons
 
 void QWebChannel::sendRawMessage(const QString& message) const
 {
-    d->sendMessage(message.toUtf8());
+    d->socket->sendMessage(message.toUtf8());
 }
 
 void QWebChannel::ping() const
 {
-    d->ping();
+    d->socket->ping();
 }
 
 #include "qwebchannel.moc"

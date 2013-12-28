@@ -1,6 +1,13 @@
-QT = core quick webchannel
+QT = core quick webchannel-private
+
+INCLUDEPATH += ../../webchannel
+VPATH += ../../webchannel
 
 SOURCES += \
-    plugin.cpp
+    plugin.cpp \
+    qmlwebchannel.cpp
+
+HEADERS += \
+    qmlwebchannel.h
 
 load(qml_plugin)

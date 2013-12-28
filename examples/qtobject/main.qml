@@ -55,22 +55,11 @@ Rectangle {
         objectName: "initialTestObject"
     }
 
-    MetaObjectPublisher {
-        id: publisher
-        webChannel: webChannel
-    }
-
     WebChannel {
         id: webChannel
 
-        onRawMessageReceived: {
-            if (!publisher.handleRawMessage(rawMessage)) {
-                console.log("unhandled request: ", rawMessage);
-            }
-        }
-
         onInitialized: {
-            publisher.registerObjects({
+            registerObjects({
                 "testObjectFactory": factory,
                 "initialTestObject": testObject
             });

@@ -56,15 +56,42 @@ class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
     Q_DISABLE_COPY(QWebChannel)
     Q_PROPERTY(QString baseUrl READ baseUrl NOTIFY baseUrlChanged)
     Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
+    Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged);
 
 public:
     QWebChannel(QObject *parent = 0);
     ~QWebChannel();
 
-    QString  baseUrl() const;
+    QString baseUrl() const;
 
     void setUseSecret(bool);
     bool useSecret() const;
+
+    /**
+     * Register a map of string ID to QObject* objects.
+     *
+     * The properties, signals and public methods of the QObject are
+     * published to the remote client, where an object with the given identifier
+     * is constructed.
+     *
+     * TODO: This must be called, before clients are initialized.
+     */
+    void registerObjects(const QHash<QString, QObject*> &objects);
+    void registerObject(const QString &id, QObject *object);
+
+    /**
+     * @return true when property updates are blocked, false otherwise.
+     */
+    bool blockUpdates() const;
+
+    /**
+     * Set whether property updates should be blocked or not.
+     *
+     * When they are blocked, the remote clients will not be notified about
+     * property changes. The changes are recorded and sent to the clients once
+     * setBlockUpdates(false) is called.
+     */
+    void setBlockUpdates(bool block);
 
 signals:
     void baseUrlChanged(const QString& baseUrl);
@@ -73,6 +100,8 @@ signals:
     void initialized();
 
     void failed(const QString& reason);
+
+    void blockUpdatesChanged(bool block);
 
 public slots:
     void sendMessage(const QJsonValue& id, const QJsonValue& data = QJsonValue()) const;
@@ -84,7 +113,9 @@ private slots:
     void onInitialized();
 
 private:
-    QWebChannelPrivate* d;
+    QScopedPointer<QWebChannelPrivate> d;
+    friend class QmlWebChannel;
+    friend class TestWebChannel;
 };
 
 #endif // QWEBCHANNEL_H

@@ -75,18 +75,6 @@ WebChannelTest {
         }
     }
 
-    MetaObjectPublisher {
-        id: publisher
-        webChannel: test.webChannel
-    }
-
-    Connections {
-        target: test.webChannel
-        onRawMessageReceived: {
-            publisher.handleRequest(JSON.parse(rawMessage));
-        }
-    }
-
     property var objects: ({})
 
     function initTestCase()
@@ -97,7 +85,7 @@ WebChannelTest {
             objects[id] = component.createObject(test, properties);
         }
 
-        publisher.registerObjects(objects);
+        webChannel.registerObjects(objects);
     }
 
     function benchmark_init_baseline()

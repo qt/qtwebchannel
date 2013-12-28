@@ -43,7 +43,7 @@
 #include "tst_webchannel.h"
 
 #include <qwebchannel.h>
-#include <qmetaobjectpublisher.h>
+#include <qwebchannel_p.h>
 #include <qmetaobjectpublisher_p.h>
 
 #include <QtTest>
@@ -58,7 +58,7 @@ TestWebChannel::~TestWebChannel()
 
 }
 
-    void TestWebChannel::testInitChannel()
+void TestWebChannel::testInitChannel()
 {
     QWebChannel channel;
 
@@ -76,26 +76,24 @@ TestWebChannel::~TestWebChannel()
 void TestWebChannel::testRegisterObjects()
 {
     QWebChannel channel;
-    QMetaObjectPublisher publisher;
-    publisher.setWebChannel(&channel);
-
     QObject plain;
 
-    QVariantMap objects;
-    objects["plain"] = QVariant::fromValue(&plain);
-    objects["channel"] = QVariant::fromValue(&channel);
-    objects["publisher"] = QVariant::fromValue(&publisher);
-    objects["test"] = QVariant::fromValue(this);
+    QHash<QString, QObject*> objects;
+    objects[QStringLiteral("plain")] = &plain;
+    objects[QStringLiteral("channel")] = &channel;
+    objects[QStringLiteral("publisher")] = channel.d->publisher;
+    objects[QStringLiteral("test")] = this;
 
-    publisher.registerObjects(objects);
+    channel.registerObjects(objects);
 }
 
 void TestWebChannel::testInfoForObject()
 {
     TestObject obj;
     obj.setObjectName("myTestObject");
-    QMetaObjectPublisher publisher;
-    const QJsonObject info = publisher.classInfoForObject(&obj);
+
+    QWebChannel channel;
+    const QJsonObject info = channel.d->publisher->classInfoForObject(&obj);
 
     QCOMPARE(info.keys(), QStringList() << "enums" << "methods" << "properties" << "signals");
 
@@ -216,12 +214,13 @@ void TestWebChannel::testInfoForObject()
     }
 }
 
-static QVariantMap createObjects(QObject *parent)
+static QHash<QString, QObject*> createObjects(QObject *parent)
 {
     const int num = 100;
-    QVariantMap objects;
+    QHash<QString, QObject*> objects;
+    objects.reserve(num);
     for (int i = 0; i < num; ++i) {
-        objects[QStringLiteral("obj%1").arg(i)] = QVariant::fromValue(new BenchObject(parent));
+        objects[QStringLiteral("obj%1").arg(i)] = new BenchObject(parent);
     }
     return objects;
 }
@@ -232,14 +231,13 @@ void TestWebChannel::benchClassInfo()
     QSignalSpy initSpy(&channel, SIGNAL(initialized()));
     QVERIFY(initSpy.wait());
 
-    QMetaObjectPublisher publisher;
-    publisher.setWebChannel(&channel);
-
     QObject parent;
-    const QVariantMap objects = createObjects(&parent);
+    const QHash<QString, QObject*> objects = createObjects(&parent);
 
     QBENCHMARK {
-        publisher.classInfoForObjects(objects);
+        foreach(const QObject *object, objects) {
+            channel.d->publisher->classInfoForObject(object);
+        }
     }
 }
 
@@ -249,19 +247,16 @@ void TestWebChannel::benchInitializeClients()
     QSignalSpy initSpy(&channel, SIGNAL(initialized()));
     QVERIFY(initSpy.wait());
 
-    QMetaObjectPublisher publisher;
-    publisher.setWebChannel(&channel);
-
     QObject parent;
-    const QVariantMap objects = createObjects(&parent);
-    publisher.registerObjects(objects);
+    channel.registerObjects(createObjects(&parent));
 
+    QMetaObjectPublisher *publisher = channel.d->publisher;
     QBENCHMARK {
-        publisher.d->initializeClients();
+        publisher->initializeClients();
 
-        publisher.d->propertyUpdatesInitialized = false;
-        publisher.d->signalToPropertyMap.clear();
-        publisher.d->signalHandler.clear();
+        publisher->propertyUpdatesInitialized = false;
+        publisher->signalToPropertyMap.clear();
+        publisher->signalHandler.clear();
     }
 }
 
@@ -271,26 +266,24 @@ void TestWebChannel::benchPropertyUpdates()
     QSignalSpy initSpy(&channel, SIGNAL(initialized()));
     QVERIFY(initSpy.wait());
 
-    QMetaObjectPublisher publisher;
-    publisher.setWebChannel(&channel);
-
     QObject parent;
-    const QVariantMap objects = createObjects(&parent);
+    const QHash<QString, QObject*> objects = createObjects(&parent);
     QVector<BenchObject*> objectList;
-    foreach (const QVariant &var, objects) {
-        objectList << var.value<BenchObject*>();
+    objectList.reserve(objects.size());
+    foreach (QObject *obj, objects) {
+        objectList << qobject_cast<BenchObject*>(obj);
     }
 
-    publisher.registerObjects(objects);
-    publisher.d->initializeClients();
+    channel.registerObjects(objects);
+    channel.d->publisher->initializeClients();
 
     QBENCHMARK {
         foreach (BenchObject *obj, objectList) {
             obj->change();
         }
 
-        publisher.d->clientIsIdle = true;
-        publisher.d->sendPendingPropertyUpdates();
+        channel.d->publisher->clientIsIdle = true;
+        channel.d->publisher->sendPendingPropertyUpdates();
     }
 }
 
@@ -300,14 +293,11 @@ void TestWebChannel::benchRegisterObjects()
     QSignalSpy initSpy(&channel, SIGNAL(initialized()));
     QVERIFY(initSpy.wait());
 
-    QMetaObjectPublisher publisher;
-    publisher.setWebChannel(&channel);
-
     QObject parent;
-    const QVariantMap objects = createObjects(&parent);
+    const QHash<QString, QObject*> objects = createObjects(&parent);
 
     QBENCHMARK {
-        publisher.registerObjects(objects);
+        channel.registerObjects(objects);
     }
 }
 
