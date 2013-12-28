@@ -40,28 +40,60 @@
 **
 ****************************************************************************/
 
-#include <qqml.h>
-#include <QtQml/QQmlExtensionPlugin>
+#include "qwebchannelsocket_p.h"
 
-#include "qmlwebchannel.h"
+#include <QUuid>
+#include <QDebug>
 
-QT_USE_NAMESPACE
-
-class QWebChannelPlugin : public QQmlExtensionPlugin
+QWebChannelSocket::QWebChannelSocket(QObject *parent)
+    : QWebSocketServer(parent)
+    , m_useSecret(true)
+    , m_starting(false)
 {
-    Q_OBJECT
-    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
-
-public:
-    void registerTypes(const char *uri);
-};
-
-void QWebChannelPlugin::registerTypes(const char *uri)
-{
-    int major = 1;
-    int minor = 0;
-    qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
-
+    connect(this, SIGNAL(error(QAbstractSocket::SocketError)),
+            SLOT(socketError()));
 }
 
-#include "plugin.moc"
+void QWebChannelSocket::initLater()
+{
+    if (m_starting)
+        return;
+    metaObject()->invokeMethod(this, "init", Qt::QueuedConnection);
+    m_starting = true;
+}
+
+bool QWebChannelSocket::isValid(const HeaderData &connection)
+{
+    if (!QWebSocketServer::isValid(connection)) {
+        return false;
+    }
+    return connection.protocol == QByteArrayLiteral("QWebChannel")
+            && connection.path == m_secret;
+}
+
+void QWebChannelSocket::init()
+{
+    close();
+
+    m_starting = false;
+    if (m_useSecret) {
+        m_secret = QUuid::createUuid().toByteArray();
+        // replace { by /
+        m_secret[0] = '/';
+        // chop of trailing }
+        m_secret.chop(1);
+    }
+
+    if (!listen(QHostAddress::LocalHost)) {
+        emit failed(errorString());
+        return;
+    }
+
+    m_baseUrl = QStringLiteral("127.0.0.1:%1%2").arg(port()).arg(QString::fromLatin1(m_secret));
+    emit initialized();
+}
+
+void QWebChannelSocket::socketError()
+{
+    emit failed(errorString());
+}

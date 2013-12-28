@@ -41,7 +41,6 @@
 ****************************************************************************/
 
 #include "qwebchannel.h"
-#include "qmetaobjectpublisher.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -111,16 +110,10 @@ int main(int argc, char** argv)
     QApplication app(argc, argv);
 
     QWebChannel channel;
-    QMetaObjectPublisher publisher;
-    publisher.setWebChannel(&channel);
-    QObject::connect(&channel, SIGNAL(rawMessageReceived(QString)),
-                     &publisher, SLOT(handleRawMessage(QString)));
 
     Dialog dialog(&channel);
 
-    QVariantMap objects;
-    objects[QStringLiteral("dialog")] = QVariant::fromValue(&dialog);
-    publisher.registerObjects(objects);
+    channel.registerObject(QStringLiteral("dialog"), &dialog);
 
     return app.exec();
 }
