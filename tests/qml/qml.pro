@@ -1,11 +1,11 @@
-QT += testlib
+QT += testlib webchannel
 TEMPLATE = app
 TARGET = qml
 
 CONFIG += warn_on qmltestcase
 
 # TODO: running tests without requiring make install
-IMPORTPATH += $$PWD
+IMPORTPATH += $$OUT_PWD/../../qml $$PWD
 
 SOURCES += \
     qml.cpp
