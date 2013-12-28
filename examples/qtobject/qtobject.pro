@@ -9,4 +9,9 @@ SOURCES += \
 HEADERS += \
     testobject.h
 
-DEFINES += "SOURCE_DIR=\"\\\""$$PWD"\\\"\""
+RESOURCES += \
+    resources.qrc
+
+OTHER_FILES += \
+    main.qml \
+    index.html
