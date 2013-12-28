@@ -146,9 +146,9 @@ function QObject(name, data, webChannel)
     this.propertyUpdate = function(signals, propertyMap)
     {
         // update property cache
-        for (var propertyName in propertyMap) {
-            var propertyValue = propertyMap[propertyName];
-            object.__propertyCache__[propertyName] = propertyValue;
+        for (var propertyIndex in propertyMap) {
+            var propertyValue = propertyMap[propertyIndex];
+            object.__propertyCache__[propertyIndex] = propertyValue;
         }
 
         for (var signalName in signals) {
@@ -187,10 +187,11 @@ function QObject(name, data, webChannel)
 
     function bindGetterSetter(propertyInfo)
     {
-        var propertyName = propertyInfo[0];
-        var notifySignalData = propertyInfo[1];
+        var propertyIndex = propertyInfo[0];
+        var propertyName = propertyInfo[1];
+        var notifySignalData = propertyInfo[2];
         // initialize property cache with current value
-        object.__propertyCache__[propertyName] = propertyInfo[2]
+        object.__propertyCache__[propertyIndex] = propertyInfo[3];
 
         if (notifySignalData) {
             if (notifySignalData[0] === 1) {
@@ -205,13 +206,13 @@ function QObject(name, data, webChannel)
                 console.warn("Property setter for " + propertyName + " called with undefined value!");
                 return;
             }
-            object.__propertyCache__[propertyName] = value;
-            webChannel.exec({"type": "Qt.setProperty", "object": object.__id__, "property": propertyName, "value": value });
+            object.__propertyCache__[propertyIndex] = value;
+            webChannel.exec({"type": "Qt.setProperty", "object": object.__id__, "property": propertyIndex, "value": value });
 
         });
         object.__defineGetter__(propertyName, function () {
             return (function (callback) {
-                var propertyValue = object.__propertyCache__[propertyName];
+                var propertyValue = object.__propertyCache__[propertyIndex];
                 if (propertyValue === undefined) {
                     // This shouldn't happen
                     console.warn("Undefined value in property cache for property \"" + propertyName + "\" in object " + object.__id__);

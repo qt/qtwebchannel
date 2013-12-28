@@ -140,8 +140,8 @@ void QMetaObjectPublisherPrivate::initializePropertyUpdates(const QObject *const
             qWarning() << "Invalid property info encountered:" << propertyInfoVar;
             continue;
         }
-        const QString &propertyName = propertyInfo.at(0).toString();
-        const QJsonArray &signalData = propertyInfo.at(1).toArray();
+        const int propertyIndex = propertyInfo.at(0).toInt();
+        const QJsonArray &signalData = propertyInfo.at(2).toArray();
 
         if (signalData.isEmpty()) {
             // Property without NOTIFY signal
@@ -150,14 +150,14 @@ void QMetaObjectPublisherPrivate::initializePropertyUpdates(const QObject *const
 
         const int signalIndex = signalData.at(1).toInt();
 
-        QSet<QString> &connectedProperties = signalToPropertyMap[object][signalIndex];
+        QSet<int> &connectedProperties = signalToPropertyMap[object][signalIndex];
 
         // Only connect for a property update once
         if (connectedProperties.isEmpty()) {
             signalHandler.connectTo(object, signalIndex);
         }
 
-        connectedProperties.insert(propertyName);
+        connectedProperties.insert(propertyIndex);
     }
 
     // also always connect to destroyed signal
@@ -184,17 +184,12 @@ void QMetaObjectPublisherPrivate::sendPendingPropertyUpdates()
         QJsonObject sigs;
         const SignalToArgumentsMap::const_iterator sigEnd = it.value().constEnd();
         for (SignalToArgumentsMap::const_iterator sigIt = it.value().constBegin(); sigIt != sigEnd; ++sigIt) {
-            // TODO: use property indices
-            foreach (const QString &propertyName, objectsSignalToPropertyMap.value(sigIt.key())) {
-                int propertyIndex = metaObject->indexOfProperty(qPrintable(propertyName));
-                if (propertyIndex == -1) {
-                    qWarning("Unknown property %d encountered", propertyIndex);
-                    continue;
-                }
-                const QMetaProperty &property = metaObject->property(propertyIndex);
-                properties[QString::fromLatin1(property.name())] = QJsonValue::fromVariant(property.read(object));
-            }
             // TODO: can we get rid of the int <-> string conversions here?
+            foreach (const int propertyIndex, objectsSignalToPropertyMap.value(sigIt.key())) {
+                const QMetaProperty &property = metaObject->property(propertyIndex);
+                Q_ASSERT(property.isValid());
+                properties[QString::number(propertyIndex)] = QJsonValue::fromVariant(property.read(object));
+            }
             sigs[QString::number(sigIt.key())] = QJsonArray::fromVariantList(sigIt.value());
         }
         QJsonObject obj;
@@ -390,6 +385,7 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(QObject *object) const
         const QMetaProperty &prop = metaObject->property(i);
         QJsonArray propertyInfo;
         const QString &propertyName = QString::fromLatin1(prop.name());
+        propertyInfo.append(i);
         propertyInfo.append(propertyName);
         identifiers << propertyName;
         QJsonArray signalInfo;
@@ -520,14 +516,16 @@ bool QMetaObjectPublisher::handleRequest(const QJsonObject &message)
             d->signalHandler.disconnectFrom(object, payload.value(KEY_SIGNAL).toInt(-1));
             return true;
         } else if (type == TYPE_SET_PROPERTY) {
-            // TODO: use property indices
-            const QString &propertyName = payload.value(KEY_PROPERTY).toString();
-            const int propertyIdx = object->metaObject()->indexOfProperty(qPrintable(propertyName));
-            if (propertyIdx == -1) {
-                qWarning() << "Cannot set unknown property" << propertyName << "of object" << objectName;
+            const int propertyIdx = payload.value(KEY_PROPERTY).toInt(-1);
+            QMetaProperty property = object->metaObject()->property(propertyIdx);
+            if (!property.isValid()) {
+                qWarning() << "Cannot set unknown property" << payload.value(KEY_PROPERTY) << "of object" << objectName;
+                return false;
+            } else if (!object->metaObject()->property(propertyIdx).write(object, payload.value(KEY_VALUE).toVariant())) {
+                qWarning() << "Could not write value " << payload.value(KEY_VALUE)
+                           << "to property" << property.name() << "of object" << objectName;
                 return false;
             }
-            object->metaObject()->property(propertyIdx).write(object, payload.value(KEY_VALUE).toVariant());
             return true;
         }
     }
