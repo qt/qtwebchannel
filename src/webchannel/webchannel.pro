@@ -27,4 +27,9 @@ SOURCES += \
     qwebsocketserver.cpp \
     qwebchannelsocket.cpp
 
+qtHaveModule(qml) {
+    QT += qml
+    DEFINES += HAVE_QML=1
+}
+
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
