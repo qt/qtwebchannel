@@ -73,7 +73,9 @@ QWebChannel::QWebChannel(QObject *parent)
     connect(d->socket, SIGNAL(failed(QString)),
             SIGNAL(failed(QString)));
     connect(d->socket, SIGNAL(initialized()),
-            SLOT(onInitialized()));
+            SIGNAL(initialized()));
+    connect(d->socket, SIGNAL(baseUrlChanged(QString)),
+            SIGNAL(baseUrlChanged(QString)));
     connect(d->socket, SIGNAL(pongReceived()),
             SIGNAL(pongReceived()));
 
@@ -131,12 +133,6 @@ void QWebChannel::setBlockUpdates(bool block)
     d->publisher->setBlockUpdates(block);
 }
 
-void QWebChannel::onInitialized()
-{
-    emit initialized();
-    emit baseUrlChanged(d->socket->m_baseUrl);
-}
-
 void QWebChannel::respond(const QJsonValue& messageId, const QJsonValue& data) const
 {
     d->sendJSONMessage(messageId, data, true);
@@ -156,5 +152,3 @@ void QWebChannel::ping() const
 {
     d->socket->ping();
 }
-
-#include "qwebchannel.moc"

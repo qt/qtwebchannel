@@ -62,6 +62,7 @@ public:
 signals:
     void failed(const QString &reason);
     void initialized();
+    void baseUrlChanged(const QString &baseUrl);
 
 protected:
     bool isValid(const HeaderData &connection) Q_DECL_OVERRIDE;
