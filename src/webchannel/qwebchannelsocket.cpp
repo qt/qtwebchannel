@@ -91,6 +91,7 @@ void QWebChannelSocket::init()
 
     m_baseUrl = QStringLiteral("127.0.0.1:%1%2").arg(port()).arg(QString::fromLatin1(m_secret));
     emit initialized();
+    emit baseUrlChanged(m_baseUrl);
 }
 
 void QWebChannelSocket::socketError()

@@ -109,9 +109,6 @@ public slots:
     void sendRawMessage(const QString& rawMessage) const;
     void ping() const;
 
-private slots:
-    void onInitialized();
-
 private:
     QScopedPointer<QWebChannelPrivate> d;
     friend class QmlWebChannel;
