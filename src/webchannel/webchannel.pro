@@ -27,4 +27,9 @@ SOURCES += \
     qwebsocketserver.cpp \
     qwebchannelsocket.cpp
 
+qtHaveModule(quick) {
+    QT += quick
+    DEFINES += HAVE_QUICK=1
+}
+
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS

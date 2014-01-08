@@ -49,6 +49,10 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+#if HAVE_QUICK
+#include <QtQml/QJSValue>
+#endif
+
 namespace {
 const QString KEY_SIGNALS = QStringLiteral("signals");
 const QString KEY_METHODS = QStringLiteral("methods");
@@ -375,7 +379,27 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
         data[KEY_SIGNAL] = signalIndex;
         if (!arguments.isEmpty()) {
             // TODO: wrap (new) objects on the fly
-            data[KEY_ARGS] = QJsonArray::fromVariantList(arguments);
+            QJsonArray args;
+#if HAVE_QUICK
+            foreach (const QVariant &arg, arguments) {
+                if (arg.canConvert<QJSValue>()) {
+                    const QJSValue &jsValue = arg.value<QJSValue>();
+                    if (jsValue.isNumber()) {
+                        args.append(QJsonValue(jsValue.toNumber()));
+                    } else if (jsValue.isBool()) {
+                        args.append(QJsonValue(jsValue.toBool()));
+                    } else {
+                        // TODO: properly serialize objects, arrays
+                        args.append(QJsonValue(jsValue.toString()));
+                    }
+                } else {
+                    args.append(QJsonValue::fromVariant(arg));
+                }
+            }
+#else
+            args = QJsonArray::fromVariantList(arguments);
+#endif
+            data[KEY_ARGS] = args;
         }
         webChannel->sendMessage(TYPE_SIGNAL, data);
 
