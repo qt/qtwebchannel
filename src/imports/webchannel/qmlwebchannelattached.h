@@ -1,7 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
-** Copyright (C) 2013 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2014 Digia Plc and/or its subsidiary(-ies).
+** Copyright (C) 2014 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: http://www.qt-project.org/legal
 *
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -40,50 +40,28 @@
 **
 ****************************************************************************/
 
-#ifndef QMLWEBCHANNEL_H
-#define QMLWEBCHANNEL_H
+#ifndef QMLWEBCHANNELATTACHED_H
+#define QMLWEBCHANNELATTACHED_H
 
-#include <qwebchannel.h>
+#include <QObject>
 
-#include "qmlwebchannelattached.h"
-
-#include <QVector>
-
-#include <QtQml/qqml.h>
-#include <QtQml/QQmlListProperty>
-
-class QmlWebChannelAttached;
-
-class QmlWebChannel : public QWebChannel
+class QmlWebChannelAttached : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
+    Q_PROPERTY( QString id READ id WRITE setId NOTIFY idChanged FINAL )
 public:
-    QmlWebChannel(QObject *parent = 0);
-    virtual ~QmlWebChannel();
+    explicit QmlWebChannelAttached(QObject *parent = 0);
+    virtual ~QmlWebChannelAttached();
 
-    Q_INVOKABLE void registerObjects(const QVariantMap& objects);
-    QQmlListProperty<QObject> registeredObjects();
+    QString id() const;
+    void setId(const QString &id);
 
-    // TODO: remove this by replacing QML with C++ tests
-    Q_INVOKABLE bool test_clientIsIdle() const;
-
-    static QmlWebChannelAttached* qmlAttachedProperties(QObject *obj);
-
-private slots:
-    void objectIdChanged(const QString &newId);
+signals:
+    void idChanged(const QString &id);
 
 private:
-    static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject* item);
-    static int registeredObjects_count(QQmlListProperty<QObject> *prop);
-    static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
-    static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
-
-    QVector<QObject*> m_registeredObjects;
+    QString m_id;
 };
 
-QML_DECLARE_TYPE( QmlWebChannel )
-QML_DECLARE_TYPEINFO( QmlWebChannel, QML_HAS_ATTACHED_PROPERTIES )
-
-#endif // QMLWEBCHANNEL_H
+#endif // QMLWEBCHANNELATTACHED_H

@@ -123,6 +123,12 @@ void QWebChannel::registerObject(const QString &id, QObject *object)
     d->publisher->registerObject(id, object);
 }
 
+void QWebChannel::deregisterObject(QObject *object)
+{
+    // handling of deregistration is analogously to handling of a destroyed signal
+    d->publisher->signalEmitted(object, s_destroyedSignalIndex, QVariantList() << QVariant::fromValue(object));
+}
+
 bool QWebChannel::blockUpdates() const
 {
     return d->publisher->blockUpdates;

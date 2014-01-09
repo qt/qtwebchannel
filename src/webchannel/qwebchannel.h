@@ -77,7 +77,8 @@ public:
      * TODO: This must be called, before clients are initialized.
      */
     void registerObjects(const QHash<QString, QObject*> &objects);
-    void registerObject(const QString &id, QObject *object);
+    Q_INVOKABLE void registerObject(const QString &id, QObject *object);
+    Q_INVOKABLE void deregisterObject(QObject *object);
 
     /**
      * @return true when property updates are blocked, false otherwise.
