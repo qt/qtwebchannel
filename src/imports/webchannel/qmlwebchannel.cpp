@@ -45,6 +45,8 @@
 #include "qwebchannel_p.h"
 #include "qmetaobjectpublisher_p.h"
 
+#include <QtQml/QQmlContext>
+
 QmlWebChannel::QmlWebChannel(QObject *parent)
     : QWebChannel(parent)
 {
@@ -72,4 +74,72 @@ void QmlWebChannel::registerObjects(const QVariantMap &objects)
 bool QmlWebChannel::test_clientIsIdle() const
 {
     return d->publisher->clientIsIdle;
+}
+
+void QmlWebChannel::objectIdChanged(const QString &newId)
+{
+    const QmlWebChannelAttached *const attached = qobject_cast<QmlWebChannelAttached*>(sender());
+    Q_ASSERT(attached);
+    Q_ASSERT(attached->parent());
+    Q_ASSERT(m_registeredObjects.contains(attached->parent()));
+
+    QObject *const object = attached->parent();
+    const QString &oldId = d->publisher->registeredObjectIds.value(object);
+
+    if (!oldId.isEmpty()) {
+        deregisterObject(object);
+    }
+
+    registerObject(newId, object);
+}
+
+QmlWebChannelAttached *QmlWebChannel::qmlAttachedProperties(QObject *obj)
+{
+    return new QmlWebChannelAttached(obj);
+}
+
+QQmlListProperty<QObject> QmlWebChannel::registeredObjects()
+{
+    return QQmlListProperty<QObject>(this, 0,
+                                     registeredObjects_append,
+                                     registeredObjects_count,
+                                     registeredObjects_at,
+                                     registeredObjects_clear);
+}
+
+void QmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *object)
+{
+    const QmlWebChannelAttached *const attached = qobject_cast<QmlWebChannelAttached*>(
+        qmlAttachedPropertiesObject<QmlWebChannel>(object, false /* don't create */));
+    if (!attached) {
+        const QQmlContext *const context = qmlContext(object);
+        qWarning() << "Missing WebChannel attached property for object" << object << context->nameForObject(object);
+        return;
+    }
+    QmlWebChannel *channel = static_cast<QmlWebChannel*>(prop->object);
+    if (!attached->id().isEmpty()) {
+        // TODO: warning in such cases?
+        channel->registerObject(attached->id(), object);
+    }
+    channel->m_registeredObjects.append(object);
+    connect(attached, SIGNAL(idChanged(QString)), channel, SLOT(objectIdChanged(QString)));
+}
+
+int QmlWebChannel::registeredObjects_count(QQmlListProperty<QObject> *prop)
+{
+    return static_cast<QmlWebChannel*>(prop->object)->m_registeredObjects.size();
+}
+
+QObject *QmlWebChannel::registeredObjects_at(QQmlListProperty<QObject> *prop, int index)
+{
+    return static_cast<QmlWebChannel*>(prop->object)->m_registeredObjects.at(index);
+}
+
+void QmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
+{
+    QmlWebChannel *channel = static_cast<QmlWebChannel*>(prop->object);
+    foreach (QObject *object, channel->m_registeredObjects) {
+        channel->deregisterObject(object);
+    }
+    return channel->m_registeredObjects.clear();
 }

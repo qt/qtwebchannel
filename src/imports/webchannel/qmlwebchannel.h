@@ -45,19 +45,45 @@
 
 #include <qwebchannel.h>
 
+#include "qmlwebchannelattached.h"
+
+#include <QVector>
+
+#include <QtQml/qqml.h>
+#include <QtQml/QQmlListProperty>
+
+class QmlWebChannelAttached;
+
 class QmlWebChannel : public QWebChannel
 {
     Q_OBJECT
 
+    Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
 public:
     QmlWebChannel(QObject *parent = 0);
     virtual ~QmlWebChannel();
 
-    // TODO: replace by list property
-    Q_INVOKABLE void registerObjects(const QVariantMap &objects);
+    Q_INVOKABLE void registerObjects(const QVariantMap& objects);
+    QQmlListProperty<QObject> registeredObjects();
 
     // TODO: remove this by replacing QML with C++ tests
     Q_INVOKABLE bool test_clientIsIdle() const;
+
+    static QmlWebChannelAttached* qmlAttachedProperties(QObject *obj);
+
+private slots:
+    void objectIdChanged(const QString &newId);
+
+private:
+    static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject* item);
+    static int registeredObjects_count(QQmlListProperty<QObject> *prop);
+    static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
+    static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
+
+    QVector<QObject*> m_registeredObjects;
 };
+
+QML_DECLARE_TYPE( QmlWebChannel )
+QML_DECLARE_TYPEINFO( QmlWebChannel, QML_HAS_ATTACHED_PROPERTIES )
 
 #endif // QMLWEBCHANNEL_H
