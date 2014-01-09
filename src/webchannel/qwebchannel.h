@@ -46,7 +46,7 @@
 #include <QObject>
 #include <QJsonValue>
 
-#include "qwebchannelglobal.h"
+#include <QtWebChannel/qwebchannelglobal.h>
 
 class QWebChannelPrivate;
 
