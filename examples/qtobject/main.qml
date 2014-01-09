@@ -49,23 +49,21 @@ import QtWebKit.experimental 1.0
 Rectangle {
     TestObjectFactory {
         id: factory
+        WebChannel.id: "testObjectFactory"
     }
     TestObject {
         id: testObject
         objectName: "initialTestObject"
+        WebChannel.id: objectName
     }
 
     WebChannel {
         id: webChannel
 
-        onInitialized: {
-            registerObjects({
-                "testObjectFactory": factory,
-                "initialTestObject": testObject
-            });
-
-            webView.url = "qrc:/index.html?webChannelBaseUrl=" + webChannel.baseUrl;
-        }
+        registeredObjects: [
+            factory,
+            testObject
+        ];
     }
 
     width: 480
@@ -73,7 +71,7 @@ Rectangle {
 
     WebView {
         id: webView
-        url: "about:blank"
+        url: webChannel.baseUrl ? ("qrc:/index.html?webChannelBaseUrl=" + webChannel.baseUrl) : "about:blank";
         anchors.fill: parent
         experimental.preferences.developerExtrasEnabled: true
     }

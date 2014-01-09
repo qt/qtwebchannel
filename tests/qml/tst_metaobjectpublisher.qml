@@ -51,11 +51,14 @@ WebChannelTest {
         {
             lastMethodArg = arg;
         }
+
+        WebChannel.id: "myObj"
     }
     QtObject {
         id: myOtherObj
         property var foo: 1
         property var bar: 1
+        WebChannel.id: "myOtherObj"
     }
     QtObject {
         id: myFactory
@@ -65,6 +68,7 @@ WebChannelTest {
             lastObj = component.createObject(myFactory, {objectName: id});
             return lastObj;
         }
+        WebChannel.id: "myFactory"
     }
 
     Component {
@@ -80,11 +84,7 @@ WebChannelTest {
 
     function initTestCase()
     {
-        webChannel.registerObjects({
-            "myObj": myObj,
-            "myOtherObj": myOtherObj,
-            "myFactory": myFactory
-        });
+        webChannel.registeredObjects = [myObj, myOtherObj, myFactory];
     }
 
     function awaitInit()

@@ -5,9 +5,11 @@ VPATH += ../../webchannel
 
 SOURCES += \
     plugin.cpp \
-    qmlwebchannel.cpp
+    qmlwebchannel.cpp \
+    qmlwebchannelattached.cpp
 
 HEADERS += \
-    qmlwebchannel.h
+    qmlwebchannel.h \
+    qmlwebchannelattached.h
 
 load(qml_plugin)
