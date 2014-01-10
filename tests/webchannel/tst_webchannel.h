@@ -192,15 +192,21 @@ public:
     explicit TestWebChannel(QObject *parent = 0);
     virtual ~TestWebChannel();
 
+    Q_INVOKABLE void setInt(int i);
+
 private slots:
     void testInitChannel();
     void testRegisterObjects();
     void testInfoForObject();
+    void testInvokeMethodConversion();
 
     void benchClassInfo();
     void benchInitializeClients();
     void benchPropertyUpdates();
     void benchRegisterObjects();
+
+private:
+    int m_lastInt;
 };
 
 #endif // TST_WEBCHANNEL_H

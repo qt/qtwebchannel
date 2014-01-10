@@ -50,12 +50,18 @@
 
 TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
+    , m_lastInt(0)
 {
 }
 
 TestWebChannel::~TestWebChannel()
 {
 
+}
+
+void TestWebChannel::setInt(int i)
+{
+    m_lastInt = i;
 }
 
 void TestWebChannel::testInitChannel()
@@ -212,6 +218,17 @@ void TestWebChannel::testInfoForObject()
         }
         QCOMPARE(info["properties"].toArray(), expected);
     }
+}
+
+void TestWebChannel::testInvokeMethodConversion()
+{
+    QWebChannel channel;
+    int method = metaObject()->indexOfMethod("setInt(int)");
+    QVERIFY(method != -1);
+    QJsonArray args;
+    args.append(QJsonValue(1000));
+    QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+    QCOMPARE(m_lastInt, 1000);
 }
 
 static QHash<QString, QObject*> createObjects(QObject *parent)
