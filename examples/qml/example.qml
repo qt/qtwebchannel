@@ -58,8 +58,11 @@ ApplicationWindow {
     WebChannel {
         id: webChannel
 
-        onRawMessageReceived: {
-            textEdit.text += "Received message: " + rawMessage + "\n";
+        connections: WebViewTransport {
+            webViewExperimental: webView.experimental
+            onMessageReceived: {
+                textEdit.text += "Received message: " + message + "\n";
+            }
         }
     }
 
@@ -106,8 +109,9 @@ ApplicationWindow {
             Layout.fillHeight: true
             Layout.minimumWidth: window.width / 2
             id: webView
-            url: webChannel.baseUrl ? ("index.html?webChannelBaseUrl=" + webChannel.baseUrl) : "about:blank"
+            url: "index.html"
             experimental.preferences.developerExtrasEnabled: true
+            experimental.preferences.navigatorQtObjectEnabled: true
         }
     }
 }

@@ -11,7 +11,9 @@ OTHER_FILES = \
     qwebchannel.js
 
 PUBLIC_HEADERS += \
-    qwebchannel.h
+    qwebchannel.h \
+    qwebchanneltransport.h \
+    qwebsockettransport.h
 
 PRIVATE_HEADERS += \
     qwebchannel_p.h \
@@ -25,7 +27,8 @@ SOURCES += \
     qwebchannel.cpp \
     qmetaobjectpublisher.cpp \
     qwebsocketserver.cpp \
-    qwebchannelsocket.cpp
+    qwebchannelsocket.cpp \
+    qwebsockettransport.cpp
 
 qtHaveModule(qml) {
     QT += qml

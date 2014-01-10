@@ -101,8 +101,19 @@ WebChannelTest {
         loadUrl("bench_init.html");
     }
 
-    function benchmark_init()
+    function benchmark_init_webview()
     {
+        useWebViewTransport = true;
+        loadUrl("bench_init.html");
+        // init
+        awaitMessage();
+        // idle
+        awaitMessage();
+    }
+
+    function benchmark_init_websocket()
+    {
+        useWebViewTransport = false;
         loadUrl("bench_init.html");
         // init
         awaitMessage();

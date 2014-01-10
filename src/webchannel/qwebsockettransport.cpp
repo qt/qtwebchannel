@@ -39,31 +39,63 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#include "qwebsockettransport.h"
+#include "qwebchannelsocket_p.h"
 
-WebChannelTest {
-    name: "WebChannel"
+QT_BEGIN_NAMESPACE
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+QWebSocketTransport::QWebSocketTransport(QObject *parent)
+    : QObject(parent)
+    , d(new QWebChannelSocket)
+{
+    connect(d.data(), SIGNAL(textDataReceived(QString)),
+            SIGNAL(messageReceived(QString)));
+    connect(d.data(), SIGNAL(failed(QString)),
+            SIGNAL(failed(QString)));
+    connect(d.data(), SIGNAL(initialized()),
+            SIGNAL(initialized()));
+    connect(d.data(), SIGNAL(baseUrlChanged(QString)),
+            SIGNAL(baseUrlChanged(QString)));
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
-
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
+    d->initLater();
 }
+
+QWebSocketTransport::~QWebSocketTransport()
+{
+
+}
+
+void QWebSocketTransport::sendMessage(const QByteArray &message) const
+{
+    d->sendMessage(message);
+}
+
+void QWebSocketTransport::sendMessage(const QString &message) const
+{
+    d->sendMessage(message.toUtf8());
+}
+
+void QWebSocketTransport::setMessageHandler(QWebChannelMessageHandlerInterface *handler)
+{
+    d->m_messageHandler = handler;
+}
+
+QString QWebSocketTransport::baseUrl() const
+{
+    return d->m_baseUrl;
+}
+
+void QWebSocketTransport::setUseSecret(bool s)
+{
+    if (d->m_useSecret == s)
+        return;
+    d->m_useSecret = s;
+    d->initLater();
+}
+
+bool QWebSocketTransport::useSecret() const
+{
+    return d->m_useSecret;
+}
+
+QT_END_NAMESPACE
