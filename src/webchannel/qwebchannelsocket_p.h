@@ -56,7 +56,7 @@ public:
     bool m_useSecret;
     bool m_starting;
 
-    QWebChannelSocket(QObject *parent);
+    explicit QWebChannelSocket(QObject *parent = 0);
 
     void initLater();
 

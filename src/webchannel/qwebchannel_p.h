@@ -47,15 +47,15 @@
 QT_BEGIN_NAMESPACE
 
 class QJsonValue;
-class QWebChannelSocket;
+class QWebChannelTransport;
 class QMetaObjectPublisher;
 
 struct Q_WEBCHANNEL_EXPORT QWebChannelPrivate
 {
-    QWebChannelSocket *socket;
+    QWebChannelTransport *transport;
     QMetaObjectPublisher *publisher;
 
-    void sendJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const;
+    QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const;
 };
 
 QT_END_NAMESPACE

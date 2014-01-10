@@ -47,6 +47,7 @@
 #include "qmlwebchannelattached.h"
 
 #include <QVector>
+#include <QPointer>
 
 #include <QtQml/qqml.h>
 #include <QtQml/QQmlListProperty>
@@ -59,7 +60,9 @@ class QmlWebChannel : public QWebChannel
 {
     Q_OBJECT
 
+    Q_PROPERTY(QObject *transport READ transport WRITE setTransport NOTIFY transportChanged);
     Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
+
 public:
     QmlWebChannel(QObject *parent = 0);
     virtual ~QmlWebChannel();
@@ -72,8 +75,15 @@ public:
 
     static QmlWebChannelAttached* qmlAttachedProperties(QObject *obj);
 
+    void setTransport(QObject *transport);
+    QObject *transport() const;
+
+signals:
+    void transportChanged(QObject *transport);
+
 private slots:
     void objectIdChanged(const QString &newId);
+    void forwardTransportChanged(QWebChannelTransport *transport);
 
 private:
     static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject* item);

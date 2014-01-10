@@ -48,6 +48,7 @@
 
 #include <QtWebChannel/qwebchannelglobal.h>
 
+class QWebChannelTransport;
 QT_BEGIN_NAMESPACE
 
 struct QWebChannelPrivate;
@@ -56,18 +57,11 @@ class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
-    Q_PROPERTY(QString baseUrl READ baseUrl NOTIFY baseUrlChanged)
-    Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
     Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged);
 
 public:
     QWebChannel(QObject *parent = 0);
     ~QWebChannel();
-
-    QString baseUrl() const;
-
-    void setUseSecret(bool);
-    bool useSecret() const;
 
     /**
      * Register a map of string ID to QObject* objects.
@@ -96,21 +90,16 @@ public:
      */
     void setBlockUpdates(bool block);
 
+    QWebChannelTransport *transport() const;
+    void setTransport(QWebChannelTransport *transport);
+
 signals:
-    void baseUrlChanged(const QString& baseUrl);
-    void rawMessageReceived(const QString& rawMessage);
-    void pongReceived();
-    void initialized();
-
-    void failed(const QString& reason);
-
     void blockUpdatesChanged(bool block);
+    void transportChanged(QWebChannelTransport *transport);
 
 public slots:
     void sendMessage(const QJsonValue& id, const QJsonValue& data = QJsonValue()) const;
     void respond(const QJsonValue& messageId, const QJsonValue& data = QJsonValue()) const;
-    void sendRawMessage(const QString& rawMessage) const;
-    void ping() const;
 
 private:
     QScopedPointer<QWebChannelPrivate> d;

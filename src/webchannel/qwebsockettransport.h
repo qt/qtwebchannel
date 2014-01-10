@@ -39,31 +39,38 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#ifndef QWEBSOCKETTRANSPORT_H
+#define QWEBSOCKETTRANSPORT_H
 
-WebChannelTest {
-    name: "WebChannel"
+#include "qwebchanneltransport.h"
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+QT_BEGIN_NAMESPACE
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
+class QWebChannelSocket;
+class Q_WEBCHANNEL_EXPORT QWebSocketTransport : public QWebChannelTransport
+{
+    Q_OBJECT
+    Q_PROPERTY(QString baseUrl READ baseUrl NOTIFY baseUrlChanged)
+    Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
+public:
+    explicit QWebSocketTransport(QObject *parent = 0);
+    ~QWebSocketTransport() Q_DECL_OVERRIDE;
 
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
-}
+    void sendMessage(const QByteArray &message) const Q_DECL_OVERRIDE;
+    void sendMessage(const QString &message) const Q_DECL_OVERRIDE;
+
+    QString baseUrl() const;
+
+    void setUseSecret(bool);
+    bool useSecret() const;
+
+Q_SIGNALS:
+    void baseUrlChanged(const QString &baseUrl);
+
+private:
+    QScopedPointer<QWebChannelSocket> d;
+};
+
+QT_END_NAMESPACE
+
+#endif // QWEBSOCKETTRANSPORT_H

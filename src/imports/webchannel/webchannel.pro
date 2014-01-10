@@ -6,10 +6,12 @@ VPATH += ../../webchannel
 SOURCES += \
     plugin.cpp \
     qmlwebchannel.cpp \
-    qmlwebchannelattached.cpp
+    qmlwebchannelattached.cpp \
+    qmlwebviewtransport.cpp
 
 HEADERS += \
     qmlwebchannel.h \
-    qmlwebchannelattached.h
+    qmlwebchannelattached.h \
+    qmlwebviewtransport.h
 
 load(qml_plugin)

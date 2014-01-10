@@ -39,31 +39,58 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#include "qmlwebviewtransport.h"
 
-WebChannelTest {
-    name: "WebChannel"
+#include <QVariantMap>
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+QT_BEGIN_NAMESPACE
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
+QmlWebViewTransport::QmlWebViewTransport(QObject *parent)
+    : QWebChannelTransport(parent)
+    , m_webViewExperimental(0)
+{
+}
 
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
+QmlWebViewTransport::~QmlWebViewTransport()
+{
+
+}
+
+void QmlWebViewTransport::setWebViewExperimental(QObject *webViewExperimental)
+{
+    if (webViewExperimental != m_webViewExperimental) {
+        if (m_webViewExperimental) {
+            disconnect(m_webViewExperimental, 0, this, 0);
+        }
+        m_webViewExperimental = webViewExperimental;
+        connect(m_webViewExperimental, SIGNAL(messageReceived(QVariantMap)), this, SLOT(handleWebViewMessage(QVariantMap)));
+        emit webViewChanged(webViewExperimental);
     }
 }
+
+QObject *QmlWebViewTransport::webViewExperimental() const
+{
+    return m_webViewExperimental;
+}
+
+void QmlWebViewTransport::sendMessage(const QString &message) const
+{
+    if (!m_webViewExperimental) {
+        qWarning("Cannot send message - did you forget to set the webViewExperimental property?");
+        return;
+    }
+    QMetaObject::invokeMethod(m_webViewExperimental, "postMessage", Q_ARG(QString, message));
+}
+
+void QmlWebViewTransport::sendMessage(const QByteArray &message) const
+{
+    sendMessage(QString::fromUtf8(message));
+}
+
+void QmlWebViewTransport::handleWebViewMessage(const QVariantMap &message)
+{
+    const QString &data = message[QStringLiteral("data")].toString();
+    emit messageReceived(data);
+}
+
+QT_END_NAMESPACE
