@@ -343,7 +343,11 @@ bool QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodI
     // construct converter objects of QVariant to QGenericArgument
     VariantArgument arguments[10];
     for (int i = 0; i < qMin(args.size(), method.parameterCount()); ++i) {
-        arguments[i].setValue(args.at(i).toVariant(), method.parameterType(i));
+        QVariant arg = args.at(i).toVariant();
+        if (method.parameterType(i) != QMetaType::QVariant && !arg.convert(method.parameterType(i))) {
+            qWarning() << "Could not convert argument" << args.at(i) << "to target type" << method.parameterTypes().at(i) << '.';
+        }
+        arguments[i].value = arg;
     }
 
     // construct QGenericReturnArgument

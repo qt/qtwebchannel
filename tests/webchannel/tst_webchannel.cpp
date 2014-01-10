@@ -50,12 +50,29 @@
 
 TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
+    , m_lastInt(0)
+    , m_lastDouble(0)
 {
 }
 
 TestWebChannel::~TestWebChannel()
 {
 
+}
+
+void TestWebChannel::setInt(int i)
+{
+    m_lastInt = i;
+}
+
+void TestWebChannel::setDouble(double d)
+{
+    m_lastDouble = d;
+}
+
+void TestWebChannel::setVariant(const QVariant &v)
+{
+    m_lastVariant = v;
 }
 
 void TestWebChannel::testInitChannel()
@@ -211,6 +228,33 @@ void TestWebChannel::testInfoForObject()
             expected.append(property);
         }
         QCOMPARE(info["properties"].toArray(), expected);
+    }
+}
+
+void TestWebChannel::testInvokeMethodConversion()
+{
+    QWebChannel channel;
+
+    QJsonArray args;
+    args.append(QJsonValue(1000));
+
+    {
+        int method = metaObject()->indexOfMethod("setInt(int)");
+        QVERIFY(method != -1);
+        QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+        QCOMPARE(m_lastInt, args.at(0).toInt());
+    }
+    {
+        int method = metaObject()->indexOfMethod("setDouble(double)");
+        QVERIFY(method != -1);
+        QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+        QCOMPARE(m_lastDouble, args.at(0).toDouble());
+    }
+    {
+        int method = metaObject()->indexOfMethod("setVariant(QVariant)");
+        QVERIFY(method != -1);
+        QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+        QCOMPARE(m_lastVariant, args.at(0).toVariant());
     }
 }
 
