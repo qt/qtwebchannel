@@ -44,11 +44,13 @@
 #include <qwebchannel.h>
 #include <qwebchannel_p.h>
 #include <qmetaobjectpublisher_p.h>
+#include <qwebsockettransport.h>
 
 #include <QtTest>
 
 TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
+    , m_dummyTransport(new DummyTransport(this))
     , m_lastInt(0)
     , m_lastDouble(0)
 {
@@ -74,19 +76,18 @@ void TestWebChannel::setVariant(const QVariant &v)
     m_lastVariant = v;
 }
 
-void TestWebChannel::testInitChannel()
+void TestWebChannel::testInitWebSocketTransport()
 {
-    QWebChannel channel;
-
-    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
-    QSignalSpy baseUrlSpy(&channel, SIGNAL(baseUrlChanged(QString)));
+    QWebSocketTransport transport;
+    QSignalSpy initSpy(&transport, SIGNAL(initialized()));
+    QSignalSpy baseUrlSpy(&transport, SIGNAL(baseUrlChanged(QString)));
 
     QVERIFY(initSpy.wait());
     QCOMPARE(initSpy.size(), 1);
     QCOMPARE(baseUrlSpy.size(), 1);
     QCOMPARE(baseUrlSpy.first().size(), 1);
-    QCOMPARE(channel.baseUrl(), baseUrlSpy.first().first().toString());
-    QVERIFY(!channel.baseUrl().isEmpty());
+    QCOMPARE(transport.baseUrl(), baseUrlSpy.first().first().toString());
+    QVERIFY(!transport.baseUrl().isEmpty());
 }
 
 void TestWebChannel::testRegisterObjects()
@@ -233,6 +234,7 @@ void TestWebChannel::testInfoForObject()
 void TestWebChannel::testInvokeMethodConversion()
 {
     QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
 
     QJsonArray args;
     args.append(QJsonValue(1000));
@@ -271,8 +273,7 @@ static QHash<QString, QObject*> createObjects(QObject *parent)
 void TestWebChannel::benchClassInfo()
 {
     QWebChannel channel;
-    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
-    QVERIFY(initSpy.wait());
+    channel.connectTo(m_dummyTransport);
 
     QObject parent;
     const QHash<QString, QObject*> objects = createObjects(&parent);
@@ -287,8 +288,7 @@ void TestWebChannel::benchClassInfo()
 void TestWebChannel::benchInitializeClients()
 {
     QWebChannel channel;
-    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
-    QVERIFY(initSpy.wait());
+    channel.connectTo(m_dummyTransport);
 
     QObject parent;
     channel.registerObjects(createObjects(&parent));
@@ -306,8 +306,7 @@ void TestWebChannel::benchInitializeClients()
 void TestWebChannel::benchPropertyUpdates()
 {
     QWebChannel channel;
-    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
-    QVERIFY(initSpy.wait());
+    channel.connectTo(m_dummyTransport);
 
     QObject parent;
     const QHash<QString, QObject*> objects = createObjects(&parent);
@@ -333,8 +332,7 @@ void TestWebChannel::benchPropertyUpdates()
 void TestWebChannel::benchRegisterObjects()
 {
     QWebChannel channel;
-    QSignalSpy initSpy(&channel, SIGNAL(initialized()));
-    QVERIFY(initSpy.wait());
+    channel.connectTo(m_dummyTransport);
 
     QObject parent;
     const QHash<QString, QObject*> objects = createObjects(&parent);

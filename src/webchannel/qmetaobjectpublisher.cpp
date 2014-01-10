@@ -524,7 +524,7 @@ bool QMetaObjectPublisher::handleRequest(const QJsonObject &message)
     return false;
 }
 
-void QMetaObjectPublisher::handleRawMessage(const QString &message)
+void QMetaObjectPublisher::handleMessage(const QString &message)
 {
     const QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     if (doc.isObject()) {
