@@ -40,6 +40,7 @@
 ****************************************************************************/
 
 #include "qwebchannel.h"
+#include "qwebsockettransport.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -55,14 +56,14 @@ class Dialog : public QObject
     Q_OBJECT
 
 public:
-    explicit Dialog(QWebChannel *channel, QObject *parent = 0)
+    explicit Dialog(QWebSocketTransport *transport, QObject *parent = 0)
         : QObject(parent)
     {
         ui.setupUi(&dialog);
         dialog.show();
 
         connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
-        connect(channel, SIGNAL(baseUrlChanged(QString)),
+        connect(transport, SIGNAL(baseUrlChanged(QString)),
                 SLOT(baseUrlChanged(QString)));
     }
 
@@ -109,8 +110,10 @@ int main(int argc, char** argv)
     QApplication app(argc, argv);
 
     QWebChannel channel;
+    QWebSocketTransport transport;
+    channel.connectTo(&transport);
 
-    Dialog dialog(&channel);
+    Dialog dialog(&transport);
 
     channel.registerObject(QStringLiteral("dialog"), &dialog);
 

@@ -5,8 +5,7 @@
         <script type="text/javascript" src="qrc:///qwebchannel/qwebchannel.js"></script>
         <script type="text/javascript">
             //BEGIN SETUP
-            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
-            new QWebChannel(baseUrl, function(channel) {
+            new QWebChannel(navigator.qt, function(channel) {
                 document.getElementById("send").onclick = function() {
                     var input = document.getElementById("input");
                     var text = input.value;
