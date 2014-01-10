@@ -387,6 +387,9 @@ void QWebSocketServer::sendMessage(const QByteArray& message) const
 
 void QWebSocketServer::sendFrame(Frame::Opcode opcode, const QByteArray& data) const
 {
+    if (m_connections.isEmpty()) {
+        return;
+    }
     const QByteArray& header = frameHeader(opcode, data.size());
     QHash< QTcpSocket*, Connection >::const_iterator it = m_connections.constBegin();
     while (it != m_connections.constEnd()) {

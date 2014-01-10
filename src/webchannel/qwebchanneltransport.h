@@ -39,31 +39,32 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#ifndef QWEBCHANNELTRANSPORT_H
+#define QWEBCHANNELTRANSPORT_H
 
-WebChannelTest {
-    name: "WebChannel"
+#include <QObject>
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+#include <QtWebChannel/qwebchannelglobal.h>
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
+QT_BEGIN_NAMESPACE
 
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
-}
+class Q_WEBCHANNEL_EXPORT QWebChannelTransport : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit QWebChannelTransport(QObject *parent);
+    ~QWebChannelTransport() Q_DECL_OVERRIDE;
+
+    virtual void sendMessage(const QString &message) const = 0;
+    virtual void sendMessage(const QByteArray &message) const = 0;
+
+Q_SIGNALS:
+    void messageReceived(const QString &message);
+    void failed(const QString &reason);
+    void initialized();
+};
+
+QT_END_NAMESPACE
+
+#endif // QWEBCHANNELTRANSPORT_H
