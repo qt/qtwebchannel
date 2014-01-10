@@ -39,31 +39,33 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#ifndef QMLWEBVIEWTRANSPORT_H
+#define QMLWEBVIEWTRANSPORT_H
 
-WebChannelTest {
-    name: "WebChannel"
+#include <qwebchanneltransport.h>
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+class QmlWebViewTransport : public QWebChannelTransport
+{
+    Q_OBJECT
+    Q_PROPERTY(QObject *webViewExperimental READ webViewExperimental WRITE setWebViewExperimental NOTIFY webViewChanged)
+public:
+    explicit QmlWebViewTransport(QObject *parent = 0);
+    ~QmlWebViewTransport() Q_DECL_OVERRIDE;
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
+    void sendMessage(const QString &message) const Q_DECL_OVERRIDE;
+    void sendMessage(const QByteArray &message) const Q_DECL_OVERRIDE;
 
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
-}
+    void setWebViewExperimental(QObject *webViewExperimental);
+    QObject *webViewExperimental() const;
+
+signals:
+    void webViewChanged(QObject *webViewExperimental);
+
+private slots:
+    void handleWebViewMessage(const QVariantMap &message);
+
+private:
+    QObject *m_webViewExperimental;
+};
+
+#endif // QMLWEBVIEWTRANSPORT_H

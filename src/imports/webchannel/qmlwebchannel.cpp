@@ -43,18 +43,38 @@
 
 #include "qwebchannel_p.h"
 #include "qmetaobjectpublisher_p.h"
+#include "qwebchanneltransport.h"
 
 #include <QtQml/QQmlContext>
 
 QmlWebChannel::QmlWebChannel(QObject *parent)
     : QWebChannel(parent)
 {
-
 }
 
 QmlWebChannel::~QmlWebChannel()
 {
 
+}
+
+void QmlWebChannel::setTransport(QObject *transport)
+{
+    QWebChannelTransport *t = qobject_cast<QWebChannelTransport*>(transport);
+    if (transport && !t) {
+        qWarning() << "Cannot set transport property to object" << transport << " - it does not inherit from QWebChannelTransport!";
+        return;
+    }
+    QWebChannel::setTransport(t);
+}
+
+QObject *QmlWebChannel::transport() const
+{
+    return d->transport;
+}
+
+void QmlWebChannel::forwardTransportChanged(QWebChannelTransport *transport)
+{
+    emit transportChanged(static_cast<QObject*>(transport));
 }
 
 void QmlWebChannel::registerObjects(const QVariantMap &objects)
