@@ -51,7 +51,6 @@ QT_USE_NAMESPACE
 QmlWebChannel::QmlWebChannel(QObject *parent)
     : QWebChannel(parent)
 {
-
 }
 
 QmlWebChannel::~QmlWebChannel()
@@ -99,6 +98,37 @@ QmlWebChannelAttached *QmlWebChannel::qmlAttachedProperties(QObject *obj)
     return new QmlWebChannelAttached(obj);
 }
 
+void QmlWebChannel::connectTo(QObject *transport)
+{
+    if (QWebChannelTransportInterface *iface = qobject_cast<QWebChannelTransportInterface*>(transport)) {
+        m_connectedObjects.insert(transport, iface);
+        QWebChannel::connectTo(iface);
+        connect(transport, SIGNAL(destroyed(QObject*)), SLOT(transportDestroyed(QObject*)), Qt::UniqueConnection);
+    } else {
+        qWarning() << "Cannot connect to transport" << transport << " - it does not implement the QWebChannelTransportInterface.";
+    }
+}
+
+void QmlWebChannel::disconnectFrom(QObject *transport)
+{
+    if (QWebChannelTransportInterface *iface = qobject_cast<QWebChannelTransportInterface*>(transport)) {
+        QWebChannel::disconnectFrom(iface);
+        disconnect(transport, SIGNAL(destroyed(QObject*)), this, SLOT(transportDestroyed(QObject*)));
+        m_connectedObjects.remove(transport);
+    } else {
+        qWarning() << "Cannot disconnect from transport" << transport << " - it does not implement the QWebChannelTransportInterface.";
+    }
+}
+
+void QmlWebChannel::transportDestroyed(QObject *transport)
+{
+    QWebChannelTransportInterface *iface = m_connectedObjects.take(transport);
+    const int idx = d->transports.indexOf(iface);
+    if (idx != -1) {
+        d->transports.remove(idx);
+    }
+}
+
 QQmlListProperty<QObject> QmlWebChannel::registeredObjects()
 {
     return QQmlListProperty<QObject>(this, 0,
@@ -143,4 +173,38 @@ void QmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
         channel->deregisterObject(object);
     }
     return channel->m_registeredObjects.clear();
+}
+
+QQmlListProperty<QWebChannelTransportInterface> QmlWebChannel::transports()
+{
+    return QQmlListProperty<QWebChannelTransportInterface>(this, 0,
+                                                           transports_append,
+                                                           transports_count,
+                                                           transports_at,
+                                                           transports_clear);
+}
+
+void QmlWebChannel::transports_append(QQmlListProperty<QWebChannelTransportInterface> *prop, QWebChannelTransportInterface *transport)
+{
+    QWebChannel *channel = static_cast<QWebChannel*>(prop->object);
+    channel->connectTo(transport);
+}
+
+int QmlWebChannel::transports_count(QQmlListProperty<QWebChannelTransportInterface> *prop)
+{
+    return static_cast<QmlWebChannel*>(prop->object)->d->transports.size();
+}
+
+QWebChannelTransportInterface *QmlWebChannel::transports_at(QQmlListProperty<QWebChannelTransportInterface> *prop, int index)
+{
+    return static_cast<QmlWebChannel*>(prop->object)->d->transports.at(index);
+}
+
+void QmlWebChannel::transports_clear(QQmlListProperty<QWebChannelTransportInterface> *prop)
+{
+    QWebChannel *channel = static_cast<QWebChannel*>(prop->object);
+    foreach (QWebChannelTransportInterface *transport, channel->d->transports) {
+        channel->disconnectFrom(transport);
+    }
+    Q_ASSERT(channel->d->transports.isEmpty());
 }

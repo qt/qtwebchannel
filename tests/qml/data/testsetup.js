@@ -39,31 +39,9 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
-
-WebChannelTest {
-    name: "WebChannel"
-
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
-
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
-
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
+window.createWebChannel = function(callback, raw)
+{
+    var baseUrlMatch = /[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search);
+    var transport = baseUrlMatch ? baseUrlMatch[1] : navigator.qt;
+    return new QWebChannel(transport, callback, raw);
 }

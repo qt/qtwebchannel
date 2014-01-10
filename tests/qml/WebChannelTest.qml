@@ -47,15 +47,25 @@ import QtWebKit 3.0
 import QtWebKit.experimental 1.0
 
 TestCase {
-    // only run after the webchannel has finished initialization
-    when: webChannel.baseUrl != ""
-
     property var lastLoadStatus
+    property bool useWebViewTransport: false
+
+    // only run after the webchannel has finished initialization
+    when: webSocketTransport.baseUrl != ""
+
+    WebViewTransport {
+        id: webViewTransport
+        webViewExperimental: view.experimental
+    }
+    WebSocketTransport {
+        id: webSocketTransport
+    }
 
     WebView {
         id: view
 
         experimental.preferences.developerExtrasEnabled: true
+        experimental.preferences.navigatorQtObjectEnabled: true
 
         onLoadingChanged: {
             // NOTE: we cannot use spy.signalArguments nor save the loadRequest anywhere, as it gets
@@ -70,6 +80,7 @@ TestCase {
             signalName: "onLoadingChanged"
         }
     }
+    property var view: view
 
     WebChannel {
         id: webChannel
@@ -78,23 +89,23 @@ TestCase {
 
     SignalSpy {
         id: rawMessageSpy
-        target: webChannel
-        signalName: "onRawMessageReceived"
+        target: useWebViewTransport ? webViewTransport : webSocketTransport;
+        signalName: "onMessageReceived"
     }
     property var rawMessageSpy: rawMessageSpy
     property var rawMessageIdx: 0;
 
-    SignalSpy {
-        id: pongSpy
-        target: webChannel
-        signalName: "onPongReceived"
-    }
-    property var pongSpy: pongSpy
-
     function loadUrl(url)
     {
-        verify(webChannel.baseUrl != "", "webChannel.baseUrl is empty");
-        view.url = "data/" + url + "?webChannelBaseUrl=" + webChannel.baseUrl;
+        if (useWebViewTransport) {
+            webChannel.disconnectFrom(webSocketTransport);
+            webChannel.connectTo(webViewTransport);
+        } else {
+            webChannel.disconnectFrom(webViewTransport);
+            webChannel.connectTo(webSocketTransport);
+        }
+        verify(useWebViewTransport || webSocketTransport.baseUrl != "", "webSocketTransport.baseUrl is empty");
+        view.url = "data/" + url + (!useWebViewTransport ? "?webChannelBaseUrl=" + webSocketTransport.baseUrl : "");
         // now wait for page to finish loading
         do {
             loadingSpy.wait(500);
@@ -108,7 +119,6 @@ TestCase {
         loadingSpy.clear();
         rawMessageSpy.clear();
         rawMessageIdx = 0;
-        pongSpy.clear();
     }
 
     function awaitRawMessage()
