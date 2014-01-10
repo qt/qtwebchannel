@@ -50,16 +50,17 @@
 #include <QBasicTimer>
 #include <QPointer>
 
+#include "qwebchannelglobal.h"
+#include "qwebchanneltransportinterface.h"
+
 QT_BEGIN_NAMESPACE
 
 class QWebChannel;
 
-#include "qwebchannelglobal.h"
-
-class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
+class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject, public QWebChannelMessageHandlerInterface
 {
     Q_OBJECT
-
+    Q_INTERFACES(QWebChannelMessageHandlerInterface)
 public:
     QMetaObjectPublisher(QWebChannel *webChannel);
     virtual ~QMetaObjectPublisher();
@@ -160,14 +161,10 @@ public:
      */
     void setBlockUpdates(bool block);
 
-public slots:
     /**
-     * Helper slot which you can connect directly to WebChannel's rawMessageReceived signal.
-     *
-     * This slot then tries to parse the message as JSON and if it succeeds, calls handleRequest
-     * with the obtained JSON object.
+     * Parse the message as JSON and if it succeeds, call handleRequest with the obtained JSON object.
      */
-    void handleRawMessage(const QString &message);
+    void handleMessage(const QString &message) Q_DECL_OVERRIDE;
 
 signals:
     void blockUpdatesChanged(bool block);
