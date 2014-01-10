@@ -44,60 +44,21 @@
 #define VARIANTARGUMENT_H
 
 #include <QVariant>
-#include <QMetaType>
 
 /**
  * RAII QVariant to Q[Generic]Argument conversion
  */
-class VariantArgument
+struct VariantArgument
 {
-public:
-    explicit VariantArgument()
-    : m_data(0)
-    , m_paramType(0)
-    {
-    }
-
-    /// TODO: test with C++ methods that don't take a QVariant as arg
-    ///       also test conversions
-    void setValue(const QVariant &value, int paramType)
-    {
-        if (m_data) {
-            QMetaType::destroy(m_paramType, m_data);
-            m_name.clear();
-            m_data = 0;
-        }
-
-        m_paramType = paramType;
-
-        if (value.isValid()) {
-            m_name = value.typeName();
-            m_data = QMetaType::create(m_paramType, value.constData());
-        }
-    }
-
-    ~VariantArgument()
-    {
-        if (m_data) {
-            QMetaType::destroy(m_paramType, m_data);
-            m_data = 0;
-        }
-    }
-
     operator QGenericArgument() const
     {
-        if (!m_data) {
+        if (!value.isValid()) {
             return QGenericArgument();
         }
-        return QGenericArgument(m_name.constData(), m_data);
+        return QGenericArgument(value.typeName(), value.constData());
     }
 
-private:
-    Q_DISABLE_COPY(VariantArgument)
-
-    QByteArray m_name;
-    void* m_data;
-    int m_paramType;
+    QVariant value;
 };
 
 #endif // VARIANTARGUMENT_H

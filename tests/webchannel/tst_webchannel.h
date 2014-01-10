@@ -44,6 +44,7 @@
 #define TST_WEBCHANNEL_H
 
 #include <QObject>
+#include <QVariant>
 
 class TestObject : public QObject
 {
@@ -192,15 +193,25 @@ public:
     explicit TestWebChannel(QObject *parent = 0);
     virtual ~TestWebChannel();
 
+    Q_INVOKABLE void setInt(int i);
+    Q_INVOKABLE void setDouble(double d);
+    Q_INVOKABLE void setVariant(const QVariant &v);
+
 private slots:
     void testInitChannel();
     void testRegisterObjects();
     void testInfoForObject();
+    void testInvokeMethodConversion();
 
     void benchClassInfo();
     void benchInitializeClients();
     void benchPropertyUpdates();
     void benchRegisterObjects();
+
+private:
+    int m_lastInt;
+    double m_lastDouble;
+    QVariant m_lastVariant;
 };
 
 #endif // TST_WEBCHANNEL_H
