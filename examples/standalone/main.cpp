@@ -40,6 +40,7 @@
 ****************************************************************************/
 
 #include "qwebchannel.h"
+#include "qwebchanneltransport.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -64,7 +65,7 @@ public:
         dialog.show();
 
         connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
-        connect(channel, SIGNAL(baseUrlChanged(QString)),
+        connect(channel->transport(), SIGNAL(baseUrlChanged(QString)),
                 SLOT(baseUrlChanged(QString)));
     }
 

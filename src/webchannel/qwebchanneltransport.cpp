@@ -39,31 +39,19 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#include "qwebchanneltransport.h"
 
-WebChannelTest {
-    name: "WebChannel"
+QT_BEGIN_NAMESPACE
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+QWebChannelTransport::QWebChannelTransport(QObject *parent)
+    : QObject(parent)
+{
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
-
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
 }
+
+QWebChannelTransport::~QWebChannelTransport()
+{
+
+}
+
+QT_END_NAMESPACE

@@ -42,7 +42,7 @@
 
 "use strict";
 
-var QWebChannel = function(baseUrl, initCallback, rawChannel)
+var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
 {
     var channel = this;
     // support multiple channels listening to the same socket
@@ -52,34 +52,14 @@ var QWebChannel = function(baseUrl, initCallback, rawChannel)
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
         return v.toString(16);
     });
-    ///TODO: use ssl?
-    var socketUrl = "ws://" + baseUrl;
-    this.socket = new WebSocket(socketUrl, "QWebChannel");
     this.send = function(data)
     {
         if (typeof(data) !== "string") {
             data = JSON.stringify(data);
         }
         channel.socket.send(data);
-    };
-
-    this.socket.onopen = function()
-    {
-        if (rawChannel) {
-            initCallback(channel);
-        } else {
-            channel.initMetaObjectPublisher(initCallback);
-        }
-    };
-    this.socket.onclose = function()
-    {
-        console.error("web channel closed");
-    };
-    this.socket.onerror = function(error)
-    {
-        console.error("web channel error: " + error);
-    };
-    this.socket.onmessage = function(message)
+    }
+    this.messageReceived = function(message)
     {
         var jsonData = JSON.parse(message.data);
         if (jsonData.id === undefined) {
@@ -99,7 +79,41 @@ var QWebChannel = function(baseUrl, initCallback, rawChannel)
                 (callback)(jsonData.data); }
             );
         }
-    };
+    }
+
+    this.initialized = function()
+    {
+        if (rawChannel) {
+            initCallback(channel);
+        } else {
+            channel.initMetaObjectPublisher(initCallback);
+        }
+    }
+
+    if (typeof baseUrlOrSocket === 'object') {
+        this.socket = baseUrlOrSocket;
+        this.socket.send = function(data)
+        {
+            channel.socket.postMessage(data);
+        }
+        this.socket.onmessage = this.messageReceived
+        setTimeout(this.initialized, 0);
+    } else {
+        ///TODO: use ssl?
+        var socketUrl = "ws://" + baseUrlOrSocket;
+        this.socket = new WebSocket(socketUrl, "QWebChannel");
+
+        this.socket.onopen = this.initialized
+        this.socket.onclose = function()
+        {
+            console.error("web channel closed");
+        };
+        this.socket.onerror = function(error)
+        {
+            console.error("web channel error: " + error);
+        };
+        this.socket.onmessage = this.messageReceived
+    }
 
     this.subscriptions = {};
     this.subscribe = function(id, callback)
@@ -136,7 +150,6 @@ var QWebChannel = function(baseUrl, initCallback, rawChannel)
         // prevent multiple initialization which might happen with multiple webchannel clients.
         var initialized = false;
 
-        console.log(channel);
         channel.subscribe(
             "Qt.signal",
             function(payload) {

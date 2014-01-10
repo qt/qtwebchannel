@@ -44,8 +44,23 @@
 
 #include <QObject>
 #include <QVariant>
+#include <qwebchanneltransport.h>
 
 QT_BEGIN_NAMESPACE
+
+class DummyTransport : public QWebChannelTransport
+{
+    Q_OBJECT
+public:
+    explicit DummyTransport(QObject *parent)
+        : QWebChannelTransport(parent)
+    {}
+
+    void sendMessage(const QString &/*message*/) const Q_DECL_OVERRIDE
+    {}
+    void sendMessage(const QByteArray &/*message*/) const Q_DECL_OVERRIDE
+    {}
+};
 
 class TestObject : public QObject
 {
@@ -210,6 +225,8 @@ private slots:
     void benchRegisterObjects();
 
 private:
+    DummyTransport *m_dummyTransport;
+
     int m_lastInt;
     double m_lastDouble;
     QVariant m_lastVariant;
