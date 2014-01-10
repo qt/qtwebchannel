@@ -48,11 +48,14 @@ QT_BEGIN_NAMESPACE
 
 QWebChannelSocket::QWebChannelSocket(QObject *parent)
     : QWebSocketServer(parent)
+    , m_messageHandler(Q_NULLPTR)
     , m_useSecret(true)
     , m_starting(false)
 {
     connect(this, SIGNAL(error(QAbstractSocket::SocketError)),
             SLOT(socketError()));
+    connect(this, SIGNAL(textDataReceived(QString)),
+            SLOT(messageReceived(QString)));
 }
 
 void QWebChannelSocket::initLater()
@@ -98,6 +101,13 @@ void QWebChannelSocket::init()
 void QWebChannelSocket::socketError()
 {
     emit failed(errorString());
+}
+
+void QWebChannelSocket::messageReceived(const QString &message)
+{
+    if (m_messageHandler) {
+        m_messageHandler->handleMessage(message);
+    }
 }
 
 QT_END_NAMESPACE

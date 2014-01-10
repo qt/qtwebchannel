@@ -39,31 +39,55 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+#ifndef QWEBCHANNELTRANSPORTINTERFACE_H
+#define QWEBCHANNELTRANSPORTINTERFACE_H
 
-WebChannelTest {
-    name: "WebChannel"
+#include <QObject>
 
-    function test_receiveRawMessage()
-    {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
-    }
+#include <QtWebChannel/qwebchannelglobal.h>
 
-    function test_sendMessage()
-    {
-        loadUrl("send.html");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
-    }
+QT_BEGIN_NAMESPACE
 
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
-}
+class Q_WEBCHANNEL_EXPORT QWebChannelMessageHandlerInterface
+{
+public:
+    virtual ~QWebChannelMessageHandlerInterface() {}
+
+    /**
+     * Handle a text message from a web channel client.
+     */
+    virtual void handleMessage(const QString &message) = 0;
+};
+
+#define QWebChannelMessageHandlerInterface_iid "org.qt-project.Qt.QWebChannelMessageHandlerInterface"
+Q_DECLARE_INTERFACE(QWebChannelMessageHandlerInterface, QWebChannelMessageHandlerInterface_iid);
+Q_DECLARE_METATYPE(QWebChannelMessageHandlerInterface*)
+
+class Q_WEBCHANNEL_EXPORT QWebChannelTransportInterface
+{
+public:
+    virtual ~QWebChannelTransportInterface() {}
+
+    /**
+     * Send a text message to all web channel clients.
+     */
+    virtual void sendMessage(const QString &message) const = 0;
+
+    /**
+     * Send a binary message to all web channel clients.
+     */
+    virtual void sendMessage(const QByteArray &message) const = 0;
+
+    /**
+     * Sets the message handler that will be called on incoming messages from web channel clients.
+     */
+    virtual void setMessageHandler(QWebChannelMessageHandlerInterface *handler) = 0;
+};
+
+#define QWebChannelTransportInterface_iid "org.qt-project.Qt.QWebChannelTransportInterface"
+Q_DECLARE_INTERFACE(QWebChannelTransportInterface, QWebChannelTransportInterface_iid);
+Q_DECLARE_METATYPE(QWebChannelTransportInterface*)
+
+QT_END_NAMESPACE
+
+#endif // QWEBCHANNELTRANSPORTINTERFACE_H
