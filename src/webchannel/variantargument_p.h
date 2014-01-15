@@ -44,6 +44,8 @@
 
 #include <QVariant>
 
+QT_BEGIN_NAMESPACE
+
 /**
  * RAII QVariant to Q[Generic]Argument conversion
  */
@@ -59,5 +61,7 @@ struct VariantArgument
 
     QVariant value;
 };
+
+QT_END_NAMESPACE
 
 #endif // VARIANTARGUMENT_H

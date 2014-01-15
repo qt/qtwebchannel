@@ -48,6 +48,8 @@
 #include <QMetaMethod>
 #include <QDebug>
 
+QT_BEGIN_NAMESPACE
+
 static const int s_destroyedSignalIndex = QObject::staticMetaObject.indexOfMethod("destroyed(QObject*)");
 
 /**
@@ -285,5 +287,7 @@ void SignalHandler<Receiver>::clear()
     m_signalArgumentTypes.clear();
     m_signalArgumentTypes[&QObject::staticMetaObject] = keep;
 }
+
+QT_END_NAMESPACE
 
 #endif // SIGNALHANDLER_H

@@ -48,6 +48,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+QT_BEGIN_NAMESPACE
+
 void QWebChannelPrivate::sendJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const
 {
     QJsonObject obj;
@@ -158,3 +160,5 @@ void QWebChannel::ping() const
 {
     d->socket->ping();
 }
+
+QT_END_NAMESPACE
