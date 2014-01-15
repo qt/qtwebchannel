@@ -53,6 +53,8 @@
 #include <QtQml/QJSEngine>
 #endif
 
+QT_BEGIN_NAMESPACE
+
 namespace {
 const QString KEY_SIGNALS = QStringLiteral("signals");
 const QString KEY_METHODS = QStringLiteral("methods");
@@ -558,3 +560,5 @@ void QMetaObjectPublisher::timerEvent(QTimerEvent *event)
         QObject::timerEvent(event);
     }
 }
+
+QT_END_NAMESPACE

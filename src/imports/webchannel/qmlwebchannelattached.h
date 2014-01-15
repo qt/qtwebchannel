@@ -44,6 +44,8 @@
 
 #include <QObject>
 
+QT_BEGIN_NAMESPACE
+
 class QmlWebChannelAttached : public QObject
 {
     Q_OBJECT
@@ -62,5 +64,7 @@ signals:
 private:
     QString m_id;
 };
+
+QT_END_NAMESPACE
 
 #endif // QMLWEBCHANNELATTACHED_H
