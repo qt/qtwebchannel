@@ -44,6 +44,8 @@
 #include <QUuid>
 #include <QDebug>
 
+QT_BEGIN_NAMESPACE
+
 QWebChannelSocket::QWebChannelSocket(QObject *parent)
     : QWebSocketServer(parent)
     , m_useSecret(true)
@@ -97,3 +99,5 @@ void QWebChannelSocket::socketError()
 {
     emit failed(errorString());
 }
+
+QT_END_NAMESPACE

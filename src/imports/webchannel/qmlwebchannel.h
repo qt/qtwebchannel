@@ -51,6 +51,8 @@
 #include <QtQml/qqml.h>
 #include <QtQml/QQmlListProperty>
 
+QT_BEGIN_NAMESPACE
+
 class QmlWebChannelAttached;
 
 class QmlWebChannel : public QWebChannel
@@ -84,5 +86,7 @@ private:
 
 QML_DECLARE_TYPE( QmlWebChannel )
 QML_DECLARE_TYPEINFO( QmlWebChannel, QML_HAS_ATTACHED_PROPERTIES )
+
+QT_END_NAMESPACE
 
 #endif // QMLWEBCHANNEL_H

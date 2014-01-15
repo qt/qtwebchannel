@@ -50,6 +50,8 @@
 #include <QBasicTimer>
 #include <QPointer>
 
+QT_BEGIN_NAMESPACE
+
 class QWebChannel;
 
 #include "qwebchannelglobal.h"
@@ -221,5 +223,7 @@ private:
     // prevent message flooding.
     QBasicTimer timer;
 };
+
+QT_END_NAMESPACE
 
 #endif // QMETAOBJECTPUBLISHER_P_H

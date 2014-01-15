@@ -41,6 +41,8 @@
 
 #include "qmlwebchannelattached.h"
 
+QT_USE_NAMESPACE
+
 QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
     : QObject(parent)
 {

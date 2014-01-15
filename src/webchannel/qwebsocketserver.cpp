@@ -48,6 +48,8 @@
 
 #include <limits>
 
+QT_BEGIN_NAMESPACE
+
 namespace {
 template<typename T>
 inline static void appendBytes(QByteArray& data, T value)
@@ -421,3 +423,5 @@ void QWebSocketServer::ping() const
 {
     sendFrame(Frame::Ping, QByteArray());
 }
+
+QT_END_NAMESPACE
