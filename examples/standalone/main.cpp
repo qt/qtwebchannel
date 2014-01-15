@@ -50,6 +50,8 @@
 
 #include "ui_dialog.h"
 
+QT_USE_NAMESPACE
+
 class Dialog : public QObject
 {
     Q_OBJECT

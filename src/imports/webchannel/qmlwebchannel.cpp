@@ -46,6 +46,8 @@
 
 #include <QtQml/QQmlContext>
 
+QT_BEGIN_NAMESPACE
+
 QmlWebChannel::QmlWebChannel(QObject *parent)
     : QWebChannel(parent)
 {
@@ -142,3 +144,5 @@ void QmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
     }
     return channel->m_registeredObjects.clear();
 }
+
+QT_END_NAMESPACE

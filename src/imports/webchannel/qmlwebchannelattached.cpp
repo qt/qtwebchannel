@@ -41,6 +41,8 @@
 
 #include "qmlwebchannelattached.h"
 
+QT_BEGIN_NAMESPACE
+
 QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
     : QObject(parent)
 {
@@ -64,3 +66,5 @@ void QmlWebChannelAttached::setId(const QString &id)
         emit idChanged(id);
     }
 }
+
+QT_END_NAMESPACE

@@ -44,7 +44,7 @@
 
 #include "qmlwebchannel.h"
 
-QT_USE_NAMESPACE
+QT_BEGIN_NAMESPACE
 
 class QWebChannelPlugin : public QQmlExtensionPlugin
 {
@@ -62,5 +62,7 @@ void QWebChannelPlugin::registerTypes(const char *uri)
     qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
 
 }
+
+QT_END_NAMESPACE
 
 #include "plugin.moc"

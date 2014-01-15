@@ -48,6 +48,8 @@
 
 #include <QtWebChannel/qwebchannelglobal.h>
 
+QT_BEGIN_NAMESPACE
+
 class QWebChannelPrivate;
 
 class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
@@ -115,6 +117,8 @@ private:
     friend class QmlWebChannel;
     friend class TestWebChannel;
 };
+
+QT_END_NAMESPACE
 
 #endif // QWEBCHANNEL_H
 

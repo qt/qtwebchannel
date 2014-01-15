@@ -45,6 +45,8 @@
 #include <QObject>
 #include <QVariant>
 
+QT_BEGIN_NAMESPACE
+
 class TestObject : public QObject
 {
     Q_OBJECT
@@ -212,5 +214,7 @@ private:
     double m_lastDouble;
     QVariant m_lastVariant;
 };
+
+QT_END_NAMESPACE
 
 #endif // TST_WEBCHANNEL_H

@@ -44,6 +44,8 @@
 
 #include "qwebsocketserver_p.h"
 
+QT_BEGIN_NAMESPACE
+
 class QWebChannelSocket : public QWebSocketServer
 {
     Q_OBJECT
@@ -70,5 +72,7 @@ private slots:
     void init();
     void socketError();
 };
+
+QT_END_NAMESPACE
 
 #endif // QWEBCHANNELSOCKET_P_H
