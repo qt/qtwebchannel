@@ -46,6 +46,8 @@
 
 #include <QtQml/QQmlContext>
 
+QT_USE_NAMESPACE
+
 QmlWebChannel::QmlWebChannel(QObject *parent)
     : QWebChannel(parent)
 {
