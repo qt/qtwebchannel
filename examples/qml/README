@@ -1,0 +1,3 @@
+To run this example, install QtWebChannel and QtQuickControls modules, then run:
+
+qmlscene ./example.qml
