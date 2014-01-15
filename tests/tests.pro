@@ -2,6 +2,6 @@ TEMPLATE = subdirs
 
 SUBDIRS += webchannel
 
-qtHaveModule(quick) {
+qtHaveModule(webkit):qtHaveModule(quick) {
     SUBDIRS += qml
 }
