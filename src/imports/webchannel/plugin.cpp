@@ -44,8 +44,6 @@
 
 #include "qmlwebchannel.h"
 
-QT_USE_NAMESPACE
-
 class QWebChannelPlugin : public QQmlExtensionPlugin
 {
     Q_OBJECT

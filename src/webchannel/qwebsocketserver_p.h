@@ -45,6 +45,8 @@
 #include <QObject>
 #include <QHostAddress>
 
+QT_BEGIN_NAMESPACE
+
 class QTcpServer;
 class QTcpSocket;
 
@@ -155,5 +157,7 @@ private:
     QTcpServer* m_server;
     QHash<QTcpSocket*, Connection> m_connections;
 };
+
+QT_END_NAMESPACE
 
 #endif // QWEBSOCKET_H
