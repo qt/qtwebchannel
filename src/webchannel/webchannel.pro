@@ -1,5 +1,5 @@
 TARGET = QtWebChannel
-QT = core network
+QT = core network websockets
 CONFIG += warn_on strict_flags
 
 load(qt_module)
@@ -18,7 +18,6 @@ PUBLIC_HEADERS += \
 PRIVATE_HEADERS += \
     qwebchannel_p.h \
     qmetaobjectpublisher_p.h \
-    qwebsocketserver_p.h \
     qwebchannelsocket_p.h \
     variantargument_p.h \
     signalhandler_p.h
@@ -26,7 +25,6 @@ PRIVATE_HEADERS += \
 SOURCES += \
     qwebchannel.cpp \
     qmetaobjectpublisher.cpp \
-    qwebsocketserver.cpp \
     qwebchannelsocket.cpp \
     qwebsockettransport.cpp
 
