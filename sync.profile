@@ -12,6 +12,7 @@
 #
 %dependencies = (
     "qtbase" => "",
+    "qtwebsockets" => "",
     # optional dependencies:
     "qtdeclarative" => "",
     # TODO: disabled for now as it breaks CI builds on OSX
