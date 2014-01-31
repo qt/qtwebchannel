@@ -109,8 +109,8 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
-    QWebChannel channel;
     QWebSocketTransport transport;
+    QWebChannel channel;
     channel.connectTo(&transport);
 
     Dialog dialog(&transport);
