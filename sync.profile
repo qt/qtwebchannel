@@ -11,9 +11,10 @@
 #   - an empty string to use the same branch under test (dependencies will become "refs/heads/master" if we are in the master branch)
 #
 %dependencies = (
-    "qtbase" => "",
+    "qtbase" => "stable",
+    "qtwebsockets" => "dev",
     # optional dependencies:
-    "qtdeclarative" => "",
+    "qtdeclarative" => "stable",
     # TODO: disabled for now as it breaks CI builds on OSX
     #       requires changes to qtqa scripts as discussed with sifalt, sahumada, tronical
     # "qtwebkit" => "",

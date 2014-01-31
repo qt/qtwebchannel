@@ -42,7 +42,8 @@
 #ifndef QWEBCHANNELSOCKET_P_H
 #define QWEBCHANNELSOCKET_P_H
 
-#include "qwebsocketserver_p.h"
+#include <QtWebSockets/QWebSocketServer>
+
 #include "qwebchanneltransportinterface.h"
 
 QT_BEGIN_NAMESPACE
@@ -51,7 +52,7 @@ class QWebChannelSocket : public QWebSocketServer
 {
     Q_OBJECT
 public:
-    QByteArray m_secret;
+    QString m_secret;
     QString m_baseUrl;
     QWebChannelMessageHandlerInterface *m_messageHandler;
 
@@ -59,21 +60,26 @@ public:
     bool m_starting;
 
     explicit QWebChannelSocket(QObject *parent = 0);
+    virtual ~QWebChannelSocket();
 
     void initLater();
+    void sendMessage(const QString &message);
 
 signals:
     void failed(const QString &reason);
     void initialized();
     void baseUrlChanged(const QString &baseUrl);
-
-protected:
-    bool isValid(const HeaderData &connection) Q_DECL_OVERRIDE;
+    void textDataReceived(const QString &message);
 
 private slots:
+    void validateNewConnection();
     void init();
     void socketError();
     void messageReceived(const QString &message);
+    void clientDisconnected();
+
+private:
+    QVector<QWebSocket*> m_clients;
 };
 
 QT_END_NAMESPACE
