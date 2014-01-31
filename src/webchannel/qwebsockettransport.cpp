@@ -67,12 +67,12 @@ QWebSocketTransport::~QWebSocketTransport()
 
 void QWebSocketTransport::sendMessage(const QByteArray &message) const
 {
-    d->sendMessage(message);
+    d->sendMessage(QString::fromUtf8(message));
 }
 
 void QWebSocketTransport::sendMessage(const QString &message) const
 {
-    d->sendMessage(message.toUtf8());
+    d->sendMessage(message);
 }
 
 void QWebSocketTransport::setMessageHandler(QWebChannelMessageHandlerInterface *handler)
