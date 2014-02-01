@@ -48,7 +48,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QWebChannelSocket : public QWebSocketServer
+class QWebSocketTransportPrivate : public QWebSocketServer
 {
     Q_OBJECT
 public:
@@ -59,8 +59,8 @@ public:
     bool m_useSecret;
     bool m_starting;
 
-    explicit QWebChannelSocket(QObject *parent = 0);
-    virtual ~QWebChannelSocket();
+    explicit QWebSocketTransportPrivate(QObject *parent = 0);
+    virtual ~QWebSocketTransportPrivate();
 
     void initLater();
     void sendMessage(const QString &message);

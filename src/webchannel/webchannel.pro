@@ -18,14 +18,13 @@ PUBLIC_HEADERS += \
 PRIVATE_HEADERS += \
     qwebchannel_p.h \
     qmetaobjectpublisher_p.h \
-    qwebchannelsocket_p.h \
+    qwebsockettransport_p.h \
     variantargument_p.h \
     signalhandler_p.h
 
 SOURCES += \
     qwebchannel.cpp \
     qmetaobjectpublisher.cpp \
-    qwebchannelsocket.cpp \
     qwebsockettransport.cpp
 
 qtHaveModule(qml) {

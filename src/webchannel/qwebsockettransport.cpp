@@ -40,13 +40,120 @@
 ****************************************************************************/
 
 #include "qwebsockettransport.h"
-#include "qwebchannelsocket_p.h"
+#include "qwebsockettransport_p.h"
 
-QT_BEGIN_NAMESPACE
+#include <QUuid>
+
+#include <QtWebSockets/QWebSocket>
+
+QT_USE_NAMESPACE
+
+//BEGIN QWebSocketTransportPrivate
+
+QWebSocketTransportPrivate::QWebSocketTransportPrivate(QObject *parent)
+    : QWebSocketServer(QStringLiteral("QWebChannel Server"), NonSecureMode, parent)
+    , m_messageHandler(Q_NULLPTR)
+    , m_useSecret(true)
+    , m_starting(false)
+{
+    connect(this, SIGNAL(acceptError(QAbstractSocket::SocketError)),
+            SLOT(socketError()));
+    connect(this, SIGNAL(newConnection()),
+            SLOT(validateNewConnection()));
+}
+
+QWebSocketTransportPrivate::~QWebSocketTransportPrivate()
+{
+    close();
+    qDeleteAll(m_clients);
+}
+
+void QWebSocketTransportPrivate::initLater()
+{
+    if (m_starting)
+        return;
+    metaObject()->invokeMethod(this, "init", Qt::QueuedConnection);
+    m_starting = true;
+}
+
+void QWebSocketTransportPrivate::sendMessage(const QString &message)
+{
+    foreach (QWebSocket *client, m_clients) {
+        client->sendTextMessage(message);
+    }
+}
+
+void QWebSocketTransportPrivate::validateNewConnection()
+{
+    QWebSocket *client = nextPendingConnection();
+    // FIXME: client->protocol() != QStringLiteral("QWebChannel")
+    // protocols are not supported in QtWebSockets yet...
+    if (m_useSecret && client->requestUrl().path() != m_secret)
+    {
+        client->close(QWebSocketProtocol::CloseCodeBadOperation);
+        client->deleteLater();
+    } else {
+        connect(client, SIGNAL(textMessageReceived(QString)),
+                SLOT(messageReceived(QString)));
+        connect(client, SIGNAL(disconnected()),
+                SLOT(clientDisconnected()));
+        m_clients << client;
+    }
+}
+
+void QWebSocketTransportPrivate::init()
+{
+    close();
+
+    m_starting = false;
+    if (m_useSecret) {
+        m_secret = QUuid::createUuid().toString();
+        // replace { by /
+        m_secret[0] = QLatin1Char('/');
+        // chop of trailing }
+        m_secret.chop(1);
+    }
+
+    if (!listen(QHostAddress::LocalHost)) {
+        emit failed(errorString());
+        return;
+    }
+
+    m_baseUrl = QStringLiteral("127.0.0.1:%1%2").arg(serverPort()).arg(m_secret);
+    emit initialized();
+    emit baseUrlChanged(m_baseUrl);
+}
+
+void QWebSocketTransportPrivate::socketError()
+{
+    emit failed(errorString());
+}
+
+void QWebSocketTransportPrivate::messageReceived(const QString &message)
+{
+    if (m_messageHandler) {
+        m_messageHandler->handleMessage(message);
+    }
+    emit textDataReceived(message);
+}
+
+void QWebSocketTransportPrivate::clientDisconnected()
+{
+    QWebSocket *client = qobject_cast<QWebSocket*>(sender());
+    if (!client) {
+        return;
+    }
+    const int idx = m_clients.indexOf(client);
+    Q_ASSERT(idx != -1);
+    m_clients.remove(idx);
+    client->deleteLater();
+}
+
+//END QWebSocketTransportPrivate
 
 QWebSocketTransport::QWebSocketTransport(QObject *parent)
     : QObject(parent)
-    , d(new QWebChannelSocket)
+    , d(new QWebSocketTransportPrivate)
 {
     connect(d.data(), SIGNAL(textDataReceived(QString)),
             SIGNAL(messageReceived(QString)));
@@ -97,5 +204,3 @@ bool QWebSocketTransport::useSecret() const
 {
     return d->m_useSecret;
 }
-
-QT_END_NAMESPACE
