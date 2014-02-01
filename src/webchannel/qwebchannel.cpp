@@ -136,12 +136,12 @@ void QWebChannel::disconnectFrom(QWebChannelTransportInterface *transport)
     }
 }
 
-void QWebChannel::respond(const QJsonValue& messageId, const QJsonValue& data) const
+void QWebChannel::respond(const QJsonValue &messageId, const QJsonValue &data) const
 {
     d->sendJSONMessage(messageId, data, true);
 }
 
-void QWebChannel::sendMessage(const QJsonValue& id, const QJsonValue& data) const
+void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) const
 {
     d->sendJSONMessage(id, data, false);
 }
