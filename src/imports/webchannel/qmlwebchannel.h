@@ -65,7 +65,7 @@ public:
     explicit QmlWebChannel(QObject *parent = 0);
     virtual ~QmlWebChannel();
 
-    Q_INVOKABLE void registerObjects(const QVariantMap& objects);
+    Q_INVOKABLE void registerObjects(const QVariantMap &objects);
     QQmlListProperty<QObject> registeredObjects();
 
     QQmlListProperty<QWebChannelTransportInterface> transports();
@@ -73,7 +73,7 @@ public:
     // TODO: remove this by replacing QML with C++ tests
     Q_INVOKABLE bool test_clientIsIdle() const;
 
-    static QmlWebChannelAttached* qmlAttachedProperties(QObject *obj);
+    static QmlWebChannelAttached *qmlAttachedProperties(QObject *obj);
 
     Q_INVOKABLE void connectTo(QObject *transport);
     Q_INVOKABLE void disconnectFrom(QObject *transport);
@@ -83,12 +83,12 @@ private slots:
     void transportDestroyed(QObject *transport);
 
 private:
-    static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject* item);
+    static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *item);
     static int registeredObjects_count(QQmlListProperty<QObject> *prop);
     static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
     static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
 
-    static void transports_append(QQmlListProperty<QWebChannelTransportInterface> *prop, QWebChannelTransportInterface* item);
+    static void transports_append(QQmlListProperty<QWebChannelTransportInterface> *prop, QWebChannelTransportInterface *item);
     static int transports_count(QQmlListProperty<QWebChannelTransportInterface> *prop);
     static QWebChannelTransportInterface *transports_at(QQmlListProperty<QWebChannelTransportInterface> *prop, int index);
     static void transports_clear(QQmlListProperty<QWebChannelTransportInterface> *prop);
