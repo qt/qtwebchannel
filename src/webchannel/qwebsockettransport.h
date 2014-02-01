@@ -46,7 +46,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class QWebChannelSocket;
+class QWebSocketTransportPrivate;
 class Q_WEBCHANNEL_EXPORT QWebSocketTransport : public QObject, public QWebChannelTransportInterface
 {
     Q_OBJECT
@@ -73,7 +73,7 @@ Q_SIGNALS:
     void messageReceived(const QString &message);
 
 private:
-    QScopedPointer<QWebChannelSocket> d;
+    QScopedPointer<QWebSocketTransportPrivate> d;
 };
 
 QT_END_NAMESPACE
