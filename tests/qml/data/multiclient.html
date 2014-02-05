@@ -1,0 +1,19 @@
+<html>
+    <head>
+        <script type="text/javascript" src="qrc:///qwebchannel/qwebchannel.js"></script>
+        <script type="text/javascript" src="testsetup.js"></script>
+        <script type="text/javascript">
+            //BEGIN SETUP
+            createWebChannel(function(channel) {
+                foo.ping.connect(function() {
+                    foo.pong(function(value) {
+                        channel.exec({pongAnswer: value});
+                    });
+                });
+            });
+            //END SETUP
+        </script>
+    </head>
+    <body>
+    </body>
+</html>
