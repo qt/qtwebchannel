@@ -97,7 +97,6 @@ signals:
 
 public slots:
     void sendMessage(const QJsonValue &id, const QJsonValue &data = QJsonValue()) const;
-    void respond(const QJsonValue &messageId, const QJsonValue &data = QJsonValue()) const;
 
 private:
     QScopedPointer<QWebChannelPrivate> d;

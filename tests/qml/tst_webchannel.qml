@@ -56,14 +56,4 @@ WebChannelTest {
         webChannel.sendMessage("myMessage", "foobar");
         compare(awaitRawMessage(), "myMessagePong:foobar");
     }
-
-    function test_respondMessage()
-    {
-        loadUrl("respond.html");
-        var msg = awaitMessage();
-        verify(msg.id);
-        compare(msg.data, "foobar");
-        webChannel.respond(msg.id, "barfoo");
-        compare(awaitRawMessage(), "received:barfoo");
-    }
 }

@@ -53,12 +53,12 @@ class QJsonValue;
 class QWebChannelTransportInterface;
 class QMetaObjectPublisher;
 
+Q_WEBCHANNEL_EXPORT QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response);
+
 struct Q_WEBCHANNEL_EXPORT QWebChannelPrivate
 {
     QVector<QWebChannelTransportInterface*> transports;
     QMetaObjectPublisher *publisher;
-
-    void sendJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const;
 };
 
 QT_END_NAMESPACE

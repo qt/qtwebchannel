@@ -50,9 +50,10 @@ QT_USE_NAMESPACE
 
 //BEGIN QWebSocketTransportPrivate
 
-QWebSocketTransportPrivate::QWebSocketTransportPrivate(QObject *parent)
+QWebSocketTransportPrivate::QWebSocketTransportPrivate(QWebSocketTransport *transport, QObject *parent)
     : QWebSocketServer(QStringLiteral("QWebChannel Server"), NonSecureMode, parent)
     , m_messageHandler(Q_NULLPTR)
+    , m_transport(transport)
     , m_useSecret(true)
     , m_starting(false)
 {
@@ -76,10 +77,14 @@ void QWebSocketTransportPrivate::initLater()
     m_starting = true;
 }
 
-void QWebSocketTransportPrivate::sendMessage(const QString &message)
+void QWebSocketTransportPrivate::sendMessage(const QString &message, int clientId)
 {
-    foreach (QWebSocket *client, m_clients) {
-        client->sendTextMessage(message);
+    if (clientId == -1) {
+        foreach (QWebSocket *client, m_clients) {
+            client->sendTextMessage(message);
+        }
+    } else {
+        m_clients.at(clientId)->sendTextMessage(message);
     }
 }
 
@@ -132,7 +137,8 @@ void QWebSocketTransportPrivate::socketError()
 void QWebSocketTransportPrivate::messageReceived(const QString &message)
 {
     if (m_messageHandler) {
-        m_messageHandler->handleMessage(message);
+        QWebSocket *client = qobject_cast<QWebSocket*>(sender());
+        m_messageHandler->handleMessage(message, m_transport, m_clients.indexOf(client));
     }
     emit textDataReceived(message);
 }
@@ -153,7 +159,7 @@ void QWebSocketTransportPrivate::clientDisconnected()
 
 QWebSocketTransport::QWebSocketTransport(QObject *parent)
     : QObject(parent)
-    , d(new QWebSocketTransportPrivate)
+    , d(new QWebSocketTransportPrivate(this))
 {
     connect(d.data(), SIGNAL(textDataReceived(QString)),
             SIGNAL(messageReceived(QString)));
@@ -172,14 +178,14 @@ QWebSocketTransport::~QWebSocketTransport()
 
 }
 
-void QWebSocketTransport::sendMessage(const QByteArray &message) const
+void QWebSocketTransport::sendMessage(const QByteArray &message, int clientId) const
 {
-    d->sendMessage(QString::fromUtf8(message));
+    d->sendMessage(QString::fromUtf8(message), clientId);
 }
 
-void QWebSocketTransport::sendMessage(const QString &message) const
+void QWebSocketTransport::sendMessage(const QString &message, int clientId) const
 {
-    d->sendMessage(message);
+    d->sendMessage(message, clientId);
 }
 
 void QWebSocketTransport::setMessageHandler(QWebChannelMessageHandlerInterface *handler)
