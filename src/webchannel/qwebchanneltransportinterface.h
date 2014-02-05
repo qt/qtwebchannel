@@ -48,6 +48,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QWebChannelTransportInterface;
 class Q_WEBCHANNEL_EXPORT QWebChannelMessageHandlerInterface
 {
 public:
@@ -56,7 +57,7 @@ public:
     /**
      * Handle a text message from a web channel client.
      */
-    virtual void handleMessage(const QString &message) = 0;
+    virtual void handleMessage(const QString &message, QWebChannelTransportInterface* transport, int clientId) = 0;
 };
 
 #define QWebChannelMessageHandlerInterface_iid "org.qt-project.Qt.QWebChannelMessageHandlerInterface"
@@ -71,12 +72,12 @@ public:
     /**
      * Send a text message to all web channel clients.
      */
-    virtual void sendMessage(const QString &message) const = 0;
+    virtual void sendMessage(const QString &message, int clientId = -1) const = 0;
 
     /**
      * Send a binary message to all web channel clients.
      */
-    virtual void sendMessage(const QByteArray &message) const = 0;
+    virtual void sendMessage(const QByteArray &message, int clientId = -1) const = 0;
 
     /**
      * Sets the message handler that will be called on incoming messages from web channel clients.

@@ -50,13 +50,8 @@
 
 QT_BEGIN_NAMESPACE
 
-void QWebChannelPrivate::sendJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response) const
+QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response)
 {
-    if (transports.isEmpty()) {
-        qWarning("QWebChannel is not connected to any transports, cannot send messages.");
-        return;
-    }
-
     QJsonObject obj;
     if (response) {
         obj[QStringLiteral("response")] = true;
@@ -66,11 +61,7 @@ void QWebChannelPrivate::sendJSONMessage(const QJsonValue &id, const QJsonValue 
         obj[QStringLiteral("data")] = data;
     }
     QJsonDocument doc(obj);
-    const QByteArray &message = doc.toJson(QJsonDocument::Compact);
-
-    foreach (QWebChannelTransportInterface *transport, transports) {
-        transport->sendMessage(message);
-    }
+    return doc.toJson(QJsonDocument::Compact);
 }
 
 QWebChannel::QWebChannel(QObject *parent)
@@ -136,14 +127,17 @@ void QWebChannel::disconnectFrom(QWebChannelTransportInterface *transport)
     }
 }
 
-void QWebChannel::respond(const QJsonValue &messageId, const QJsonValue &data) const
-{
-    d->sendJSONMessage(messageId, data, true);
-}
-
 void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) const
 {
-    d->sendJSONMessage(id, data, false);
+    if (d->transports.isEmpty()) {
+        qWarning("QWebChannel is not connected to any transports, cannot send messages.");
+        return;
+    }
+
+    const QByteArray &message = generateJSONMessage(id, data, false);
+    foreach (QWebChannelTransportInterface *transport, d->transports) {
+        transport->sendMessage(message);
+    }
 }
 
 QT_END_NAMESPACE
