@@ -74,7 +74,7 @@ QObject *QmlWebViewTransport::webViewExperimental() const
     return m_webViewExperimental;
 }
 
-void QmlWebViewTransport::sendMessage(const QString &message) const
+void QmlWebViewTransport::sendMessage(const QString &message, int /*clientId*/) const
 {
     if (!m_webViewExperimental) {
         qWarning("Cannot send message - did you forget to set the webViewExperimental property?");
@@ -83,16 +83,16 @@ void QmlWebViewTransport::sendMessage(const QString &message) const
     QMetaObject::invokeMethod(m_webViewExperimental, "postMessage", Q_ARG(QString, message));
 }
 
-void QmlWebViewTransport::sendMessage(const QByteArray &message) const
+void QmlWebViewTransport::sendMessage(const QByteArray &message, int clientId) const
 {
-    sendMessage(QString::fromUtf8(message));
+    sendMessage(QString::fromUtf8(message), clientId);
 }
 
 void QmlWebViewTransport::handleWebViewMessage(const QVariantMap &message)
 {
     if (m_handler) {
         const QString &data = message[QStringLiteral("data")].toString();
-        m_handler->handleMessage(data);
+        m_handler->handleMessage(data, this, -1);
         emit messageReceived(data);
     }
 }
