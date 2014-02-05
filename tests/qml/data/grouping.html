@@ -5,7 +5,7 @@
         <script type="text/javascript">
             //BEGIN SETUP
             window.channel = createWebChannel(function(channel) {
-                channel.subscribe("Qt.propertyUpdate", function() {
+                channel.subscribe(QWebChannelMessageTypes.propertyUpdate, function() {
                     channel.exec({label: "gotPropertyUpdate", values: [myObj.myProperty(), myOtherObj.foo(), myOtherObj.bar()]});
                 });
             });
