@@ -81,7 +81,7 @@ public:
      *
      * @return true if the request was handled, false otherwise.
      */
-    bool handleRequest(const QJsonObject &message);
+    QByteArray handleRequest(const QJsonObject &message);
 
     /**
      * Serialize the QMetaObject of @p object and return it in JSON form.
@@ -124,10 +124,10 @@ public:
     /**
      * Invoke the method of index @p methodIndex on @p object with the arguments @p args.
      *
-     * The return value of the method invocation is then transmitted to the calling client
-     * via a webchannel response to the message identified by @p id.
+     * The return value of the method invocation is then serialized and a response message
+     * is returned.
      */
-    bool invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args, const QJsonValue &id);
+    QByteArray invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args, const QJsonValue &id);
 
     /**
      * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
@@ -164,7 +164,7 @@ public:
     /**
      * Parse the message as JSON and if it succeeds, call handleRequest with the obtained JSON object.
      */
-    void handleMessage(const QString &message) Q_DECL_OVERRIDE;
+    void handleMessage(const QString &message, QWebChannelTransportInterface* transport, int clientId) Q_DECL_OVERRIDE;
 
 signals:
     void blockUpdatesChanged(bool block);
