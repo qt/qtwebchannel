@@ -43,8 +43,6 @@ import QtQuick 2.0
 import QtTest 1.0
 
 import QtWebChannel 1.0
-import QtWebKit 3.0
-import QtWebKit.experimental 1.0
 
 TestCase {
     property var lastLoadStatus
@@ -55,32 +53,15 @@ TestCase {
 
     WebViewTransport {
         id: webViewTransport
-        webViewExperimental: view.experimental
+        webViewExperimental: defaultView.experimental
     }
     WebSocketTransport {
         id: webSocketTransport
     }
 
-    WebView {
-        id: view
-
-        experimental.preferences.developerExtrasEnabled: true
-        experimental.preferences.navigatorQtObjectEnabled: true
-
-        onLoadingChanged: {
-            // NOTE: we cannot use spy.signalArguments nor save the loadRequest anywhere, as it gets
-            // deleted after the slots connected to the signal have finished... i.e. it's a weak pointer,
-            // not a shared pointer. As such, we have to copy out the interesting data we need later on here...
-            lastLoadStatus = loadRequest.status
-        }
-
-        SignalSpy {
-            id: loadingSpy
-            target: view
-            signalName: "onLoadingChanged"
-        }
+    TestWebView {
+        id: defaultView
     }
-    property var view: view
 
     WebChannel {
         id: webChannel
@@ -95,7 +76,14 @@ TestCase {
     property var rawMessageSpy: rawMessageSpy
     property var rawMessageIdx: 0;
 
-    function loadUrl(url)
+    function urlForFile(file)
+    {
+        verify(useWebViewTransport || webSocketTransport.baseUrl != "", "webSocketTransport.baseUrl is empty");
+        return "data/" + file + (!useWebViewTransport ? "?webChannelBaseUrl=" + webSocketTransport.baseUrl : "");
+    }
+
+    // load file in the given view or use the global one by default
+    function loadUrl(file, view)
     {
         if (useWebViewTransport) {
             webChannel.disconnectFrom(webSocketTransport);
@@ -104,19 +92,16 @@ TestCase {
             webChannel.disconnectFrom(webViewTransport);
             webChannel.connectTo(webSocketTransport);
         }
-        verify(useWebViewTransport || webSocketTransport.baseUrl != "", "webSocketTransport.baseUrl is empty");
-        view.url = "data/" + url + (!useWebViewTransport ? "?webChannelBaseUrl=" + webSocketTransport.baseUrl : "");
-        // now wait for page to finish loading
-        do {
-            loadingSpy.wait(500);
-        } while (view.loading);
-        compare(lastLoadStatus, WebView.LoadSucceededStatus);
+        if (!view) {
+            view = defaultView;
+        }
+        view.url = urlForFile(file);
+        view.waitForLoaded();
     }
 
     function cleanup()
     {
-        view.url = "";
-        loadingSpy.clear();
+        defaultView.clear();
         rawMessageSpy.clear();
         rawMessageIdx = 0;
     }
@@ -138,5 +123,23 @@ TestCase {
             return msg;
         }
         return JSON.parse(msg);
+    }
+
+    function awaitInit()
+    {
+        var msg = awaitMessage();
+        verify(msg);
+        verify(msg.data);
+        verify(msg.data.type);
+        compare(msg.data.type, "Qt.init");
+    }
+
+    function awaitIdle()
+    {
+        var msg = awaitMessage();
+        verify(msg);
+        verify(msg.data);
+        compare(msg.data.type, "Qt.idle");
+        verify(webChannel.test_clientIsIdle())
     }
 }
