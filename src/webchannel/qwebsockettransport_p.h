@@ -48,6 +48,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QWebSocketTransport;
 class QWebSocketTransportPrivate : public QWebSocketServer
 {
     Q_OBJECT
@@ -55,15 +56,16 @@ public:
     QString m_secret;
     QString m_baseUrl;
     QWebChannelMessageHandlerInterface *m_messageHandler;
+    QWebSocketTransport *m_transport;
 
     bool m_useSecret;
     bool m_starting;
 
-    explicit QWebSocketTransportPrivate(QObject *parent = 0);
+    explicit QWebSocketTransportPrivate(QWebSocketTransport* transport, QObject *parent = 0);
     virtual ~QWebSocketTransportPrivate();
 
     void initLater();
-    void sendMessage(const QString &message);
+    void sendMessage(const QString &message, int clientId);
 
 signals:
     void failed(const QString &reason);

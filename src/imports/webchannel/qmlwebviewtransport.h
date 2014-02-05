@@ -55,8 +55,8 @@ public:
     explicit QmlWebViewTransport(QObject *parent = 0);
     ~QmlWebViewTransport() Q_DECL_OVERRIDE;
 
-    void sendMessage(const QString &message) const Q_DECL_OVERRIDE;
-    void sendMessage(const QByteArray &message) const Q_DECL_OVERRIDE;
+    void sendMessage(const QString &message, int clientId) const Q_DECL_OVERRIDE;
+    void sendMessage(const QByteArray &message, int clientId) const Q_DECL_OVERRIDE;
     void setMessageHandler(QWebChannelMessageHandlerInterface *handler) Q_DECL_OVERRIDE;
 
     void setWebViewExperimental(QObject *webViewExperimental);
