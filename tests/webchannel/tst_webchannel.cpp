@@ -242,19 +242,19 @@ void TestWebChannel::testInvokeMethodConversion()
     {
         int method = metaObject()->indexOfMethod("setInt(int)");
         QVERIFY(method != -1);
-        QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+        QVERIFY(!channel.d->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
         QCOMPARE(m_lastInt, args.at(0).toInt());
     }
     {
         int method = metaObject()->indexOfMethod("setDouble(double)");
         QVERIFY(method != -1);
-        QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+        QVERIFY(!channel.d->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
         QCOMPARE(m_lastDouble, args.at(0).toDouble());
     }
     {
         int method = metaObject()->indexOfMethod("setVariant(QVariant)");
         QVERIFY(method != -1);
-        QVERIFY(channel.d->publisher->invokeMethod(this, method, args, QJsonValue()));
+        QVERIFY(!channel.d->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
         QCOMPARE(m_lastVariant, args.at(0).toVariant());
     }
 }
