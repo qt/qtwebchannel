@@ -95,24 +95,6 @@ WebChannelTest {
         webChannel.registeredObjects = [myObj, myOtherObj, myFactory];
     }
 
-    function awaitInit()
-    {
-        var msg = awaitMessage();
-        verify(msg);
-        verify(msg.data);
-        verify(msg.data.type);
-        compare(msg.data.type, "Qt.init");
-    }
-
-    function awaitIdle()
-    {
-        var msg = awaitMessage();
-        verify(msg);
-        verify(msg.data);
-        compare(msg.data.type, "Qt.idle");
-        verify(webChannel.test_clientIsIdle())
-    }
-
     function awaitMessageSkipIdle()
     {
         var msg;
