@@ -131,7 +131,7 @@ TestCase {
         verify(msg);
         verify(msg.data);
         verify(msg.data.type);
-        compare(msg.data.type, "Qt.init");
+        compare(msg.data.type, qWebChannelMessageTypes.init);
     }
 
     function awaitIdle()
@@ -139,7 +139,19 @@ TestCase {
         var msg = awaitMessage();
         verify(msg);
         verify(msg.data);
-        compare(msg.data.type, "Qt.idle");
+        compare(msg.data.type, qWebChannelMessageTypes.idle);
         verify(webChannel.test_clientIsIdle())
     }
+
+    property var qWebChannelMessageTypes: ({
+        signal: 1,
+        propertyUpdate: 2,
+        init: 3,
+        idle: 4,
+        debug: 5,
+        invokeMethod: 6,
+        connectToSignal: 7,
+        disconnectFromSignal: 8,
+        setProperty: 9,
+    });
 }

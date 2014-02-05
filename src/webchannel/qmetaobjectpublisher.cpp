@@ -56,6 +56,35 @@
 QT_BEGIN_NAMESPACE
 
 namespace {
+
+// NOTE: keep in sync with corresponding maps in qwebchannel.js and WebChannelTest.qml
+enum Type {
+    TYPE_INVALID = 0,
+    TYPES_FIRST_VALUE = 1,
+
+    TYPE_SIGNAL = 1,
+    TYPE_PROPERTY_UPDATE = 2,
+    TYPE_INIT = 3,
+    TYPE_IDLE = 4,
+    TYPE_DEBUG = 5,
+    TYPE_INVOKE_METHOD = 6,
+    TYPE_CONNECT_TO_SIGNAL = 7,
+    TYPE_DISCONNECT_FROM_SIGNAL = 8,
+    TYPE_SET_PROPERTY = 9,
+
+    TYPES_LAST_VALUE = 9
+};
+
+Type toType(const QJsonValue &value)
+{
+    int i = value.toInt(-1);
+    if (i >= TYPES_FIRST_VALUE && i <= TYPES_LAST_VALUE) {
+        return static_cast<Type>(i);
+    } else {
+        return TYPE_INVALID;
+    }
+}
+
 const QString KEY_SIGNALS = QStringLiteral("signals");
 const QString KEY_METHODS = QStringLiteral("methods");
 const QString KEY_PROPERTIES = QStringLiteral("properties");
@@ -73,15 +102,6 @@ const QString KEY_ARGS = QStringLiteral("args");
 const QString KEY_PROPERTY = QStringLiteral("property");
 const QString KEY_VALUE = QStringLiteral("value");
 
-const QString TYPE_SIGNAL = QStringLiteral("Qt.signal");
-const QString TYPE_PROPERTY_UPDATE = QStringLiteral("Qt.propertyUpdate");
-const QString TYPE_INIT = QStringLiteral("Qt.init");
-const QString TYPE_IDLE = QStringLiteral("Qt.idle");
-const QString TYPE_DEBUG = QStringLiteral("Qt.debug");
-const QString TYPE_INVOKE_METHOD = QStringLiteral("Qt.invokeMethod");
-const QString TYPE_CONNECT_TO_SIGNAL = QStringLiteral("Qt.connectToSignal");
-const QString TYPE_DISCONNECT_FROM_SIGNAL = QStringLiteral("Qt.disconnectFromSignal");
-const QString TYPE_SET_PROPERTY = QStringLiteral("Qt.setProperty");
 
 QString objectId(const QObject *object)
 {
@@ -476,7 +496,7 @@ bool QMetaObjectPublisher::handleRequest(const QJsonObject &message)
         return false;
     }
 
-    const QString &type = payload.value(KEY_TYPE).toString();
+    const Type type = toType(payload.value(KEY_TYPE));
     if (type == TYPE_IDLE) {
         setClientIsIdle(true);
         return true;

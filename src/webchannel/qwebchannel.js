@@ -42,6 +42,18 @@
 
 "use strict";
 
+var QWebChannelMessageTypes = {
+    signal: 1,
+    propertyUpdate: 2,
+    init: 3,
+    idle: 4,
+    debug: 5,
+    invokeMethod: 6,
+    connectToSignal: 7,
+    disconnectFromSignal: 8,
+    setProperty: 9,
+};
+
 var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
 {
     var channel = this;
@@ -152,7 +164,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         var initialized = false;
 
         channel.subscribe(
-            "Qt.signal",
+            QWebChannelMessageTypes.signal,
             function(payload) {
                 var object = window[payload.object] || channel.objectMap[payload.object];
                 if (object) {
@@ -164,7 +176,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         );
 
         channel.subscribe(
-            "Qt.propertyUpdate",
+            QWebChannelMessageTypes.propertyUpdate,
             function(payload) {
                 for (var i in payload) {
                     var data = payload[i];
@@ -175,12 +187,12 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                         console.warn("Unhandled property update: " + data.object + "::" + data.signal);
                     }
                 }
-                setTimeout(function() { channel.exec({type: "Qt.idle"}); }, 0);
+                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
             }
         );
 
         channel.subscribe(
-            "Qt.init",
+            QWebChannelMessageTypes.init,
             function(payload) {
                 if (initialized) {
                     return;
@@ -194,16 +206,16 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                 if (doneCallback) {
                     doneCallback(channel);
                 }
-                setTimeout(function() { channel.exec({type: "Qt.idle"}); }, 0);
+                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
             }
         );
 
         channel.debug = function(message)
         {
-            channel.send({"data" : {"type" : "Qt.Debug", "message" : message}});
+            channel.send({"data" : {"type" : QWebChannelMessageTypes.debug, "message" : message}});
         };
 
-        channel.exec({type:"Qt.init"});
+        channel.exec({type: QWebChannelMessageTypes.init});
     }
 };
 
@@ -265,7 +277,7 @@ function QObject(name, data, webChannel)
                 if (!isPropertyNotifySignal) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
                     webChannel.exec({
-                        type: "Qt.connectToSignal",
+                        type: QWebChannelMessageTypes.connectToSignal,
                         object: object.__id__,
                         signal: signalIndex
                     });
@@ -286,7 +298,7 @@ function QObject(name, data, webChannel)
                 if (!isPropertyNotifySignal && object.__objectSignals__[signalIndex].length === 0) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
                     webChannel.exec({
-                        type: "Qt.disconnectFromSignal",
+                        type: QWebChannelMessageTypes.disconnectFromSignal,
                         object: object.__id__,
                         signal: signalIndex
                     });
@@ -342,7 +354,12 @@ function QObject(name, data, webChannel)
                     args.push(arguments[i]);
             }
 
-            webChannel.exec({"type": "Qt.invokeMethod", "object": object.__id__, "method": methodIdx, "args": args}, function(response) {
+            webChannel.exec({
+                "type": QWebChannelMessageTypes.invokeMethod,
+                "object": object.__id__,
+                "method": methodIdx,
+                "args": args
+            }, function(response) {
                 if ( (response !== undefined) && callback ) {
                     (callback)(unwrapQObject(response));
                 }
@@ -372,7 +389,12 @@ function QObject(name, data, webChannel)
                 return;
             }
             object.__propertyCache__[propertyIndex] = value;
-            webChannel.exec({"type": "Qt.setProperty", "object": object.__id__, "property": propertyIndex, "value": value });
+            webChannel.exec({
+                "type": QWebChannelMessageTypes.setProperty,
+                "object": object.__id__,
+                "property": propertyIndex,
+                "value": value
+            });
 
         });
         object.__defineGetter__(propertyName, function () {
