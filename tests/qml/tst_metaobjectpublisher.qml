@@ -102,7 +102,7 @@ WebChannelTest {
             msg = awaitMessage();
             verify(msg);
             verify(msg.data);
-        } while (msg.data.type === "Qt.idle");
+        } while (msg.data.type === qWebChannelMessageTypes.idle);
         return msg;
     }
 
@@ -145,7 +145,7 @@ WebChannelTest {
         webChannel.sendMessage("invokeMethod", "test");
 
         var msg = awaitMessage();
-        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, "myObj");
         compare(msg.data.args, ["test"]);
 
@@ -158,7 +158,7 @@ WebChannelTest {
         awaitInit();
 
         var msg = awaitMessage();
-        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, "myObj");
 
         awaitIdle();
@@ -197,27 +197,27 @@ WebChannelTest {
         awaitInit();
 
         var msg = awaitMessageSkipIdle();
-        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, "myFactory");
         verify(myFactory.lastObj);
         compare(myFactory.lastObj.objectName, "testObj");
 
         msg = awaitMessageSkipIdle();
-        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
         verify(msg.data.object);
         var objId = msg.data.object;
 
         msg = awaitMessageSkipIdle();
-        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, objId);
 
         msg = awaitMessageSkipIdle();
-        compare(msg.data.type, "Qt.setProperty");
+        compare(msg.data.type, qWebChannelMessageTypes.setProperty);
         compare(msg.data.object, objId);
         compare(myFactory.lastObj.myProperty, 42);
 
         msg = awaitMessageSkipIdle();
-        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, objId);
         compare(msg.data.args, ["foobar"]);
 
@@ -229,7 +229,7 @@ WebChannelTest {
         webChannel.sendMessage("triggerDelete");
 
         msg = awaitMessageSkipIdle();
-        compare(msg.data.type, "Qt.invokeMethod");
+        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, objId);
 
         webChannel.sendMessage("report");
@@ -245,7 +245,7 @@ WebChannelTest {
         awaitInit();
 
         var msg = awaitMessage();
-        compare(msg.data.type, "Qt.connectToSignal");
+        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, "myObj");
 
         awaitIdle();
@@ -257,7 +257,7 @@ WebChannelTest {
         compare(msg.data.args, [42]);
 
         msg = awaitMessage();
-        compare(msg.data.type, "Qt.disconnectFromSignal");
+        compare(msg.data.type, qWebChannelMessageTypes.disconnectFromSignal);
         compare(msg.data.object, "myObj");
 
         myObj.mySignal(0);
