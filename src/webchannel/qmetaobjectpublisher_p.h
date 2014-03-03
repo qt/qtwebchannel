@@ -62,7 +62,7 @@ class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject, public QWebChan
     Q_OBJECT
     Q_INTERFACES(QWebChannelMessageHandlerInterface)
 public:
-    QMetaObjectPublisher(QWebChannel *webChannel);
+    explicit QMetaObjectPublisher(QWebChannel *webChannel);
     virtual ~QMetaObjectPublisher();
 
     /**
