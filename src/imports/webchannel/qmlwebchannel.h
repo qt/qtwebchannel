@@ -62,7 +62,7 @@ class QmlWebChannel : public QWebChannel
     Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
 
 public:
-    QmlWebChannel(QObject *parent = 0);
+    explicit QmlWebChannel(QObject *parent = 0);
     virtual ~QmlWebChannel();
 
     Q_INVOKABLE void registerObjects(const QVariantMap& objects);
