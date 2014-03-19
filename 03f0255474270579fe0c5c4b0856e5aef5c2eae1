@@ -1,0 +1,6 @@
+Sanity-Review+1: Qt Sanity Bot <qt_sanitybot@qt-project.org>
+Code-Review+2: Frederik Gladhorn <frederik.gladhorn@digia.com>
+Code-Review+1: Milian Wolff <milian.wolff@kdab.com>
+Reviewed-on: https://codereview.qt-project.org/79749
+Project: qt-labs/qwebchannel
+Branch: refs/heads/master
