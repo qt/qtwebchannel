@@ -43,7 +43,7 @@
 #include "qwebchannel.h"
 #include "qwebchannel_p.h"
 #include "qmetaobjectpublisher_p.h"
-#include "qwebchanneltransportinterface.h"
+#include "qwebchannelabstracttransport.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -64,6 +64,14 @@ QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, boo
     return doc.toJson(QJsonDocument::Compact);
 }
 
+void QWebChannelPrivate::_q_transportDestroyed(QObject *object)
+{
+    const int idx = transports.indexOf(static_cast<QWebChannelAbstractTransport*>(object));
+    if (idx != -1) {
+        transports.remove(idx);
+    }
+}
+
 QWebChannel::QWebChannel(QObject *parent)
 : QObject(parent)
 , d(new QWebChannelPrivate)
@@ -75,9 +83,6 @@ QWebChannel::QWebChannel(QObject *parent)
 
 QWebChannel::~QWebChannel()
 {
-    foreach (QWebChannelTransportInterface *transport, d->transports) {
-        transport->setMessageHandler(Q_NULLPTR);
-    }
 }
 
 void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
@@ -109,20 +114,24 @@ void QWebChannel::setBlockUpdates(bool block)
     d->publisher->setBlockUpdates(block);
 }
 
-void QWebChannel::connectTo(QWebChannelTransportInterface *transport)
+void QWebChannel::connectTo(QWebChannelAbstractTransport *transport)
 {
     Q_ASSERT(transport);
     if (!d->transports.contains(transport)) {
         d->transports << transport;
-        transport->setMessageHandler(d->publisher);
+        connect(transport, &QWebChannelAbstractTransport::textMessageReceived,
+                d->publisher, &QMetaObjectPublisher::handleMessage,
+                Qt::UniqueConnection);
+        connect(transport, SIGNAL(destroyed(QObject*)),
+                this, SLOT(_q_transportDestroyed(QObject*)));
     }
 }
 
-void QWebChannel::disconnectFrom(QWebChannelTransportInterface *transport)
+void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
 {
     const int idx = d->transports.indexOf(transport);
     if (idx != -1) {
-        transport->setMessageHandler(Q_NULLPTR);
+        disconnect(transport, 0, this, 0);
         d->transports.remove(idx);
     }
 }
@@ -135,9 +144,12 @@ void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) cons
     }
 
     const QByteArray &message = generateJSONMessage(id, data, false);
-    foreach (QWebChannelTransportInterface *transport, d->transports) {
-        transport->sendMessage(message);
+    const QString &messageText = QString::fromUtf8(message);
+    foreach (QWebChannelAbstractTransport *transport, d->transports) {
+        transport->sendTextMessage(messageText);
     }
 }
 
 QT_END_NAMESPACE
+
+#include "moc_qwebchannel.cpp"
