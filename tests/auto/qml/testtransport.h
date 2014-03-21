@@ -39,51 +39,25 @@
 **
 ****************************************************************************/
 
-#ifndef QWEBCHANNELSOCKET_P_H
-#define QWEBCHANNELSOCKET_P_H
+#ifndef TESTTRANSPORT_H
+#define TESTTRANSPORT_H
 
-#include <QtWebSockets/QWebSocketServer>
-
-#include "qwebchanneltransportinterface.h"
+#include <QtWebChannel/QWebChannelAbstractTransport>
 
 QT_BEGIN_NAMESPACE
 
-class QWebSocketTransport;
-class QWebSocketTransportPrivate : public QWebSocketServer
+class TestTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
 public:
-    QString m_secret;
-    QString m_baseUrl;
-    QWebChannelMessageHandlerInterface *m_messageHandler;
-    QWebSocketTransport *m_transport;
+    explicit TestTransport(QObject *parent = 0);
 
-    bool m_useSecret;
-    bool m_starting;
-
-    explicit QWebSocketTransportPrivate(QWebSocketTransport* transport, QObject *parent = 0);
-    virtual ~QWebSocketTransportPrivate();
-
-    void initLater();
-    void sendMessage(const QString &message, int clientId);
+    virtual void sendTextMessage(const QString &message);
 
 Q_SIGNALS:
-    void failed(const QString &reason);
-    void initialized();
-    void baseUrlChanged(const QString &baseUrl);
-    void textDataReceived(const QString &message);
-
-private Q_SLOTS:
-    void validateNewConnection();
-    void init();
-    void socketError();
-    void messageReceived(const QString &message);
-    void clientDisconnected();
-
-private:
-    QVector<QWebSocket*> m_clients;
+    void sendTextMessageRequested(const QString &message);
 };
 
 QT_END_NAMESPACE
 
-#endif // QWEBCHANNELSOCKET_P_H
+#endif // TESTTRANSPORT_H
