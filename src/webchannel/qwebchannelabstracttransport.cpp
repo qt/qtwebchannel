@@ -39,43 +39,20 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
-import QtTest 1.0
+#include "qwebchannelabstracttransport.h"
 
-import QtWebKit 3.0
-import QtWebKit.experimental 1.0
+QT_BEGIN_NAMESPACE
 
-WebView {
-    id: view
-    property var lastLoadStatus
+QWebChannelAbstractTransport::QWebChannelAbstractTransport(QObject *parent)
+: QObject(parent)
+{
 
-    experimental.preferences.developerExtrasEnabled: true
-    experimental.preferences.navigatorQtObjectEnabled: true
-
-    onLoadingChanged: {
-        // NOTE: we cannot use spy.signalArguments nor save the loadRequest anywhere, as it gets
-        // deleted after the slots connected to the signal have finished... i.e. it's a weak pointer,
-        // not a shared pointer. As such, we have to copy out the interesting data we need later on here...
-        lastLoadStatus = loadRequest.status
-    }
-
-    SignalSpy {
-        id: loadingSpy
-        target: view
-        signalName: "onLoadingChanged"
-    }
-
-    function waitForLoaded()
-    {
-        do {
-            loadingSpy.wait(500);
-        } while (loading);
-        return lastLoadStatus == WebView.LoadSucceededStatus;
-    }
-
-    function clear()
-    {
-        url = "";
-        loadingSpy.clear()
-    }
 }
+
+QWebChannelAbstractTransport::~QWebChannelAbstractTransport()
+{
+
+}
+
+
+QT_END_NAMESPACE

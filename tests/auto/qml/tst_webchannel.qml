@@ -40,20 +40,47 @@
 ****************************************************************************/
 
 import QtQuick 2.0
+import QtTest 1.0
 
-WebChannelTest {
+import QtWebChannel 1.0
+import "qrc:///qwebchannel/qwebchannel.js" as Client
+
+TestCase {
     name: "WebChannel"
+
+    Client {
+        id: client
+    }
+
+    WebChannel {
+        id: webChannel
+        transports: [client.serverTransport]
+    }
+
+    function cleanup()
+    {
+        client.cleanup();
+    }
 
     function test_receiveRawMessage()
     {
-        loadUrl("receiveRaw.html");
-        compare(awaitRawMessage(), "foobar");
+        var channel = client.createChannel(function (channel) {
+            channel.send("foobar");
+        }, true /* raw */);
+        compare(client.awaitRawMessage(), "foobar");
     }
 
     function test_sendMessage()
     {
-        loadUrl("send.html");
+        var channel = client.createChannel(function (channel) {
+            channel.subscribe("myMessage", function(payload) {
+                channel.send("myMessagePong:" + payload);
+            });
+            channel.send("initialized");
+        }, true /* raw */);
+
+        compare(client.awaitRawMessage(), "initialized");
         webChannel.sendMessage("myMessage", "foobar");
-        compare(awaitRawMessage(), "myMessagePong:foobar");
+        compare(client.awaitRawMessage(), "myMessagePong:foobar");
     }
 }
