@@ -55,15 +55,22 @@ ApplicationWindow {
     width: 600
     height: 400
 
+    QtObject {
+        id: server
+        signal send(string message);
+
+        function receive(message) {
+            textEdit.text += "Received message: " + message + "\n";
+        }
+
+        WebChannel.id: "server"
+    }
+
     WebChannel {
         id: webChannel
 
-        connections: WebViewTransport {
-            webViewExperimental: webView.experimental
-            onMessageReceived: {
-                textEdit.text += "Received message: " + message + "\n";
-            }
-        }
+        registeredObjects: [server]
+        connections: [webView.experimental]
     }
 
     RowLayout {
@@ -96,7 +103,7 @@ ApplicationWindow {
                     text: "Send"
                     onClicked: {
                         if (input.text) {
-                            webChannel.sendMessage("message", input.text);
+                            server.send(input.text);
                             textEdit.text += "Sent message: " + input.text + "\n";
                             input.text = ""
                         }

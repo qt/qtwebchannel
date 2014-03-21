@@ -43,11 +43,9 @@
 #include <QtQml/QQmlExtensionPlugin>
 
 #include "qmlwebchannel.h"
-#include "qwebsockettransport.h"
-#include "qmlwebviewtransport.h"
-#include "qwebchanneltransportinterface.h"
+#include "qmessagepassinginterface.h"
 
-QML_DECLARE_INTERFACE_HASMETATYPE(QWebChannelTransportInterface);
+QML_DECLARE_INTERFACE_HASMETATYPE(QMessagePassingInterface);
 
 QT_BEGIN_NAMESPACE
 
@@ -62,13 +60,11 @@ public:
 
 void QWebChannelPlugin::registerTypes(const char *uri)
 {
-    qmlRegisterInterface<QWebChannelTransportInterface>("QWebChannelTransportInterface");
+    qmlRegisterInterface<QMessagePassingInterface>("QMessagePassingInterface");
 
     int major = 1;
     int minor = 0;
     qmlRegisterType<QmlWebChannel>(uri, major, minor, "WebChannel");
-    qmlRegisterType<QWebSocketTransport>(uri, major, minor, "WebSocketTransport");
-    qmlRegisterType<QmlWebViewTransport>(uri, major, minor, "WebViewTransport");
 }
 
 QT_END_NAMESPACE

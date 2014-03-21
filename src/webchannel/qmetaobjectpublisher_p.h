@@ -51,16 +51,15 @@
 #include <QPointer>
 
 #include "qwebchannelglobal.h"
-#include "qwebchanneltransportinterface.h"
 
 QT_BEGIN_NAMESPACE
 
 class QWebChannel;
-
-class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject, public QWebChannelMessageHandlerInterface
+class QMessagePassingInterface;
+class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
     Q_OBJECT
-    Q_INTERFACES(QWebChannelMessageHandlerInterface)
+
 public:
     explicit QMetaObjectPublisher(QWebChannel *webChannel);
     virtual ~QMetaObjectPublisher();
@@ -161,13 +160,14 @@ public:
      */
     void setBlockUpdates(bool block);
 
+signals:
+    void blockUpdatesChanged(bool block);
+
+public slots:
     /**
      * Parse the message as JSON and if it succeeds, call handleRequest with the obtained JSON object.
      */
-    void handleMessage(const QString &message, QWebChannelTransportInterface* transport, int clientId) Q_DECL_OVERRIDE;
-
-signals:
-    void blockUpdatesChanged(bool block);
+    void handleMessage(const QString &message);
 
 protected:
     void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
