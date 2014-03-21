@@ -40,5 +40,17 @@
 ****************************************************************************/
 
 #include <QtQuickTest/quicktest.h>
+#include <QtQml/qqml.h>
 
-QUICK_TEST_MAIN(qml)
+#ifndef QUICK_TEST_SOURCE_DIR
+#define QUICK_TEST_SOURCE_DIR Q_NULLPTR
+#endif
+
+#include "testtransport.h"
+
+int main(int argc, char **argv)
+{
+    qmlRegisterType<TestTransport>("QtWebChannel.Tests", 1, 0, "TestTransport");
+
+    return quick_test_main(argc, argv, "qml", QUICK_TEST_SOURCE_DIR);
+}

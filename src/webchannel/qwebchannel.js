@@ -102,10 +102,8 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         this.socket.onmessage = this.messageReceived
         setTimeout(this.initialized, 0);
     } else {
-        ///TODO: use ssl?
-        var socketUrl = "ws://" + baseUrlOrSocket;
         ///TODO: use QWebChannel protocol, once custom protcols are supported by QtWebSocket
-        this.socket = new WebSocket(socketUrl /*, "QWebChannel" */);
+        this.socket = new WebSocket(baseUrlOrSocket/*, "QWebChannel" */);
 
         this.socket.onopen = this.initialized
         this.socket.onclose = function()
@@ -147,7 +145,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         channel.send({"id": id, "data": data});
     };
 
-    this.objectMap = {};
+    this.objects = {};
 
     this.initMetaObjectPublisher = function(doneCallback)
     {
@@ -157,7 +155,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         channel.subscribe(
             QWebChannelMessageTypes.signal,
             function(payload) {
-                var object = window[payload.object] || channel.objectMap[payload.object];
+                var object = channel.objects[payload.object];
                 if (object) {
                     object.signalEmitted(payload.signal, payload.args);
                 } else {
@@ -171,7 +169,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
             function(payload) {
                 for (var i in payload) {
                     var data = payload[i];
-                    var object = window[data.object] || channel.objectMap[data.object];
+                    var object = channel.objects[data.object];
                     if (object) {
                         object.propertyUpdate(data.signals, data.properties);
                     } else {
@@ -192,7 +190,6 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                 for (var objectName in payload) {
                     var data = payload[objectName];
                     var object = new QObject(objectName, data, channel);
-                    window[objectName] = object;
                 }
                 if (doneCallback) {
                     doneCallback(channel);
@@ -213,7 +210,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
 function QObject(name, data, webChannel)
 {
     this.__id__ = name;
-    webChannel.objectMap[name] = this;
+    webChannel.objects[name] = this;
 
     // List of callbacks that get invoked upon signal emission
     this.__objectSignals__ = {};
@@ -233,18 +230,23 @@ function QObject(name, data, webChannel)
             return response;
         }
         var objectId = response.id;
-        if (webChannel.objectMap[objectId])
-            return webChannel.objectMap[objectId];
+        if (webChannel.objects[objectId])
+            return webChannel.objects[objectId];
 
         var qObject = new QObject( objectId, response.data, webChannel );
         qObject.destroyed.connect(function() {
-            if (webChannel.objectMap[objectId] === qObject) {
-                delete webChannel.objectMap[objectId];
+            if (webChannel.objects[objectId] === qObject) {
+                delete webChannel.objects[objectId];
                 // reset the now deleted QObject to an empty {} object
                 // just assigning {} though would not have the desired effect, but the
                 // below also ensures all external references will see the empty map
-                for (var prop in qObject) {
-                    delete qObject[prop];
+                // NOTE: this detour is neccessary to workaround QTBUG-40021
+                var propertyNames = [];
+                for (var propertyName in qObject) {
+                    propertyNames.push(propertyName);
+                }
+                for (var idx in propertyNames) {
+                    delete qObject[propertyNames[idx]];
                 }
             }
         });
