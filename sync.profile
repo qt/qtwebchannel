@@ -15,7 +15,4 @@
     "qtwebsockets" => "dev",
     # optional dependencies:
     "qtdeclarative" => "stable",
-    # TODO: disabled for now as it breaks CI builds on OSX
-    #       requires changes to qtqa scripts as discussed with sifalt, sahumada, tronical
-    # "qtwebkit" => "",
 );
