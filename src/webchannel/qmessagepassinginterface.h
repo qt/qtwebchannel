@@ -46,21 +46,30 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \inmodule QtWebChannel
+    \brief The interface used for communication between the QWebChannel server and its HTML clients.
+
+    In order to communicate with HTML clients an object implementing this interface must be passed
+    to QWebChannel::connectTo(). Currently this interface is implemented by QWebSocket for pure C++
+    applications. QML applications can use the declarative WebSocket or WebView.experimental's
+    \c navigator.qt functionality.
+ */
 class QMessagePassingInterface
 {
 public:
     virtual ~QMessagePassingInterface() {}
 
-    /**
-     * Send a text @p message to the remote client.
-     */
+    /*!
+        Send a text \a message to the remote client.
+    */
     virtual qint64 sendTextMessage(const QString &message) = 0;
 
-    /**
-     * Emitted when a new text message was received from the remote client.
-     *
-     * NOTE: This should be implemented as a signal.
-     */
+    /*!
+        Emitted when a new text \a message was received from the remote client.
+
+        \note This should be implemented as a signal.
+    */
     virtual void textMessageReceived(const QString &message) = 0;
 };
 

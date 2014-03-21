@@ -62,31 +62,12 @@ public:
     explicit QWebChannel(QObject *parent = 0);
     ~QWebChannel();
 
-    /**
-     * Register a map of string ID to QObject* objects.
-     *
-     * The properties, signals and public methods of the QObject are
-     * published to the remote client, where an object with the given identifier
-     * is constructed.
-     *
-     * TODO: This must be called, before clients are initialized.
-     */
     void registerObjects(const QHash<QString, QObject*> &objects);
     Q_INVOKABLE void registerObject(const QString &id, QObject *object);
     Q_INVOKABLE void deregisterObject(QObject *object);
 
-    /**
-     * @return true when property updates are blocked, false otherwise.
-     */
     bool blockUpdates() const;
 
-    /**
-     * Set whether property updates should be blocked or not.
-     *
-     * When they are blocked, the remote clients will not be notified about
-     * property changes. The changes are recorded and sent to the clients once
-     * setBlockUpdates(false) is called.
-     */
     void setBlockUpdates(bool block);
 
 signals:
