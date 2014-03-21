@@ -44,24 +44,22 @@
 
 #include <QObject>
 #include <QVariant>
-#include <qwebchanneltransportinterface.h>
 
-class DummyTransport : public QObject, public QWebChannelTransportInterface
+#include <QtWebChannel/QWebChannelAbstractTransport>
+
+class DummyTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
-    Q_INTERFACES(QWebChannelTransportInterface)
 public:
     explicit DummyTransport(QObject *parent)
-        : QObject(parent)
+        : QWebChannelAbstractTransport(parent)
     {}
     ~DummyTransport() {};
 
-    void sendMessage(const QString &/*message*/, int /*clientId*/) const Q_DECL_OVERRIDE
-    {}
-    void sendMessage(const QByteArray &/*message*/, int /*clientId*/) const Q_DECL_OVERRIDE
-    {}
-    void setMessageHandler(QWebChannelMessageHandlerInterface * /*handler*/) Q_DECL_OVERRIDE
-    {}
+public slots:
+    void sendTextMessage(const QString &/*message*/) Q_DECL_OVERRIDE
+    {
+    }
 };
 
 class TestObject : public QObject
@@ -216,7 +214,6 @@ public:
     Q_INVOKABLE void setVariant(const QVariant &v);
 
 private slots:
-    void testInitWebSocketTransport();
     void testRegisterObjects();
     void testInfoForObject();
     void testInvokeMethodConversion();

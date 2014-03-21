@@ -40,12 +40,23 @@
 ****************************************************************************/
 
 import QtQuick 2.0
+import QtTest 1.0
 
 import QtWebChannel 1.0
+import "qrc:///qwebchannel/qwebchannel.js" as Client
 
-WebChannelTest {
+TestCase {
     name: "Bench"
     id: test
+
+    Client {
+        id: client
+    }
+
+    WebChannel {
+        id: webChannel
+        transports: [client.serverTransport]
+    }
 
     Component {
         id: component
@@ -96,28 +107,15 @@ WebChannelTest {
         webChannel.registerObjects(objects);
     }
 
-    function benchmark_init_baseline()
+    function cleanup()
     {
-        loadUrl("bench_init.html");
+        client.cleanup();
     }
 
-    function benchmark_init_webview()
+    function benchmark_init()
     {
-        useWebViewTransport = true;
-        loadUrl("bench_init.html");
-        // init
-        awaitMessage();
-        // idle
-        awaitMessage();
-    }
-
-    function benchmark_init_websocket()
-    {
-        useWebViewTransport = false;
-        loadUrl("bench_init.html");
-        // init
-        awaitMessage();
-        // idle
-        awaitMessage();
+        var channel = client.createChannel(function() {});
+        client.awaitInit();
+        client.awaitIdle();
     }
 }

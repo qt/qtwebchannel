@@ -43,22 +43,23 @@
 #define QWEBCHANNEL_P_H
 
 #include "qwebchannelglobal.h"
-#include "qwebchanneltransportinterface.h"
 
 #include <QVector>
 
 QT_BEGIN_NAMESPACE
 
 class QJsonValue;
-class QWebChannelTransportInterface;
+class QWebChannelAbstractTransport;
 class QMetaObjectPublisher;
 
 Q_WEBCHANNEL_EXPORT QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response);
 
 struct Q_WEBCHANNEL_EXPORT QWebChannelPrivate
 {
-    QVector<QWebChannelTransportInterface*> transports;
+    QVector<QWebChannelAbstractTransport*> transports;
     QMetaObjectPublisher *publisher;
+
+    void transportDestroyed(QObject* object);
 };
 
 QT_END_NAMESPACE

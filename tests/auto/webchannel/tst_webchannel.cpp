@@ -44,7 +44,6 @@
 #include <qwebchannel.h>
 #include <qwebchannel_p.h>
 #include <qmetaobjectpublisher_p.h>
-#include <qwebsockettransport.h>
 
 #include <QtTest>
 
@@ -74,20 +73,6 @@ void TestWebChannel::setDouble(double d)
 void TestWebChannel::setVariant(const QVariant &v)
 {
     m_lastVariant = v;
-}
-
-void TestWebChannel::testInitWebSocketTransport()
-{
-    QWebSocketTransport transport;
-    QSignalSpy initSpy(&transport, SIGNAL(initialized()));
-    QSignalSpy baseUrlSpy(&transport, SIGNAL(baseUrlChanged(QString)));
-
-    QVERIFY(initSpy.wait());
-    QCOMPARE(initSpy.size(), 1);
-    QCOMPARE(baseUrlSpy.size(), 1);
-    QCOMPARE(baseUrlSpy.first().size(), 1);
-    QCOMPARE(transport.baseUrl(), baseUrlSpy.first().first().toString());
-    QVERIFY(!transport.baseUrl().isEmpty());
 }
 
 void TestWebChannel::testRegisterObjects()

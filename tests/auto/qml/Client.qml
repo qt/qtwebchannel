@@ -43,77 +43,86 @@ import QtQuick 2.0
 import QtTest 1.0
 
 import QtWebChannel 1.0
+import QtWebChannel.Tests 1.0
+import "qrc:///qwebchannel/qwebchannel.js" as Client
 
-TestCase {
-    property var lastLoadStatus
-    property bool useWebViewTransport: false
-
-    // only run after the webchannel has finished initialization
-    when: webSocketTransport.baseUrl != ""
-
-    WebViewTransport {
-        id: webViewTransport
-        webViewExperimental: defaultView.experimental
+Item {
+    TestTransport {
+        id: serverTransport
     }
-    WebSocketTransport {
-        id: webSocketTransport
-    }
+    readonly property var serverTransport: serverTransport
 
-    TestWebView {
-        id: defaultView
-    }
+    property var clientMessages: []
 
-    WebChannel {
-        id: webChannel
-    }
-    property var webChannel: webChannel
+    property bool debug: false
 
-    SignalSpy {
-        id: rawMessageSpy
-        target: useWebViewTransport ? webViewTransport : webSocketTransport;
-        signalName: "onMessageReceived"
-    }
-    property var rawMessageSpy: rawMessageSpy
-    property var rawMessageIdx: 0;
+    QtObject {
+        id: clientTransport
 
-    function urlForFile(file)
-    {
-        verify(useWebViewTransport || webSocketTransport.baseUrl != "", "webSocketTransport.baseUrl is empty");
-        return "data/" + file + (!useWebViewTransport ? "?webChannelBaseUrl=" + webSocketTransport.baseUrl : "");
-    }
+        property var send;
+        property var onmessage;
 
-    // load file in the given view or use the global one by default
-    function loadUrl(file, view)
-    {
-        if (useWebViewTransport) {
-            webChannel.disconnectFrom(webSocketTransport);
-            webChannel.connectTo(webViewTransport);
-        } else {
-            webChannel.disconnectFrom(webViewTransport);
-            webChannel.connectTo(webSocketTransport);
+        function postMessage(message)
+        {
+            if (debug) {
+                console.log("client posts message: ", message);
+            }
+            clientMessages.push(message);
+            serverTransport.textMessageReceived(message);
         }
-        if (!view) {
-            view = defaultView;
+
+        Component.onCompleted: {
+            serverTransport.sendTextMessageRequested.connect(function(message) {
+                if (debug) {
+                    console.log("client received message: ", message);
+                }
+                onmessage({data:message});
+            });
         }
-        view.url = urlForFile(file);
-        view.waitForLoaded();
+    }
+    readonly property var clientTransport: clientTransport
+
+    Timer {
+        id: timer
+        running: false
+        repeat: false
+
+        property var callback
+
+        onTriggered: {
+            callback();
+        }
+    }
+
+    function setTimeout(callback, delay)
+    {
+        if (timer.running) {
+            console.error("nested calls to setTimeout are not supported!", JSON.stringify(callback), JSON.stringify(timer.callback));
+            return;
+        }
+        timer.callback = callback;
+        // note: an interval of 0 is directly triggered, so add a little padding
+        timer.interval = delay + 1;
+        timer.running = true;
+    }
+
+    function createChannel(callback, raw)
+    {
+        return new Client.QWebChannel(clientTransport, callback, raw);
     }
 
     function cleanup()
     {
-        defaultView.clear();
-        rawMessageSpy.clear();
-        rawMessageIdx = 0;
+        clientMessages = [];
+        timer.running = false;
     }
 
     function awaitRawMessage()
     {
-        rawMessageSpy.wait(500);
-        if (rawMessageSpy.signalArguments.length <= rawMessageIdx) {
-            // still no message received, fail
-            return null;
+        for (var i = 0; i < 10 && !clientMessages.length; ++i) {
+            wait(10);
         }
-        return rawMessageSpy.signalArguments[rawMessageIdx++][0];
+        return clientMessages.shift();
     }
 
     function awaitMessage()
@@ -131,7 +140,7 @@ TestCase {
         verify(msg);
         verify(msg.data);
         verify(msg.data.type);
-        compare(msg.data.type, qWebChannelMessageTypes.init);
+        compare(msg.data.type, Client.QWebChannelMessageTypes.init);
     }
 
     function awaitIdle()
@@ -139,19 +148,19 @@ TestCase {
         var msg = awaitMessage();
         verify(msg);
         verify(msg.data);
-        compare(msg.data.type, qWebChannelMessageTypes.idle);
+        compare(msg.data.type, Client.QWebChannelMessageTypes.idle);
         verify(webChannel.test_clientIsIdle())
     }
 
-    property var qWebChannelMessageTypes: ({
-        signal: 1,
-        propertyUpdate: 2,
-        init: 3,
-        idle: 4,
-        debug: 5,
-        invokeMethod: 6,
-        connectToSignal: 7,
-        disconnectFromSignal: 8,
-        setProperty: 9,
-    });
+    function awaitMessageSkipIdle()
+    {
+        var msg;
+        do {
+            msg = awaitMessage();
+            verify(msg);
+            verify(msg.data);
+        } while (msg.data.type === Client.QWebChannelMessageTypes.idle);
+        return msg;
+    }
+
 }
