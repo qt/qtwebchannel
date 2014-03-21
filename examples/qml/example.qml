@@ -55,27 +55,36 @@ ApplicationWindow {
     width: 600
     height: 400
 
+    // this object is published and accessible from the HTML client side
     QtObject {
         id: server
+
+        // emitted from the QML side and handled on the HTML side
         signal send(string message);
 
+        // invoked from the HTML side
         function receive(message) {
             textEdit.text += "Received message: " + message + "\n";
         }
 
+        // the identifier, under which this object is known on the HTML client side
         WebChannel.id: "server"
     }
 
     WebChannel {
         id: webChannel
 
+        // the list of objects that are accessible to HTML clients
         registeredObjects: [server]
+        // the list of connections, i.e. clients. This can be any object implementing the
+        // QMessagePassingInterface, currently WebView.experimental or WebSocket.
         connections: [webView.experimental]
     }
 
     RowLayout {
         id: myRow
         anchors.fill: parent
+        // qml server
         ColumnLayout {
             id: myCol
             Label {
@@ -111,6 +120,7 @@ ApplicationWindow {
                 }
             }
         }
+        // remote client
         WebView {
             Layout.fillWidth: true
             Layout.fillHeight: true

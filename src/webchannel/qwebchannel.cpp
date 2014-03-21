@@ -50,6 +50,16 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QWebChannel
+
+    \inmodule QtWebChannel
+    \brief Implements a channel to expose QObjects to remote HTML clients.
+
+
+    \sa {Standalone Example}
+*/
+
 namespace {
 
 QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response)
