@@ -8,7 +8,11 @@ CONFIG += warn_on qmltestcase
 IMPORTPATH += $$OUT_PWD/../../../qml $$PWD
 
 SOURCES += \
-    qml.cpp
+    qml.cpp \
+    testtransport.cpp
+
+HEADERS += \
+    testtransport.h
 
 OTHER_FILES += \
     WebChannelTest.qml \

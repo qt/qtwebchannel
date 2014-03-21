@@ -12,20 +12,20 @@ OTHER_FILES = \
 
 PUBLIC_HEADERS += \
     qwebchannel.h \
-    qwebchanneltransport.h \
-    qwebsockettransport.h
+    qwebchannelabstracttransport.h \
+    qwebchannelwebsockettransport.h
 
 PRIVATE_HEADERS += \
     qwebchannel_p.h \
     qmetaobjectpublisher_p.h \
-    qwebsockettransport_p.h \
     variantargument_p.h \
     signalhandler_p.h
 
 SOURCES += \
     qwebchannel.cpp \
     qmetaobjectpublisher.cpp \
-    qwebsockettransport.cpp
+    qwebchannelabstracttransport.cpp \
+    qwebchannelwebsockettransport.cpp
 
 qtHaveModule(qml) {
     QT += qml

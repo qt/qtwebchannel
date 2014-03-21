@@ -39,43 +39,34 @@
 **
 ****************************************************************************/
 
-#ifndef QWEBSOCKETTRANSPORT_H
-#define QWEBSOCKETTRANSPORT_H
+#ifndef QWEBCHANNELABSTRACTTRANSPORT_H
+#define QWEBCHANNELABSTRACTTRANSPORT_H
 
-#include "qwebchanneltransportinterface.h"
+#include <QObject>
+#include <qwebchannelglobal.h>
 
 QT_BEGIN_NAMESPACE
 
-class QWebSocketTransportPrivate;
-class Q_WEBCHANNEL_EXPORT QWebSocketTransport : public QObject, public QWebChannelTransportInterface
+class Q_WEBCHANNEL_EXPORT QWebChannelAbstractTransport : public QObject
 {
     Q_OBJECT
-    Q_INTERFACES(QWebChannelTransportInterface)
-    Q_PROPERTY(QString baseUrl READ baseUrl NOTIFY baseUrlChanged)
-    Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
 public:
-    explicit QWebSocketTransport(QObject *parent = 0);
-    ~QWebSocketTransport() Q_DECL_OVERRIDE;
+    explicit QWebChannelAbstractTransport(QObject *parent = 0);
+    virtual ~QWebChannelAbstractTransport();
 
-    void sendMessage(const QByteArray &message, int clientId = -1) const Q_DECL_OVERRIDE;
-    void sendMessage(const QString &message, int clientId = -1) const Q_DECL_OVERRIDE;
-    void setMessageHandler(QWebChannelMessageHandlerInterface *handler) Q_DECL_OVERRIDE;
-
-    QString baseUrl() const;
-
-    void setUseSecret(bool);
-    bool useSecret() const;
+public Q_SLOTS:
+    /**
+     * Send a text @p message to the remote client.
+     */
+    virtual void sendTextMessage(const QString &message) = 0;
 
 Q_SIGNALS:
-    void baseUrlChanged(const QString &baseUrl);
-    void failed(const QString &reason);
-    void initialized();
-    void messageReceived(const QString &message);
-
-private:
-    QScopedPointer<QWebSocketTransportPrivate> d;
+    /**
+     * Emitted when a new text message was received from the remote client.
+     */
+    void textMessageReceived(const QString &message);
 };
 
 QT_END_NAMESPACE
 
-#endif // QWEBSOCKETTRANSPORT_H
+#endif // QWEBCHANNELABSTRACTTRANSPORT_H

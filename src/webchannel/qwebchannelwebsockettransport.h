@@ -39,41 +39,30 @@
 **
 ****************************************************************************/
 
-#ifndef QMLWEBVIEWTRANSPORT_H
-#define QMLWEBVIEWTRANSPORT_H
+#ifndef QWEBCHANNELWEBSOCKETTRANSPORT_H
+#define QWEBCHANNELWEBSOCKETTRANSPORT_H
 
-#include <qwebchanneltransportinterface.h>
+#include <QObject>
+#include <QtWebChannel/QWebChannelAbstractTransport>
+#include <QtWebChannel/qwebchannelglobal.h>
+#include <QtWebSockets/QWebSocket>
 
 QT_BEGIN_NAMESPACE
 
-class QmlWebViewTransport : public QObject, public QWebChannelTransportInterface
+struct QWebChannelWebSocketTransportPrivate;
+class Q_WEBCHANNEL_EXPORT QWebChannelWebSocketTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
-    Q_INTERFACES(QWebChannelTransportInterface)
-    Q_PROPERTY(QObject *webViewExperimental READ webViewExperimental WRITE setWebViewExperimental NOTIFY webViewChanged)
 public:
-    explicit QmlWebViewTransport(QObject *parent = 0);
-    ~QmlWebViewTransport() Q_DECL_OVERRIDE;
+    explicit QWebChannelWebSocketTransport(QWebSocket *socket);
+    virtual ~QWebChannelWebSocketTransport();
 
-    void sendMessage(const QString &message, int clientId) const Q_DECL_OVERRIDE;
-    void sendMessage(const QByteArray &message, int clientId) const Q_DECL_OVERRIDE;
-    void setMessageHandler(QWebChannelMessageHandlerInterface *handler) Q_DECL_OVERRIDE;
-
-    void setWebViewExperimental(QObject *webViewExperimental);
-    QObject *webViewExperimental() const;
-
-Q_SIGNALS:
-    void webViewChanged(QObject *webViewExperimental);
-    void messageReceived(const QString &message);
-
-private Q_SLOTS:
-    void handleWebViewMessage(const QVariantMap &message);
+    void sendTextMessage(const QString &message) Q_DECL_OVERRIDE;
 
 private:
-    QObject *m_webViewExperimental;
-    QWebChannelMessageHandlerInterface *m_handler;
+    QScopedPointer<QWebChannelWebSocketTransportPrivate> d;
 };
 
 QT_END_NAMESPACE
 
-#endif // QMLWEBVIEWTRANSPORT_H
+#endif // QWEBCHANNELWEBSOCKETTRANSPORT_H
