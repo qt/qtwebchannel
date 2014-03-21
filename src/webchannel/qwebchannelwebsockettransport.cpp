@@ -39,79 +39,41 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.1
+#include "qwebchannelwebsockettransport.h"
 
-import QtWebChannel 1.0
+/*!
+    \inmodule QtWebChannel
+    \brief QWebChannelAbstractSocket implementation that uses a QWebSocket internally.
 
-import QtQuick.Controls 1.0
-import QtQuick.Layouts 1.0
+    The transport delegates all messages received over the QWebSocket over its
+    textMessageReceived signal. Analogously, all calls to sendTextMessage will
+    be send over the QWebSocket to the remote client.
+*/
 
-import QtWebKit 3.0
-import QtWebKit.experimental 1.0
+QT_BEGIN_NAMESPACE
 
-ApplicationWindow {
-    id: window
-    title: "QtWebChannel Example: QML Server to QtWebKit WebView Client"
-    width: 600
-    height: 400
+struct QWebChannelWebSocketTransportPrivate
+{
+    QWebSocket *socket;
+};
 
-    WebChannel {
-        id: webChannel
-
-        connections: WebViewTransport {
-            webViewExperimental: webView.experimental
-            onMessageReceived: {
-                textEdit.text += "Received message: " + message + "\n";
-            }
-        }
-    }
-
-    RowLayout {
-        id: myRow
-        anchors.fill: parent
-        ColumnLayout {
-            id: myCol
-            Label {
-                id: caption
-                text: "QML Server"
-                font.bold: true
-            }
-            TextArea {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                id: textEdit
-                readOnly: true
-            }
-            RowLayout {
-                Label {
-                    id: label
-                    text: "Input: "
-                }
-                TextField {
-                    id: input
-                    Layout.fillWidth: true
-                }
-                Button {
-                    id: send
-                    text: "Send"
-                    onClicked: {
-                        if (input.text) {
-                            webChannel.sendMessage("message", input.text);
-                            textEdit.text += "Sent message: " + input.text + "\n";
-                            input.text = ""
-                        }
-                    }
-                }
-            }
-        }
-        WebView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumWidth: window.width / 2
-            id: webView
-            url: "index.html"
-            experimental.preferences.developerExtrasEnabled: true
-            experimental.preferences.navigatorQtObjectEnabled: true
-        }
-    }
+QWebChannelWebSocketTransport::QWebChannelWebSocketTransport(QWebSocket *socket)
+: QWebChannelAbstractTransport(socket)
+, d(new QWebChannelWebSocketTransportPrivate)
+{
+    d->socket = socket;
+    connect(socket, &QWebSocket::textMessageReceived,
+            this, &QWebChannelWebSocketTransport::textMessageReceived);
 }
+
+QWebChannelWebSocketTransport::~QWebChannelWebSocketTransport()
+{
+
+}
+
+void QWebChannelWebSocketTransport::sendTextMessage(const QString &message)
+{
+    d->socket->sendTextMessage(message);
+}
+
+QT_END_NAMESPACE
