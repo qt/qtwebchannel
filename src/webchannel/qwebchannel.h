@@ -51,7 +51,7 @@
 QT_BEGIN_NAMESPACE
 
 struct QWebChannelPrivate;
-class QWebChannelTransportInterface;
+class QWebChannelAbstractTransport;
 
 class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
 {
@@ -89,8 +89,8 @@ public:
      */
     void setBlockUpdates(bool block);
 
-    void connectTo(QWebChannelTransportInterface *transport);
-    void disconnectFrom(QWebChannelTransportInterface *transport);
+    void connectTo(QWebChannelAbstractTransport *transport);
+    void disconnectFrom(QWebChannelAbstractTransport *transport);
 
 Q_SIGNALS:
     void blockUpdatesChanged(bool block);
@@ -100,6 +100,8 @@ public Q_SLOTS:
 
 private:
     QScopedPointer<QWebChannelPrivate> d;
+    Q_PRIVATE_SLOT(d, void _q_transportDestroyed(QObject*));
+    friend class QMetaObjectPublisher;
     friend class QmlWebChannel;
     friend class TestWebChannel;
 };

@@ -43,6 +43,7 @@
 
 #include "qwebchannel_p.h"
 #include "qmetaobjectpublisher_p.h"
+#include "qwebchannelabstracttransport.h"
 
 #include <QtQml/QQmlContext>
 
@@ -100,32 +101,19 @@ QmlWebChannelAttached *QmlWebChannel::qmlAttachedProperties(QObject *obj)
 
 void QmlWebChannel::connectTo(QObject *transport)
 {
-    if (QWebChannelTransportInterface *iface = qobject_cast<QWebChannelTransportInterface*>(transport)) {
-        m_connectedObjects.insert(transport, iface);
-        QWebChannel::connectTo(iface);
-        connect(transport, SIGNAL(destroyed(QObject*)), SLOT(transportDestroyed(QObject*)), Qt::UniqueConnection);
+    if (QWebChannelAbstractTransport *realTransport = qobject_cast<QWebChannelAbstractTransport*>(transport)) {
+        QWebChannel::connectTo(realTransport);
     } else {
-        qWarning() << "Cannot connect to transport" << transport << " - it does not implement the QWebChannelTransportInterface.";
+        qWarning() << "Cannot connect to transport" << transport << " - it is not a QWebChannelAbstractTransport.";
     }
 }
 
 void QmlWebChannel::disconnectFrom(QObject *transport)
 {
-    if (QWebChannelTransportInterface *iface = qobject_cast<QWebChannelTransportInterface*>(transport)) {
-        QWebChannel::disconnectFrom(iface);
-        disconnect(transport, SIGNAL(destroyed(QObject*)), this, SLOT(transportDestroyed(QObject*)));
-        m_connectedObjects.remove(transport);
+    if (QWebChannelAbstractTransport *realTransport = qobject_cast<QWebChannelAbstractTransport*>(transport)) {
+        QWebChannel::disconnectFrom(realTransport);
     } else {
-        qWarning() << "Cannot disconnect from transport" << transport << " - it does not implement the QWebChannelTransportInterface.";
-    }
-}
-
-void QmlWebChannel::transportDestroyed(QObject *transport)
-{
-    QWebChannelTransportInterface *iface = m_connectedObjects.take(transport);
-    const int idx = d->transports.indexOf(iface);
-    if (idx != -1) {
-        d->transports.remove(idx);
+        qWarning() << "Cannot disconnect from transport" << transport << " - it is not a QWebChannelAbstractTransport.";
     }
 }
 
@@ -175,35 +163,36 @@ void QmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
     return channel->m_registeredObjects.clear();
 }
 
-QQmlListProperty<QWebChannelTransportInterface> QmlWebChannel::transports()
+QQmlListProperty<QObject> QmlWebChannel::transports()
 {
-    return QQmlListProperty<QWebChannelTransportInterface>(this, 0,
+    return QQmlListProperty<QObject>(this, 0,
                                                            transports_append,
                                                            transports_count,
                                                            transports_at,
                                                            transports_clear);
 }
 
-void QmlWebChannel::transports_append(QQmlListProperty<QWebChannelTransportInterface> *prop, QWebChannelTransportInterface *transport)
+void QmlWebChannel::transports_append(QQmlListProperty<QObject> *prop, QObject *transport)
 {
-    QWebChannel *channel = static_cast<QWebChannel*>(prop->object);
+    QmlWebChannel *channel = static_cast<QmlWebChannel*>(prop->object);
     channel->connectTo(transport);
 }
 
-int QmlWebChannel::transports_count(QQmlListProperty<QWebChannelTransportInterface> *prop)
+int QmlWebChannel::transports_count(QQmlListProperty<QObject> *prop)
 {
     return static_cast<QmlWebChannel*>(prop->object)->d->transports.size();
 }
 
-QWebChannelTransportInterface *QmlWebChannel::transports_at(QQmlListProperty<QWebChannelTransportInterface> *prop, int index)
+QObject *QmlWebChannel::transports_at(QQmlListProperty<QObject> *prop, int index)
 {
-    return static_cast<QmlWebChannel*>(prop->object)->d->transports.at(index);
+    QmlWebChannel *channel = static_cast<QmlWebChannel*>(prop->object);
+    return dynamic_cast<QObject*>(channel->d->transports.at(index));
 }
 
-void QmlWebChannel::transports_clear(QQmlListProperty<QWebChannelTransportInterface> *prop)
+void QmlWebChannel::transports_clear(QQmlListProperty<QObject> *prop)
 {
     QWebChannel *channel = static_cast<QWebChannel*>(prop->object);
-    foreach (QWebChannelTransportInterface *transport, channel->d->transports) {
+    foreach (QWebChannelAbstractTransport *transport, channel->d->transports) {
         channel->disconnectFrom(transport);
     }
     Q_ASSERT(channel->d->transports.isEmpty());

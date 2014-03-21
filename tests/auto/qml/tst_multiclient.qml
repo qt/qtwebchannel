@@ -40,12 +40,21 @@
 ****************************************************************************/
 
 import QtQuick 2.0
+import QtTest 1.0
 
 import QtWebChannel 1.0
+import "qrc:///qwebchannel/qwebchannel.js" as Client
 
-WebChannelTest {
+TestCase {
     name: "MultiClient"
-    id: test
+
+    Client {
+        id: client1
+    }
+
+    Client {
+        id: client2
+    }
 
     QtObject {
         id: foo
@@ -61,39 +70,50 @@ WebChannelTest {
         WebChannel.id: "foo"
     }
 
-    TestWebView {
-        id: client1
-    }
-    TestWebView {
-        id: client2
+    WebChannel {
+        id: webChannel
+        transports: [client1.serverTransport, client2.serverTransport]
+        registeredObjects: [foo]
     }
 
-    function initTestCase()
+    function init()
     {
-        webChannel.registeredObjects = [foo];
+        client1.cleanup();
+        client2.cleanup();
+    }
+
+    function clientInitCallback(channel)
+    {
+        channel.objects.foo.ping.connect(function() {
+            channel.objects.foo.pong(function(value) {
+                channel.exec({pongAnswer: value});
+            });
+        });
     }
 
     function test_multiclient()
     {
-        loadUrl("multiclient.html", client1);
-        loadUrl("multiclient.html", client2);
+        var c1 = client1.createChannel(clientInitCallback);
+        var c2 = client2.createChannel(clientInitCallback);
+
         // init, connect & idle messages for two clients
-        for (var i = 0; i < 3 * 2; ++i) {
-            awaitMessage();
+        for (var i = 0; i < 3; ++i) {
+            client1.awaitMessage();
+            client2.awaitMessage();
         }
 
         foo.ping();
 
         // invoke of pong method
-        awaitMessage();
-        awaitMessage();
+        client1.awaitMessage();
+        client2.awaitMessage();
 
-        var msg = awaitMessage();
+        var msg = client1.awaitMessage();
         compare(msg.data.pongAnswer, 1);
-        msg = awaitMessage();
+        msg = client2.awaitMessage();
         compare(msg.data.pongAnswer, 2);
 
-        awaitIdle();
-        awaitIdle();
+        client1.awaitIdle();
+        client2.awaitIdle();
     }
 }

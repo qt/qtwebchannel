@@ -40,12 +40,17 @@
 ****************************************************************************/
 
 import QtQuick 2.0
+import QtTest 1.0
 
 import QtWebChannel 1.0
+import "qrc:///qwebchannel/qwebchannel.js" as Client
 
-WebChannelTest {
+TestCase {
     name: "MetaObjectPublisher"
-    id: test
+
+    Client {
+        id: client
+    }
 
     property var lastMethodArg
 
@@ -90,62 +95,71 @@ WebChannelTest {
         }
     }
 
-    function initTestCase()
-    {
-        webChannel.registeredObjects = [myObj, myOtherObj, myFactory];
+    WebChannel {
+        id: webChannel
+        transports: [client.serverTransport]
+        registeredObjects: [myObj, myOtherObj, myFactory]
     }
 
-    function awaitMessageSkipIdle()
+    function init()
     {
-        var msg;
-        do {
-            msg = awaitMessage();
-            verify(msg);
-            verify(msg.data);
-        } while (msg.data.type === qWebChannelMessageTypes.idle);
-        return msg;
+        myObj.myProperty = 1
+        client.cleanup();
     }
 
     function test_property()
     {
-        myObj.myProperty = 1
-        loadUrl("property.html");
-        awaitInit();
-        var msg = awaitMessageSkipIdle();
+        var channel = client.createChannel(function(channel) {
+            channel.exec({label: "init", value: channel.objects.myObj.myProperty});
+            channel.objects.myObj.myPropertyChanged.connect(function() {
+                channel.exec({label: "changed", value: channel.objects.myObj.myProperty});
+            });
+            channel.subscribe("setProperty", function(newValue) {
+                channel.objects.myObj.myProperty = newValue;
+            });
+        });
+
+        client.awaitInit();
+        var msg = client.awaitMessageSkipIdle();
         compare(msg.data.label, "init");
         compare(msg.data.value, 1);
         compare(myObj.myProperty, 1);
 
         // change property, should be propagated to HTML client and a message be send there
         myObj.myProperty = 2;
-        msg = awaitMessageSkipIdle();
+        msg = client.awaitMessageSkipIdle();
         compare(msg.data.label, "changed");
         compare(msg.data.value, 2);
         compare(myObj.myProperty, 2);
 
         // now trigger a write from the client side
         webChannel.sendMessage("setProperty", 3);
-        msg = awaitMessageSkipIdle();
+        msg = client.awaitMessageSkipIdle();
         compare(myObj.myProperty, 3);
 
         // the above write is also propagated to the HTML client
-        msg = awaitMessageSkipIdle();
+        msg = client.awaitMessageSkipIdle();
         compare(msg.data.label, "changed");
         compare(msg.data.value, 3);
 
-        awaitIdle();
+        client.awaitIdle();
     }
 
     function test_method()
     {
-        loadUrl("method.html");
-        awaitInit();
-        awaitIdle();
+        var channel = client.createChannel(function (channel) {
+            channel.subscribe("invokeMethod", function (arg) {
+                channel.objects.myObj.myMethod(arg);
+            });
+        });
+
+        client.awaitInit();
+        client.awaitIdle();
 
         webChannel.sendMessage("invokeMethod", "test");
 
-        var msg = awaitMessage();
-        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
+        var msg = client.awaitMessage();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, "myObj");
         compare(msg.data.args, ["test"]);
 
@@ -154,27 +168,35 @@ WebChannelTest {
 
     function test_signal()
     {
-        loadUrl("signal.html");
-        awaitInit();
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myObj.mySignal.connect(function(arg) {
+                channel.exec({label: "signalReceived", value: arg});
+            });
+        });
+        client.awaitInit();
 
-        var msg = awaitMessage();
-        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
+        var msg = client.awaitMessage();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, "myObj");
 
-        awaitIdle();
+        client.awaitIdle();
 
         myObj.mySignal("test");
 
-        msg = awaitMessage();
+        msg = client.awaitMessageSkipIdle();
         compare(msg.data.label, "signalReceived");
         compare(msg.data.value, "test");
     }
 
     function test_grouping()
     {
-        loadUrl("grouping.html");
-        awaitInit();
-        awaitIdle();
+        var channel = client.createChannel(function(channel) {
+            channel.subscribe(Client.QWebChannelMessageTypes.propertyUpdate, function() {
+                channel.exec({label: "gotPropertyUpdate", values: [channel.objects.myObj.myProperty, channel.objects.myOtherObj.foo, channel.objects.myOtherObj.bar]});
+            });
+        });
+        client.awaitInit();
+        client.awaitIdle();
 
         // change properties a lot, we expect this to be grouped into a single update notification
         for (var i = 0; i < 10; ++i) {
@@ -183,81 +205,106 @@ WebChannelTest {
             myOtherObj.bar = i;
         }
 
-        var msg = awaitMessage();
+        var msg = client.awaitMessage();
         verify(msg);
         compare(msg.data.label, "gotPropertyUpdate");
         compare(msg.data.values, [myObj.myProperty, myOtherObj.foo, myOtherObj.bar]);
 
-        awaitIdle();
+        client.awaitIdle();
     }
 
     function test_wrapper()
     {
-        loadUrl("wrapper.html");
-        awaitInit();
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myFactory.create("testObj", function(obj) {
+                channel.objects["testObj"] = obj;
+                obj.mySignal.connect(function(arg1, arg2) {
+                    channel.exec({label: "signalReceived", args: [arg1, arg2]});
+                });
+                obj.myProperty = 42;
+                obj.myMethod("foobar");
+            });
+            channel.subscribe("triggerDelete", function() {
+                channel.objects.testObj.deleteLater();
+            });
+            channel.subscribe("report", function() {
+                channel.exec({label:"report", obj: channel.objects.testObj})
+            });
+        });
+        client.awaitInit();
 
-        var msg = awaitMessageSkipIdle();
-        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
+        var msg = client.awaitMessageSkipIdle();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, "myFactory");
         verify(myFactory.lastObj);
         compare(myFactory.lastObj.objectName, "testObj");
 
-        msg = awaitMessageSkipIdle();
-        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
+        msg = client.awaitMessageSkipIdle();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
         verify(msg.data.object);
         var objId = msg.data.object;
 
-        msg = awaitMessageSkipIdle();
-        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
+        msg = client.awaitMessageSkipIdle();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, objId);
 
-        msg = awaitMessageSkipIdle();
-        compare(msg.data.type, qWebChannelMessageTypes.setProperty);
+        msg = client.awaitMessageSkipIdle();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.setProperty);
         compare(msg.data.object, objId);
         compare(myFactory.lastObj.myProperty, 42);
 
-        msg = awaitMessageSkipIdle();
-        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
+        msg = client.awaitMessageSkipIdle();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, objId);
         compare(msg.data.args, ["foobar"]);
 
-        msg = awaitMessageSkipIdle();
+        msg = client.awaitMessageSkipIdle();
         compare(msg.data.label, "signalReceived");
         compare(msg.data.args, ["foobar", 42]);
 
         // pass QObject* on the fly and trigger deleteLater from client side
         webChannel.sendMessage("triggerDelete");
 
-        msg = awaitMessageSkipIdle();
-        compare(msg.data.type, qWebChannelMessageTypes.invokeMethod);
+        msg = client.awaitMessageSkipIdle();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, objId);
+
+        client.awaitIdle();
 
         webChannel.sendMessage("report");
 
-        msg = awaitMessageSkipIdle();
+        msg = client.awaitMessageSkipIdle();
         compare(msg.data.label, "report");
         compare(msg.data.obj, {});
     }
 
     function test_disconnect()
     {
-        loadUrl("disconnect.html");
-        awaitInit();
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myObj.mySignal.connect(function(arg) {
+                channel.exec({label: "mySignalReceived", args: [arg]});
+                channel.objects.myObj.mySignal.disconnect(this);
+            });
+            channel.subscribe("report", function() {
+                channel.exec({label: "report"});
+            });
+        });
+        client.awaitInit();
 
-        var msg = awaitMessage();
-        compare(msg.data.type, qWebChannelMessageTypes.connectToSignal);
+        var msg = client.awaitMessage();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, "myObj");
 
-        awaitIdle();
+        client.awaitIdle();
 
         myObj.mySignal(42);
 
-        msg = awaitMessage();
+        msg = client.awaitMessage();
         compare(msg.data.label, "mySignalReceived");
         compare(msg.data.args, [42]);
 
-        msg = awaitMessage();
-        compare(msg.data.type, qWebChannelMessageTypes.disconnectFromSignal);
+        msg = client.awaitMessage();
+        compare(msg.data.type, Client.QWebChannelMessageTypes.disconnectFromSignal);
         compare(msg.data.object, "myObj");
 
         myObj.mySignal(0);
@@ -266,7 +313,7 @@ WebChannelTest {
         // and verify no mySignalReceived was triggered by the above emission
         webChannel.sendMessage("report");
 
-        msg = awaitMessage();
+        msg = client.awaitMessage();
         compare(msg.data.label, "report");
     }
 }

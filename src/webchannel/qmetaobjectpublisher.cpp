@@ -42,6 +42,7 @@
 #include "qmetaobjectpublisher_p.h"
 #include "qwebchannel.h"
 #include "qwebchannel_p.h"
+#include "qwebchannelabstracttransport.h"
 
 #include <QEvent>
 #include <QJsonDocument>
@@ -394,7 +395,7 @@ QByteArray QMetaObjectPublisher::invokeMethod(QObject *const object, const int m
 
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
 {
-    if (!webChannel) {
+    if (!webChannel || webChannel->d->transports.isEmpty()) {
         return;
     }
     if (!signalToPropertyMap.value(object).contains(signalIndex)) {
@@ -544,15 +545,18 @@ QByteArray QMetaObjectPublisher::handleRequest(const QJsonObject &message)
     return QByteArray();
 }
 
-void QMetaObjectPublisher::handleMessage(const QString &message, QWebChannelTransportInterface *transport, int clientId)
+void QMetaObjectPublisher::handleMessage(const QString &message)
 {
+    QWebChannelAbstractTransport *transport = qobject_cast<QWebChannelAbstractTransport*>(sender());
+    Q_ASSERT(transport);
+
     const QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     if (!doc.isObject()) {
         return;
     }
     const QByteArray &response = handleRequest(doc.object());
     if (!response.isEmpty()) {
-        transport->sendMessage(response, clientId);
+        transport->sendTextMessage(QString::fromUtf8(response));
     }
 }
 
