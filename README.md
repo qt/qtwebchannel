@@ -27,18 +27,18 @@ To use the Qt/C++ library, add the following to your `QMake` project:
 
     QT += webchannel
 
-Then, in your C++ code, construct a websocket transport and webchannel, then publish your `QObject`s:
+Then, in your C++ code, construct a a webchannel, then publish your `QObject`s:
 
-    QWebSocketTransport transport;
     QWebChannel channel;
-    channel.connectTo(&transport);
-
     channel.registerObject(QStringLiteral("foo"), myFooObj);
     ....
 
+Additionally, you need to provide a communication channel to the HTML client. One way is to
+use the QtWebSockets module. The `examples/standalone` example shows how to do this.
+
 On the HTML/JavaScript client side, you need to embed `src/webchannel/qwebchannel.js` and setup
 the connection to the WebSocket transport. The base URL for that can be found from C++ via
-`transport.baseUrl()` after the transport was initialized, and must be passed to HTML clients:
+`yourWebSocketServer.serverUrl()`, and must be passed to the HTML clients, e.g. via a `GET` parameter:
 
     <script type="text/javascript" src="path/to/qwebchannel.js"></script>
     <script type="text/javascript">
@@ -48,7 +48,7 @@ the connection to the WebSocket transport. The base URL for that can be found fr
     });
     </script>
 
-An example which shows all this can be found in `examples/standalone`.
+An example which shows all this in action can be found in `examples/standalone`.
 
 ### Usage from QtQuick
 

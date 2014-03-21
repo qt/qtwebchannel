@@ -4,6 +4,8 @@ CONFIG += warn_on strict_flags
 
 load(qt_module)
 
+QMAKE_DOCS = $$PWD/doc/qtwebchannel.qdocconf
+
 RESOURCES += \
     resources.qrc
 

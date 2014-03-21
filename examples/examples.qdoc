@@ -39,36 +39,17 @@
 **
 ****************************************************************************/
 
-#include "qmlwebchannelattached.h"
-
-QT_USE_NAMESPACE
-
-QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
-    : QObject(parent)
-{
-
-}
-
-QmlWebChannelAttached::~QmlWebChannelAttached()
-{
-
-}
-
 /*!
-    \qmlattachedproperty QString WebChannel::id
+    \title Qt WebChannel Examples
+    \page qtwebchannel-examples.html
+    \brief List of Qt WebChannel examples
 
-    The identifier under which an object, registered to a WebChannel, is known to remote clients.
-    You must use a string that is a valid JavaScript identifier.
+    The examples below can be used as a guide to using the QWebChannel C++ and WebChannel QML API.
+
+    \list
+    \li \l qml shows how to use the WebChannel from within QML to communicate with a client
+    running in a WebView.
+    \li \l standalone is a pure C++/Qt example which uses the QWebChannel to communicate with an
+    external client running in the browser of your choice. Communication is handled via WebSockets.
+    \endlist
 */
-QString QmlWebChannelAttached::id() const
-{
-    return m_id;
-}
-
-void QmlWebChannelAttached::setId(const QString &id)
-{
-    if (id != m_id) {
-        m_id = id;
-        emit idChanged(id);
-    }
-}

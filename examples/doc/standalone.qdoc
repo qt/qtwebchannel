@@ -39,36 +39,27 @@
 **
 ****************************************************************************/
 
-#include "qmlwebchannelattached.h"
-
-QT_USE_NAMESPACE
-
-QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
-    : QObject(parent)
-{
-
-}
-
-QmlWebChannelAttached::~QmlWebChannelAttached()
-{
-
-}
-
 /*!
-    \qmlattachedproperty QString WebChannel::id
+    \example standalone
+    \title Standalone Example
+    \ingroup qtwebchannel-examples
+    \brief Shows how to use the QWebChannel API to communicate with an external client.
 
-    The identifier under which an object, registered to a WebChannel, is known to remote clients.
-    You must use a string that is a valid JavaScript identifier.
+    The standalone example is a simple chat between a pure C++/Qt application and a remote HTML
+    client running in your default browser.
+
+    The C++ app sets up a WebChannel and publishes a Dialog object over it. The same object
+    For the remote client side, \c index.html is opened. Both show a dialog with the list of
+    received messages and an input box to send messages to the other end.
+
+    The Dialog emits the Dialog::sendText signal when the user sents a message. The signal
+    automatically gets propagated to the HTML client. When the user enters a message on the HTML
+    side, Dialog::receiveText is called.
+
+    All communication between the HTML client and the C++/Qt server is done over a WebSocket.
+    The C++ side instantiates a QWebSocketServer and wraps incoming QWebSocket connections
+    in a class that implements the QMessagePassingInterface. These objects are then handed over
+    to the QWebChannel.
+
+    \sa {QML Example}
 */
-QString QmlWebChannelAttached::id() const
-{
-    return m_id;
-}
-
-void QmlWebChannelAttached::setId(const QString &id)
-{
-    if (id != m_id) {
-        m_id = id;
-        emit idChanged(id);
-    }
-}

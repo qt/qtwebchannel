@@ -54,6 +54,7 @@
 
 #include "ui_dialog.h"
 
+// An instance of this class gets published over the WebChannel and is then accessible to HTML clients.
 class Dialog : public QObject
 {
     Q_OBJECT
@@ -67,16 +68,19 @@ public:
 
         connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
 
+        // open the HTML client in an external browser
         QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
         url.setQuery(QStringLiteral("webChannelBaseUrl=") + baseUrl);
-        ui.output->appendPlainText(tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
         QDesktopServices::openUrl(url);
+        ui.output->appendPlainText(tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
     }
 
 signals:
+    // emitted from the C++ side and handled on the HTML client side
     void sendText(const QString &text);
 
 public slots:
+    // invoked from the HTML client side
     void receiveText(const QString &text)
     {
         ui.output->appendPlainText(tr("Received message: %1").arg(text));
