@@ -51,7 +51,7 @@
 QT_BEGIN_NAMESPACE
 
 struct QWebChannelPrivate;
-class QWebChannelTransportInterface;
+class QMessagePassingInterface;
 
 class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
 {
@@ -89,14 +89,14 @@ public:
      */
     void setBlockUpdates(bool block);
 
-    void connectTo(QWebChannelTransportInterface *transport);
-    void disconnectFrom(QWebChannelTransportInterface *transport);
-
 signals:
     void blockUpdatesChanged(bool block);
 
 public slots:
     void sendMessage(const QJsonValue &id, const QJsonValue &data = QJsonValue()) const;
+
+    void connectTo(QMessagePassingInterface *transport);
+    void disconnectFrom(QMessagePassingInterface *transport);
 
 private:
     QScopedPointer<QWebChannelPrivate> d;
