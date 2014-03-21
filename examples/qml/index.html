@@ -15,14 +15,14 @@
                     var output = document.getElementById("output");
                     output.innerHTML = output.innerHTML + "Sent message: " + text + "\n";
                     input.value = "";
-                    channel.send(text);
+                    server.receive(text);
                 }
 
-                channel.subscribe("message", function(text) {
+                server.send.connect(function(text) {
                     var output = document.getElementById("output");
                     output.innerHTML = output.innerHTML + "Received message: " + text + "\n";
                 });
-            }, true /* raw web channel */);
+            });
             //END SETUP
         </script>
         <style type="text/css">

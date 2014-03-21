@@ -1,4 +1,4 @@
-QT += gui webchannel widgets
+QT += gui webchannel widgets websockets
 
 CONFIG += warn_on
 

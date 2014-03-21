@@ -43,20 +43,33 @@ import QtQuick 2.0
 import QtTest 1.0
 
 import QtWebChannel 1.0
+import Qt.WebSockets 1.0
 
 TestCase {
     property var lastLoadStatus
     property bool useWebViewTransport: false
 
-    // only run after the webchannel has finished initialization
-    when: webSocketTransport.baseUrl != ""
+    // only run after the websocket server has finished initialization
+    when: webSocketServer.url != ""
 
-    WebViewTransport {
-        id: webViewTransport
-        webViewExperimental: defaultView.experimental
-    }
-    WebSocketTransport {
-        id: webSocketTransport
+    WebSocketServer {
+        id: webSocketServer
+        name: "WebChannelTestServer"
+
+        signal textMessageReceived(var message);
+
+        onClientConnected: { /* (webSocket) */
+            if (!useWebViewTransport) {
+                webChannel.connectTo(webSocket);
+            }
+            webSocket.textMessageReceived.connect(function(message) {
+                webSocketServer.textMessageReceived(message);
+            });
+        }
+
+        onErrorStringChanged: {
+            console.error(errorString);
+        }
     }
 
     TestWebView {
@@ -70,28 +83,27 @@ TestCase {
 
     SignalSpy {
         id: rawMessageSpy
-        target: useWebViewTransport ? webViewTransport : webSocketTransport;
-        signalName: "onMessageReceived"
+        target: useWebViewTransport ? defaultView.experimental : webSocketServer;
+        signalName: "onTextMessageReceived"
     }
     property var rawMessageSpy: rawMessageSpy
     property var rawMessageIdx: 0;
 
     function urlForFile(file)
     {
-        verify(useWebViewTransport || webSocketTransport.baseUrl != "", "webSocketTransport.baseUrl is empty");
-        return "data/" + file + (!useWebViewTransport ? "?webChannelBaseUrl=" + webSocketTransport.baseUrl : "");
+        verify(useWebViewTransport || webSocketServer.url != "", "webSocketServer.url is empty");
+        return "data/" + file + (!useWebViewTransport ? "?webChannelBaseUrl=" + webSocketServer.url : "");
     }
 
     // load file in the given view or use the global one by default
     function loadUrl(file, view)
     {
         if (useWebViewTransport) {
-            webChannel.disconnectFrom(webSocketTransport);
-            webChannel.connectTo(webViewTransport);
+            webChannel.connectTo(defaultView.experimental);
         } else {
-            webChannel.disconnectFrom(webViewTransport);
-            webChannel.connectTo(webSocketTransport);
+            webChannel.disconnectFrom(defaultView.experimental);
         }
+
         if (!view) {
             view = defaultView;
         }
