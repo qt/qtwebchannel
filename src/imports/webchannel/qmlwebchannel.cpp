@@ -48,6 +48,43 @@
 
 QT_USE_NAMESPACE
 
+/*!
+    \qmltype WebChannel
+    \instantiates QmlWebChannel
+
+    \inqmlmodule Qt.WebChannel
+    \ingroup webchannel-qml
+    \brief QML interface to QWebChannel.
+
+    The WebChannel provides a mechanism to transparently access QObject or QML objects from HTML
+    clients. All properties, signals and public slots can be used from the HTML clients.
+
+    \sa {QML Example}, QWebChannel
+*/
+
+/*!
+  \qmlproperty QQmlListProperty<QObject> WebChannel::connections
+  A list of connections which are objects implementing the QMessagePassingInterface. The connections
+  are used to talk to the remote clients. Currently, only WebView.experimental and WebSocket
+  implement this interface.
+
+  \sa QmlWebChannel::connectTo(), QmlWebChannel::disconnectFrom()
+  */
+
+/*!
+  \qmlproperty QQmlListProperty<QObject> WebChannel::registeredObjects
+  A list of objects which should be accessible to remote clients. The objects must have the attached
+  WebChannel.id property set to an identifier, under which the object is then known on the HTML side.
+
+  Once registered, all signals and property changes are automatically propagated to the clients.
+  Public invokable methods, including slots, are also accessible to the clients.
+
+  If one needs to register objects which are not available when the component is created, use the
+  imperative registerObjects method.
+
+  \sa QmlWebChannel::registerObjects()
+  */
+
 QmlWebChannel::QmlWebChannel(QObject *parent)
     : QWebChannel(parent)
 {
@@ -58,6 +95,18 @@ QmlWebChannel::~QmlWebChannel()
 
 }
 
+/*!
+  Register objects to make them accessible to HTML clients. The key of the map is used as an identifier
+  for the object on the client side.
+
+  Once registered, all signals and property changes are automatically propagated to the clients.
+  Public invokable methods, including slots, are also accessible to the clients.
+
+  This imperative API can be used to register objects on the fly. For static objects, the declarative
+  registeredObjects property should be preferred.
+
+  \sa registeredObjects
+  */
 void QmlWebChannel::registerObjects(const QVariantMap &objects)
 {
     QMap<QString, QVariant>::const_iterator it = objects.constBegin();
@@ -71,6 +120,9 @@ void QmlWebChannel::registerObjects(const QVariantMap &objects)
     }
 }
 
+/*!
+  \internal
+  */
 bool QmlWebChannel::test_clientIsIdle() const
 {
     return d->publisher->clientIsIdle;
@@ -98,6 +150,14 @@ QmlWebChannelAttached *QmlWebChannel::qmlAttachedProperties(QObject *obj)
     return new QmlWebChannelAttached(obj);
 }
 
+/*!
+  Connectect to the given transport. Clients can then use it to communicate with the WebChannel.
+  The transport object must implement the QMessagePassingInterface interface.
+  Currently, only WebView.experimental and WebSocket implement this interface.
+
+  \sa connections, disconnectFrom
+  */
+
 void QmlWebChannel::connectTo(QObject *transport)
 {
     if (QMessagePassingInterface *iface = qobject_cast<QMessagePassingInterface*>(transport)) {
@@ -109,6 +169,10 @@ void QmlWebChannel::connectTo(QObject *transport)
     }
 }
 
+/*!
+  Disconnect the given transport. Clients which use it will not be able to communicate to the
+  WebChannel anymore.
+  */
 void QmlWebChannel::disconnectFrom(QObject *transport)
 {
     if (QMessagePassingInterface *iface = qobject_cast<QMessagePassingInterface*>(transport)) {
