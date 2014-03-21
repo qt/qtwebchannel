@@ -45,7 +45,7 @@
 #include <qwebchannel.h>
 
 #include "qmlwebchannelattached.h"
-#include "qwebchanneltransportinterface.h"
+#include "qmessagepassinginterface.h"
 
 #include <QVector>
 
@@ -58,7 +58,7 @@ class QmlWebChannel : public QWebChannel
 {
     Q_OBJECT
 
-    Q_PROPERTY( QQmlListProperty<QWebChannelTransportInterface> connections READ transports );
+    Q_PROPERTY( QQmlListProperty<QMessagePassingInterface> connections READ transports );
     Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
 
 public:
@@ -68,7 +68,7 @@ public:
     Q_INVOKABLE void registerObjects(const QVariantMap &objects);
     QQmlListProperty<QObject> registeredObjects();
 
-    QQmlListProperty<QWebChannelTransportInterface> transports();
+    QQmlListProperty<QMessagePassingInterface> transports();
 
     // TODO: remove this by replacing QML with C++ tests
     Q_INVOKABLE bool test_clientIsIdle() const;
@@ -88,14 +88,14 @@ private:
     static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
     static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
 
-    static void transports_append(QQmlListProperty<QWebChannelTransportInterface> *prop, QWebChannelTransportInterface *item);
-    static int transports_count(QQmlListProperty<QWebChannelTransportInterface> *prop);
-    static QWebChannelTransportInterface *transports_at(QQmlListProperty<QWebChannelTransportInterface> *prop, int index);
-    static void transports_clear(QQmlListProperty<QWebChannelTransportInterface> *prop);
+    static void transports_append(QQmlListProperty<QMessagePassingInterface> *prop, QMessagePassingInterface *item);
+    static int transports_count(QQmlListProperty<QMessagePassingInterface> *prop);
+    static QMessagePassingInterface *transports_at(QQmlListProperty<QMessagePassingInterface> *prop, int index);
+    static void transports_clear(QQmlListProperty<QMessagePassingInterface> *prop);
 
     QVector<QObject*> m_registeredObjects;
     // required as when the object is destroyed, we must still find the address of the base class somehow
-    QHash<QObject*, QWebChannelTransportInterface*> m_connectedObjects;
+    QHash<QObject*, QMessagePassingInterface*> m_connectedObjects;
 };
 
 QML_DECLARE_TYPE( QmlWebChannel )

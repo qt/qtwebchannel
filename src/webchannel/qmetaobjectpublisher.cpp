@@ -42,6 +42,7 @@
 #include "qmetaobjectpublisher_p.h"
 #include "qwebchannel.h"
 #include "qwebchannel_p.h"
+#include "qmessagepassinginterface.h"
 
 #include <QEvent>
 #include <QJsonDocument>
@@ -544,15 +545,18 @@ QByteArray QMetaObjectPublisher::handleRequest(const QJsonObject &message)
     return QByteArray();
 }
 
-void QMetaObjectPublisher::handleMessage(const QString &message, QWebChannelTransportInterface *transport, int clientId)
+void QMetaObjectPublisher::handleMessage(const QString &message)
 {
+    QMessagePassingInterface *transport = qobject_cast<QMessagePassingInterface*>(sender());
+    Q_ASSERT(transport);
+
     const QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
     if (!doc.isObject()) {
         return;
     }
     const QByteArray &response = handleRequest(doc.object());
     if (!response.isEmpty()) {
-        transport->sendMessage(response, clientId);
+        transport->sendTextMessage(QString::fromUtf8(response));
     }
 }
 
