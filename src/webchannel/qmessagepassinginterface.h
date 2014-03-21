@@ -39,65 +39,35 @@
 **
 ****************************************************************************/
 
-#include "qmlwebviewtransport.h"
+#ifndef QMESSAGEPASSINGINTERFACE_H
+#define QMESSAGEPASSINGINTERFACE_H
 
-#include <QVariantMap>
+#include <QObject>
 
-QT_USE_NAMESPACE
+QT_BEGIN_NAMESPACE
 
-QmlWebViewTransport::QmlWebViewTransport(QObject *parent)
-    : QObject(parent)
-    , m_webViewExperimental(Q_NULLPTR)
-    , m_handler(Q_NULLPTR)
+class QMessagePassingInterface
 {
-}
+public:
+    virtual ~QMessagePassingInterface() {}
 
-QmlWebViewTransport::~QmlWebViewTransport()
-{
+    /**
+     * Send a text @p message to the remote client.
+     */
+    virtual qint64 sendTextMessage(const QString &message) = 0;
 
-}
+    /**
+     * Emitted when a new text message was received from the remote client.
+     *
+     * NOTE: This should be implemented as a signal.
+     */
+    virtual void textMessageReceived(const QString &message) = 0;
+};
 
-void QmlWebViewTransport::setWebViewExperimental(QObject *webViewExperimental)
-{
-    if (webViewExperimental != m_webViewExperimental) {
-        if (m_webViewExperimental) {
-            disconnect(m_webViewExperimental, 0, this, 0);
-        }
-        m_webViewExperimental = webViewExperimental;
-        connect(m_webViewExperimental, SIGNAL(messageReceived(QVariantMap)), this, SLOT(handleWebViewMessage(QVariantMap)));
-        emit webViewChanged(webViewExperimental);
-    }
-}
+#define QMessagePassingInterface_iid "org.qt-project.Qt.QMessagePassingInterface/1.0"
+Q_DECLARE_INTERFACE(QMessagePassingInterface, QMessagePassingInterface_iid);
+Q_DECLARE_METATYPE(QMessagePassingInterface*)
 
-QObject *QmlWebViewTransport::webViewExperimental() const
-{
-    return m_webViewExperimental;
-}
+QT_END_NAMESPACE
 
-void QmlWebViewTransport::sendMessage(const QString &message, int /*clientId*/) const
-{
-    if (!m_webViewExperimental) {
-        qWarning("Cannot send message - did you forget to set the webViewExperimental property?");
-        return;
-    }
-    QMetaObject::invokeMethod(m_webViewExperimental, "postMessage", Q_ARG(QString, message));
-}
-
-void QmlWebViewTransport::sendMessage(const QByteArray &message, int clientId) const
-{
-    sendMessage(QString::fromUtf8(message), clientId);
-}
-
-void QmlWebViewTransport::handleWebViewMessage(const QVariantMap &message)
-{
-    if (m_handler) {
-        const QString &data = message[QStringLiteral("data")].toString();
-        m_handler->handleMessage(data, this, -1);
-        emit messageReceived(data);
-    }
-}
-
-void QmlWebViewTransport::setMessageHandler(QWebChannelMessageHandlerInterface *handler)
-{
-    m_handler = handler;
-}
+#endif // QMESSAGEPASSINGINTERFACE_H

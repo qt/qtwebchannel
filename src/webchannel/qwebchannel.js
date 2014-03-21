@@ -102,10 +102,8 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         this.socket.onmessage = this.messageReceived
         setTimeout(this.initialized, 0);
     } else {
-        ///TODO: use ssl?
-        var socketUrl = "ws://" + baseUrlOrSocket;
         ///TODO: use QWebChannel protocol, once custom protcols are supported by QtWebSocket
-        this.socket = new WebSocket(socketUrl /*, "QWebChannel" */);
+        this.socket = new WebSocket(baseUrlOrSocket/*, "QWebChannel" */);
 
         this.socket.onopen = this.initialized
         this.socket.onclose = function()

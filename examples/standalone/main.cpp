@@ -40,7 +40,6 @@
 ****************************************************************************/
 
 #include "qwebchannel.h"
-#include "qwebsockettransport.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -49,6 +48,9 @@
 #include <QUrl>
 #include <QDebug>
 
+#include <QtWebSockets/QWebSocketServer>
+#include <QtWebSockets/QWebSocket>
+
 #include "ui_dialog.h"
 
 class Dialog : public QObject
@@ -56,15 +58,18 @@ class Dialog : public QObject
     Q_OBJECT
 
 public:
-    explicit Dialog(QWebSocketTransport *transport, QObject *parent = 0)
+    explicit Dialog(const QString &baseUrl, QObject *parent = 0)
         : QObject(parent)
     {
         ui.setupUi(&dialog);
         dialog.show();
 
         connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
-        connect(transport, SIGNAL(baseUrlChanged(QString)),
-                SLOT(baseUrlChanged(QString)));
+
+        QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
+        url.setQuery(QStringLiteral("webChannelBaseUrl=") + baseUrl);
+        ui.output->appendPlainText(tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
+        QDesktopServices::openUrl(url);
     }
 
 signals:
@@ -91,29 +96,57 @@ private slots:
         ui.input->clear();
     }
 
-    void baseUrlChanged(const QString &baseUrl)
-    {
-        ui.output->appendPlainText(tr("Initialization complete, opening browser."));
-
-        QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
-        url.setQuery(QStringLiteral("webChannelBaseUrl=") + baseUrl);
-        QDesktopServices::openUrl(url);
-    }
-
 private:
     QDialog dialog;
     Ui::Dialog ui;
+};
+
+class Transport : public QObject
+{
+    Q_OBJECT
+
+public:
+    Transport(QObject *parent = 0)
+        : QObject(parent)
+        , m_server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode)
+    {
+        if (!m_server.listen(QHostAddress::LocalHost)) {
+            qFatal("Failed to open web socket server.");
+        }
+
+        connect(&m_server, SIGNAL(newConnection()),
+                this, SLOT(handleNewConnection()));
+    }
+
+    QString baseUrl() const
+    {
+        return m_server.serverUrl().toString();
+    }
+
+signals:
+    void clientConnected(QMessagePassingInterface *client);
+
+private slots:
+    void handleNewConnection()
+    {
+        emit clientConnected(m_server.nextPendingConnection());
+    }
+
+private:
+    QWebSocketServer m_server;
 };
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
-    QWebSocketTransport transport;
+    Transport transport;
     QWebChannel channel;
-    channel.connectTo(&transport);
 
-    Dialog dialog(&transport);
+    QObject::connect(&transport, SIGNAL(clientConnected(QMessagePassingInterface*)),
+                     &channel, SLOT(connectTo(QMessagePassingInterface*)));
+
+    Dialog dialog(transport.baseUrl());
 
     channel.registerObject(QStringLiteral("dialog"), &dialog);
 
