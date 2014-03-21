@@ -50,6 +50,8 @@
 
 QT_BEGIN_NAMESPACE
 
+namespace {
+
 QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response)
 {
     QJsonObject obj;
@@ -62,6 +64,8 @@ QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, boo
     }
     QJsonDocument doc(obj);
     return doc.toJson(QJsonDocument::Compact);
+}
+
 }
 
 QWebChannel::QWebChannel(QObject *parent)
