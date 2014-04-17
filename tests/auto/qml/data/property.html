@@ -5,9 +5,9 @@
         <script type="text/javascript">
             //BEGIN SETUP
             createWebChannel(function(channel) {
-                channel.exec({label: "init", value: myObj.myProperty()});
+                channel.exec({label: "init", value: myObj.myProperty});
                 myObj.myPropertyChanged.connect(function() {
-                    channel.exec({label: "changed", value: myObj.myProperty()});
+                    channel.exec({label: "changed", value: myObj.myProperty});
                 });
                 channel.subscribe("setProperty", function(newValue) {
                     myObj.myProperty = newValue;
