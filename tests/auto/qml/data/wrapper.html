@@ -6,7 +6,7 @@
             //BEGIN SETUP
             createWebChannel(function(channel) {
                 myFactory.create("testObj", function(obj) {
-                    window[obj.objectName()] = obj;
+                    window[obj.objectName] = obj;
                     obj.mySignal.connect(function(arg1, arg2) {
                         channel.exec({label: "signalReceived", args: [arg1, arg2]});
                     });

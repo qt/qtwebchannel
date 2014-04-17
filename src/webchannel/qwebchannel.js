@@ -389,24 +389,13 @@ function QObject(name, data, webChannel)
 
         });
         object.__defineGetter__(propertyName, function () {
-            return (function (callback) {
-                var propertyValue = object.__propertyCache__[propertyIndex];
-                if (propertyValue === undefined) {
-                    // This shouldn't happen
-                    console.warn("Undefined value in property cache for property \"" + propertyName + "\" in object " + object.__id__);
-                }
+            var propertyValue = object.__propertyCache__[propertyIndex];
+            if (propertyValue === undefined) {
+                // This shouldn't happen
+                console.warn("Undefined value in property cache for property \"" + propertyName + "\" in object " + object.__id__);
+            }
 
-                // TODO: A callback is not required here anymore, but is kept for backwards compatibility
-                if (callback !== undefined) {
-                    if (typeof(callback) !== "function") {
-                        console.error("Bad callback given to get property " + property);
-                        return;
-                    }
-                    callback(propertyValue);
-                } else {
-                    return propertyValue;
-                }
-            });
+            return propertyValue;
         });
     }
 
