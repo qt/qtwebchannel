@@ -124,9 +124,9 @@ signals:
     void textMessageReceived(const QString &message) Q_DECL_OVERRIDE;
 
 public slots:
-    qint64 sendTextMessage(const QString &message) Q_DECL_OVERRIDE
+    void sendTextMessage(const QString &message) Q_DECL_OVERRIDE
     {
-        return m_socket->sendTextMessage(message);
+        m_socket->sendTextMessage(message);
     }
 
 private:

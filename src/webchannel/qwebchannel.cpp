@@ -199,7 +199,7 @@ void QWebChannel::setBlockUpdates(bool block)
     Connects the QWebChannel to the \a transport object which implements the QMessagePassingInterface.
 
     The transport object then handles the communication between the C++ application and the remote
-    HTML clients. Currently, only QWebSocket implements this feature for pure C++ applications.
+    HTML clients.
 
     \sa QWebChannel::disconnectFrom(), {Standalone Example}
 */

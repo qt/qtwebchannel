@@ -57,9 +57,8 @@ public:
     ~DummyTransport() {};
 
 public slots:
-    qint64 sendTextMessage(const QString &/*message*/) Q_DECL_OVERRIDE
+    void sendTextMessage(const QString &/*message*/) Q_DECL_OVERRIDE
     {
-        return 0;
     }
 
 signals:

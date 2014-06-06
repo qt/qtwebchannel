@@ -48,6 +48,65 @@
 
 QT_USE_NAMESPACE
 
+class WrapperTransport : public QObject, public QMessagePassingInterface
+{
+    Q_OBJECT
+    Q_INTERFACES(QMessagePassingInterface)
+
+public:
+    WrapperTransport(QObject *base)
+        : QObject(base)
+        , m_type(base->metaObject()->className() == QByteArrayLiteral("QQmlWebSocket") ? QmlWebSocket : QuickWebViewExperimental)
+        , m_base(base)
+    {
+        if (m_type == QmlWebSocket) {
+            connect(base, SIGNAL(textMessageReceived(QString)),
+                    this, SIGNAL(textMessageReceived(QString)));
+        } else {
+            connect(base, SIGNAL(messageReceived(QVariantMap)),
+                    this, SLOT(textMessageReceived(QVariantMap)));
+        }
+    }
+
+    QObject* base() const
+    {
+        return m_base;
+    }
+
+    static bool canWrap(const QObject *base)
+    {
+        return base->metaObject()->className() == QByteArrayLiteral("QQmlWebSocket")
+            || base->metaObject()->className() == QByteArrayLiteral("QQuickWebViewExperimental");
+    }
+
+public slots:
+    void sendTextMessage(const QString &message) Q_DECL_OVERRIDE
+    {
+        if (!QMetaObject::invokeMethod(m_base, m_type == QmlWebSocket ? "sendTextMessage" : "postMessage",
+                                       Q_ARG(QString, message)))
+        {
+            qWarning() << "Failed to invoke wrapped transport send method on object" << m_base;
+        }
+    }
+
+signals:
+    void textMessageReceived(const QString &message) Q_DECL_OVERRIDE;
+
+private slots:
+    void textMessageReceived(const QVariantMap& map)
+    {
+        emit textMessageReceived(map[QStringLiteral("data")].toString());
+    }
+
+private:
+    enum Type {
+        QmlWebSocket,
+        QuickWebViewExperimental
+    };
+    Type m_type;
+    QObject* m_base;
+};
+
 /*!
     \qmltype WebChannel
     \instantiates QmlWebChannel
@@ -65,8 +124,7 @@ QT_USE_NAMESPACE
 /*!
   \qmlproperty QQmlListProperty<QObject> WebChannel::connections
   A list of connections which are objects implementing the QMessagePassingInterface. The connections
-  are used to talk to the remote clients. Currently, only WebView.experimental and WebSocket
-  implement this interface.
+  are used to talk to the remote clients.
 
   \sa QmlWebChannel::connectTo(), QmlWebChannel::disconnectFrom()
   */
@@ -153,13 +211,17 @@ QmlWebChannelAttached *QmlWebChannel::qmlAttachedProperties(QObject *obj)
 /*!
   Connectect to the given transport. Clients can then use it to communicate with the WebChannel.
   The transport object must implement the QMessagePassingInterface interface.
-  Currently, only WebView.experimental and WebSocket implement this interface.
+  WebView.experimental and WebSocket will be wrapped automatically in an object that implements this
+  interface.
 
   \sa connections, disconnectFrom
   */
-
 void QmlWebChannel::connectTo(QObject *transport)
 {
+    if (WrapperTransport::canWrap(transport)) {
+        transport = new WrapperTransport(transport);
+    }
+
     if (QMessagePassingInterface *iface = qobject_cast<QMessagePassingInterface*>(transport)) {
         m_connectedObjects.insert(transport, iface);
         QWebChannel::connectTo(iface);
@@ -175,10 +237,28 @@ void QmlWebChannel::connectTo(QObject *transport)
   */
 void QmlWebChannel::disconnectFrom(QObject *transport)
 {
+    if (WrapperTransport::canWrap(transport)) {
+        transport = 0;
+        foreach (QMessagePassingInterface *iface, d->transports) {
+            if (WrapperTransport* wrapper = dynamic_cast<WrapperTransport*>(iface)) {
+                if (wrapper->base() == transport) {
+                    transport = wrapper;
+                    break;
+                }
+            }
+        }
+        if (!transport) {
+            return;
+        }
+    }
+
     if (QMessagePassingInterface *iface = qobject_cast<QMessagePassingInterface*>(transport)) {
         QWebChannel::disconnectFrom(iface);
         disconnect(transport, SIGNAL(destroyed(QObject*)), this, SLOT(transportDestroyed(QObject*)));
         m_connectedObjects.remove(transport);
+        if (qobject_cast<WrapperTransport*>(transport)) {
+            delete transport;
+        }
     } else {
         qWarning() << "Cannot disconnect from transport" << transport << " - it does not implement the QMessagePassingInterface.";
     }
@@ -273,3 +353,5 @@ void QmlWebChannel::transports_clear(QQmlListProperty<QObject> *prop)
     }
     Q_ASSERT(channel->d->transports.isEmpty());
 }
+
+#include "qmlwebchannel.moc"

@@ -77,7 +77,8 @@ ApplicationWindow {
         // the list of objects that are accessible to HTML clients
         registeredObjects: [server]
         // the list of connections, i.e. clients. This can be any object implementing the
-        // QMessagePassingInterface, currently WebView.experimental or WebSocket.
+        // QMessagePassingInterface. WebView.experimental or WebSocket QML objects will
+        // be wrapped automatically in objects implementing this interface.
         connections: [webView.experimental]
     }
 

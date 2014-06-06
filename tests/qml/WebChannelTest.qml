@@ -56,15 +56,13 @@ TestCase {
         id: webSocketServer
         name: "WebChannelTestServer"
 
-        signal textMessageReceived(var message);
-
         onClientConnected: { /* (webSocket) */
             if (!useWebViewTransport) {
                 webChannel.connectTo(webSocket);
+                webSocket.textMessageReceived.connect(function(message) {
+                    messageWrapper.textMessageReceived(message);
+                });
             }
-            webSocket.textMessageReceived.connect(function(message) {
-                webSocketServer.textMessageReceived(message);
-            });
         }
 
         onErrorStringChanged: {
@@ -72,6 +70,20 @@ TestCase {
         }
 
         listen: true
+    }
+
+    QtObject {
+        id: messageWrapper
+
+        signal textMessageReceived(string message);
+
+        Component.onCompleted: {
+            defaultView.experimental.onMessageReceived.connect(function(message) {
+                if (useWebViewTransport) {
+                    messageWrapper.textMessageReceived(message.data);
+                }
+            });
+        }
     }
 
     TestWebView {
@@ -85,7 +97,7 @@ TestCase {
 
     SignalSpy {
         id: rawMessageSpy
-        target: useWebViewTransport ? defaultView.experimental : webSocketServer;
+        target: messageWrapper;
         signalName: "onTextMessageReceived"
     }
     property var rawMessageSpy: rawMessageSpy
