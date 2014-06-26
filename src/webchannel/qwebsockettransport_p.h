@@ -67,13 +67,13 @@ public:
     void initLater();
     void sendMessage(const QString &message, int clientId);
 
-signals:
+Q_SIGNALS:
     void failed(const QString &reason);
     void initialized();
     void baseUrlChanged(const QString &baseUrl);
     void textDataReceived(const QString &message);
 
-private slots:
+private Q_SLOTS:
     void validateNewConnection();
     void init();
     void socketError();

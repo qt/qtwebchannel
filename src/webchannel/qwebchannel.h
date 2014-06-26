@@ -92,10 +92,10 @@ public:
     void connectTo(QWebChannelTransportInterface *transport);
     void disconnectFrom(QWebChannelTransportInterface *transport);
 
-signals:
+Q_SIGNALS:
     void blockUpdatesChanged(bool block);
 
-public slots:
+public Q_SLOTS:
     void sendMessage(const QJsonValue &id, const QJsonValue &data = QJsonValue()) const;
 
 private:

@@ -166,7 +166,7 @@ public:
      */
     void handleMessage(const QString &message, QWebChannelTransportInterface* transport, int clientId) Q_DECL_OVERRIDE;
 
-signals:
+Q_SIGNALS:
     void blockUpdatesChanged(bool block);
 
 protected:

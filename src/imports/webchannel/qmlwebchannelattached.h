@@ -58,7 +58,7 @@ public:
     QString id() const;
     void setId(const QString &id);
 
-signals:
+Q_SIGNALS:
     void idChanged(const QString &id);
 
 private:

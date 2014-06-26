@@ -62,11 +62,11 @@ public:
     void setWebViewExperimental(QObject *webViewExperimental);
     QObject *webViewExperimental() const;
 
-signals:
+Q_SIGNALS:
     void webViewChanged(QObject *webViewExperimental);
     void messageReceived(const QString &message);
 
-private slots:
+private Q_SLOTS:
     void handleWebViewMessage(const QVariantMap &message);
 
 private:

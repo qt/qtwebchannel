@@ -78,7 +78,7 @@ public:
     Q_INVOKABLE void connectTo(QObject *transport);
     Q_INVOKABLE void disconnectFrom(QObject *transport);
 
-private slots:
+private Q_SLOTS:
     void objectIdChanged(const QString &newId);
     void transportDestroyed(QObject *transport);
 
