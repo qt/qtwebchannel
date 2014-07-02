@@ -2,8 +2,8 @@ QT = core webchannel-private testlib
 
 CONFIG += testcase strict_flags warn_on
 
-INCLUDEPATH += ../../src/webchannel
-VPATH += ../../src/webchannel
+INCLUDEPATH += ../../../src/webchannel
+VPATH += ../../../src/webchannel
 
 TARGET = tst_webchannel
 
