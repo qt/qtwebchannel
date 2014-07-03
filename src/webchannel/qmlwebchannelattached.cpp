@@ -39,64 +39,41 @@
 **
 ****************************************************************************/
 
-#ifndef QMLWEBCHANNEL_H
-#define QMLWEBCHANNEL_H
-
-#include <qwebchannel.h>
-
 #include "qmlwebchannelattached.h"
 
-#include <QVector>
+#include <private/qobject_p.h>
 
-#include <QtQml/qqml.h>
-#include <QtQml/QQmlListProperty>
+QT_USE_NAMESPACE
 
-QT_BEGIN_NAMESPACE
-
-class QmlWebChannel : public QWebChannel
+class QmlWebChannelAttachedPrivate : public QObjectPrivate
 {
-    Q_OBJECT
-
-    Q_PROPERTY( QQmlListProperty<QObject> transports READ transports );
-    Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
-
+    Q_DECLARE_PUBLIC(QmlWebChannelAttached)
 public:
-    explicit QmlWebChannel(QObject *parent = 0);
-    virtual ~QmlWebChannel();
-
-    Q_INVOKABLE void registerObjects(const QVariantMap &objects);
-    QQmlListProperty<QObject> registeredObjects();
-
-    QQmlListProperty<QObject> transports();
-
-    // TODO: remove this by replacing QML with C++ tests
-    Q_INVOKABLE bool test_clientIsIdle() const;
-
-    static QmlWebChannelAttached *qmlAttachedProperties(QObject *obj);
-
-    Q_INVOKABLE void connectTo(QObject *transport);
-    Q_INVOKABLE void disconnectFrom(QObject *transport);
-
-private Q_SLOTS:
-    void objectIdChanged(const QString &newId);
-
-private:
-    static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *item);
-    static int registeredObjects_count(QQmlListProperty<QObject> *prop);
-    static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
-    static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
-
-    static void transports_append(QQmlListProperty<QObject> *prop, QObject *item);
-    static int transports_count(QQmlListProperty<QObject> *prop);
-    static QObject *transports_at(QQmlListProperty<QObject> *prop, int index);
-    static void transports_clear(QQmlListProperty<QObject> *prop);
-
-    QVector<QObject*> m_registeredObjects;
+    QString id;
 };
 
-QML_DECLARE_TYPE( QmlWebChannel )
-QML_DECLARE_TYPEINFO( QmlWebChannel, QML_HAS_ATTACHED_PROPERTIES )
+QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
+    : QObject(*(new QmlWebChannelAttachedPrivate), parent)
+{
 
-QT_END_NAMESPACE
+}
 
-#endif // QMLWEBCHANNEL_H
+QmlWebChannelAttached::~QmlWebChannelAttached()
+{
+
+}
+
+QString QmlWebChannelAttached::id() const
+{
+    Q_D(const QmlWebChannelAttached);
+    return d->id;
+}
+
+void QmlWebChannelAttached::setId(const QString &id)
+{
+    Q_D(QmlWebChannelAttached);
+    if (id != d->id) {
+        d->id = id;
+        emit idChanged(id);
+    }
+}

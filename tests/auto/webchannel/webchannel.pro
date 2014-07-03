@@ -1,4 +1,4 @@
-QT = core webchannel-private testlib
+QT = core-private webchannel-private testlib
 
 CONFIG += testcase strict_flags warn_on
 
