@@ -43,6 +43,7 @@ import QtQuick 2.0
 import QtTest 1.0
 
 import QtWebChannel 1.0
+import QtWebChannel.Tests 1.0
 import "qrc:///qwebchannel/qwebchannel.js" as Client
 
 TestCase {
@@ -53,7 +54,7 @@ TestCase {
         id: client
     }
 
-    WebChannel {
+    TestWebChannel {
         id: webChannel
         transports: [client.serverTransport]
     }

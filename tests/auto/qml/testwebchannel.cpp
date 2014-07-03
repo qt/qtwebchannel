@@ -39,30 +39,27 @@
 **
 ****************************************************************************/
 
-#include "qmlwebchannelattached.h"
+#include "testwebchannel.h"
 
-QT_USE_NAMESPACE
+#include <private/qwebchannel_p.h>
+#include <private/qmetaobjectpublisher_p.h>
 
-QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
-    : QObject(parent)
+QT_BEGIN_NAMESPACE
+
+TestWebChannel::TestWebChannel(QObject *parent)
+    : QQmlWebChannel(parent)
 {
 
 }
 
-QmlWebChannelAttached::~QmlWebChannelAttached()
+TestWebChannel::~TestWebChannel()
 {
 
 }
 
-QString QmlWebChannelAttached::id() const
+bool TestWebChannel::clientIsIdle() const
 {
-    return m_id;
+    return QWebChannel::d_func()->publisher->clientIsIdle;
 }
 
-void QmlWebChannelAttached::setId(const QString &id)
-{
-    if (id != m_id) {
-        m_id = id;
-        emit idChanged(id);
-    }
-}
+QT_END_NAMESPACE

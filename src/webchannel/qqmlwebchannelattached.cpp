@@ -39,49 +39,30 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
-import QtTest 1.0
+#include "qqmlwebchannelattached_p.h"
 
-import QtWebChannel 1.0
-import QtWebChannel.Tests 1.0
-import "qrc:///qwebchannel/qwebchannel.js" as Client
+QT_USE_NAMESPACE
 
-TestCase {
-    name: "WebChannel"
+QQmlWebChannelAttached::QQmlWebChannelAttached(QObject *parent)
+    : QObject(parent)
+{
 
-    Client {
-        id: client
-    }
+}
 
-    TestWebChannel {
-        id: webChannel
-        transports: [client.serverTransport]
-    }
+QQmlWebChannelAttached::~QQmlWebChannelAttached()
+{
 
-    function cleanup()
-    {
-        client.cleanup();
-    }
+}
 
-    function test_receiveRawMessage()
-    {
-        var channel = client.createChannel(function (channel) {
-            channel.send("foobar");
-        }, true /* raw */);
-        compare(client.awaitRawMessage(), "foobar");
-    }
+QString QQmlWebChannelAttached::id() const
+{
+    return m_id;
+}
 
-    function test_sendMessage()
-    {
-        var channel = client.createChannel(function (channel) {
-            channel.subscribe("myMessage", function(payload) {
-                channel.send("myMessagePong:" + payload);
-            });
-            channel.send("initialized");
-        }, true /* raw */);
-
-        compare(client.awaitRawMessage(), "initialized");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(client.awaitRawMessage(), "myMessagePong:foobar");
+void QQmlWebChannelAttached::setId(const QString &id)
+{
+    if (id != m_id) {
+        m_id = id;
+        emit idChanged(id);
     }
 }
