@@ -39,21 +39,23 @@
 **
 ****************************************************************************/
 
-#ifndef QMLWEBCHANNELATTACHED_H
-#define QMLWEBCHANNELATTACHED_H
+#ifndef QQMLWEBCHANNELATTACHED_H
+#define QQMLWEBCHANNELATTACHED_H
 
 #include <QObject>
 
+#include "qwebchannelglobal.h"
+
 QT_BEGIN_NAMESPACE
 
-class QmlWebChannelAttached : public QObject
+class Q_WEBCHANNEL_EXPORT QQmlWebChannelAttached : public QObject
 {
     Q_OBJECT
 
     Q_PROPERTY( QString id READ id WRITE setId NOTIFY idChanged FINAL )
 public:
-    explicit QmlWebChannelAttached(QObject *parent = 0);
-    virtual ~QmlWebChannelAttached();
+    explicit QQmlWebChannelAttached(QObject *parent = 0);
+    virtual ~QQmlWebChannelAttached();
 
     QString id() const;
     void setId(const QString &id);
@@ -67,4 +69,4 @@ private:
 
 QT_END_NAMESPACE
 
-#endif // QMLWEBCHANNELATTACHED_H
+#endif // QQMLWEBCHANNELATTACHED_H
