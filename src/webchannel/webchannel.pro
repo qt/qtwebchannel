@@ -1,5 +1,5 @@
 TARGET = QtWebChannel
-QT = core network
+QT = core
 CONFIG += warn_on strict_flags
 
 load(qt_module)
