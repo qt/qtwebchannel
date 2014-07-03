@@ -39,41 +39,33 @@
 **
 ****************************************************************************/
 
-#include "qwebchannelwebsockettransport.h"
+#ifndef WEBSOCKETTRANSPORTSERVER_H
+#define WEBSOCKETTRANSPORTSERVER_H
 
-/*!
-    \inmodule QtWebChannel
-    \brief QWebChannelAbstractSocket implementation that uses a QWebSocket internally.
-
-    The transport delegates all messages received over the QWebSocket over its
-    textMessageReceived signal. Analogously, all calls to sendTextMessage will
-    be send over the QWebSocket to the remote client.
-*/
+#include <QObject>
 
 QT_BEGIN_NAMESPACE
 
-struct QWebChannelWebSocketTransportPrivate
+class QWebSocketServer;
+class WebSocketTransport;
+
+class WebSocketClientWrapper : public QObject
 {
-    QWebSocket *socket;
+    Q_OBJECT
+
+public:
+    WebSocketClientWrapper(QWebSocketServer *server, QObject *parent = 0);
+
+Q_SIGNALS:
+    void clientConnected(WebSocketTransport* client);
+
+private Q_SLOTS:
+    void handleNewConnection();
+
+private:
+    QWebSocketServer *m_server;
 };
 
-QWebChannelWebSocketTransport::QWebChannelWebSocketTransport(QWebSocket *socket)
-: QWebChannelAbstractTransport(socket)
-, d(new QWebChannelWebSocketTransportPrivate)
-{
-    d->socket = socket;
-    connect(socket, &QWebSocket::textMessageReceived,
-            this, &QWebChannelWebSocketTransport::textMessageReceived);
-}
-
-QWebChannelWebSocketTransport::~QWebChannelWebSocketTransport()
-{
-
-}
-
-void QWebChannelWebSocketTransport::sendTextMessage(const QString &message)
-{
-    d->socket->sendTextMessage(message);
-}
-
 QT_END_NAMESPACE
+
+#endif // WEBSOCKETTRANSPORTSERVER_H

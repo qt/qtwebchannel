@@ -5,24 +5,34 @@
         <script type="text/javascript" src="../../src/webchannel/qwebchannel.js"></script>
         <script type="text/javascript">
             //BEGIN SETUP
+            function output(message)
+            {
+                var output = document.getElementById("output");
+                output.innerHTML = output.innerHTML + message + "\n";
+            }
             var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
             new QWebChannel(baseUrl, function(channel) {
+                // make dialog object accessible globally
+                window.dialog = channel.objects.dialog;
+
                 document.getElementById("send").onclick = function() {
                     var input = document.getElementById("input");
                     var text = input.value;
                     if (!text) {
                         return;
                     }
-                    var output = document.getElementById("output");
-                    output.innerHTML = output.innerHTML + "Send message: " + text + "\n";
+
+                    output("Sent message: " + text);
                     input.value = "";
                     dialog.receiveText(text);
                 }
 
-                dialog.sendText.connect(function(text) {
-                    var output = document.getElementById("output");
-                    output.innerHTML = output.innerHTML + "Received message: " + text + "\n";
+                dialog.sendText.connect(function(message) {
+                    output("Received message: " + message);
                 });
+
+                dialog.receiveText("Client connected, ready to send/receive messages!");
+                output("Connected to WebChannel, ready to send/receive messages!");
             });
             //END SETUP
         </script>
