@@ -4,12 +4,6 @@ INCLUDEPATH += ../../webchannel
 VPATH += ../../webchannel
 
 SOURCES += \
-    plugin.cpp \
-    qmlwebchannel.cpp \
-    qmlwebchannelattached.cpp
-
-HEADERS += \
-    qmlwebchannel.h \
-    qmlwebchannelattached.h
+    plugin.cpp
 
 load(qml_plugin)

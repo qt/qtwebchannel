@@ -39,49 +39,27 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
-import QtTest 1.0
+#include "testwebchannel.h"
 
-import QtWebChannel 1.0
-import QtWebChannel.Tests 1.0
-import "qrc:///qwebchannel/qwebchannel.js" as Client
+#include <private/qwebchannel_p.h>
+#include <private/qmetaobjectpublisher_p.h>
 
-TestCase {
-    name: "WebChannel"
+QT_BEGIN_NAMESPACE
 
-    Client {
-        id: client
-    }
+TestWebChannel::TestWebChannel(QObject *parent)
+    : QmlWebChannel(parent)
+{
 
-    TestWebChannel {
-        id: webChannel
-        transports: [client.serverTransport]
-    }
-
-    function cleanup()
-    {
-        client.cleanup();
-    }
-
-    function test_receiveRawMessage()
-    {
-        var channel = client.createChannel(function (channel) {
-            channel.send("foobar");
-        }, true /* raw */);
-        compare(client.awaitRawMessage(), "foobar");
-    }
-
-    function test_sendMessage()
-    {
-        var channel = client.createChannel(function (channel) {
-            channel.subscribe("myMessage", function(payload) {
-                channel.send("myMessagePong:" + payload);
-            });
-            channel.send("initialized");
-        }, true /* raw */);
-
-        compare(client.awaitRawMessage(), "initialized");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(client.awaitRawMessage(), "myMessagePong:foobar");
-    }
 }
+
+TestWebChannel::~TestWebChannel()
+{
+
+}
+
+bool TestWebChannel::clientIsIdle() const
+{
+    return QWebChannel::d_func()->publisher->clientIsIdle;
+}
+
+QT_END_NAMESPACE

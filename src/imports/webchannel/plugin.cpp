@@ -42,7 +42,8 @@
 #include <qqml.h>
 #include <QtQml/QQmlExtensionPlugin>
 
-#include "qmlwebchannel.h"
+#include <qmlwebchannel.h>
+#include <qmlwebchannelattached_p.h>
 
 QT_BEGIN_NAMESPACE
 
