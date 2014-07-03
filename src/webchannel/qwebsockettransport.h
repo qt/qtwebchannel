@@ -43,6 +43,7 @@
 #define QWEBSOCKETTRANSPORT_H
 
 #include "qwebchanneltransportinterface.h"
+#include <QtNetwork/QHostAddress>
 
 QT_BEGIN_NAMESPACE
 
@@ -55,6 +56,7 @@ class Q_WEBCHANNEL_EXPORT QWebSocketTransport : public QObject, public QWebChann
     Q_PROPERTY(bool useSecret READ useSecret WRITE setUseSecret)
 public:
     explicit QWebSocketTransport(QObject *parent = 0);
+    explicit QWebSocketTransport(const QHostAddress & address, quint16 port = 0, QObject *parent = 0);
     ~QWebSocketTransport() Q_DECL_OVERRIDE;
 
     void sendMessage(const QByteArray &message, int clientId = -1) const Q_DECL_OVERRIDE;

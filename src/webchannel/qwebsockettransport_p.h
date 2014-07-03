@@ -61,6 +61,9 @@ public:
     bool m_useSecret;
     bool m_starting;
 
+    QHostAddress m_localAddress;
+    quint16 m_localPort;
+
     explicit QWebSocketTransportPrivate(QWebSocketTransport* transport, QObject *parent = 0);
     virtual ~QWebSocketTransportPrivate();
 

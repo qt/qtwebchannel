@@ -56,6 +56,8 @@ QWebSocketTransportPrivate::QWebSocketTransportPrivate(QWebSocketTransport *tran
     , m_transport(transport)
     , m_useSecret(true)
     , m_starting(false)
+    , m_localAddress(QHostAddress::LocalHost)
+    , m_localPort(0)
 {
     connect(this, SIGNAL(acceptError(QAbstractSocket::SocketError)),
             SLOT(socketError()));
@@ -119,12 +121,12 @@ void QWebSocketTransportPrivate::init()
         m_secret.chop(1);
     }
 
-    if (!listen(QHostAddress::LocalHost)) {
+    if (!listen(m_localAddress, m_localPort)) {
         emit failed(errorString());
         return;
     }
 
-    m_baseUrl = QStringLiteral("127.0.0.1:%1%2").arg(serverPort()).arg(m_secret);
+    m_baseUrl = QStringLiteral("%1:%2%3").arg(m_localAddress.toString()).arg(serverPort()).arg(m_secret);
     emit initialized();
     emit baseUrlChanged(m_baseUrl);
 }
@@ -169,6 +171,25 @@ QWebSocketTransport::QWebSocketTransport(QObject *parent)
             SIGNAL(initialized()));
     connect(d.data(), SIGNAL(baseUrlChanged(QString)),
             SIGNAL(baseUrlChanged(QString)));
+
+    d->initLater();
+}
+
+QWebSocketTransport::QWebSocketTransport(const QHostAddress &address, quint16 port, QObject *parent)
+    : QObject(parent)
+    , d(new QWebSocketTransportPrivate(this))
+{
+    connect(d.data(), SIGNAL(textDataReceived(QString)),
+            SIGNAL(messageReceived(QString)));
+    connect(d.data(), SIGNAL(failed(QString)),
+            SIGNAL(failed(QString)));
+    connect(d.data(), SIGNAL(initialized()),
+            SIGNAL(initialized()));
+    connect(d.data(), SIGNAL(baseUrlChanged(QString)),
+            SIGNAL(baseUrlChanged(QString)));
+
+    d->m_localAddress = address;
+    d->m_localPort = port;
 
     d->initLater();
 }
