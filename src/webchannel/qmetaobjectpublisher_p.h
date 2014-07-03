@@ -172,7 +172,7 @@ protected:
     void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
 
 private:
-    friend class QmlWebChannel;
+    friend class QmlWebChannelPrivate;
     friend class QWebChannel;
     friend class TestWebChannel;
 

@@ -83,7 +83,7 @@ void TestWebChannel::testRegisterObjects()
     QHash<QString, QObject*> objects;
     objects[QStringLiteral("plain")] = &plain;
     objects[QStringLiteral("channel")] = &channel;
-    objects[QStringLiteral("publisher")] = channel.d->publisher;
+    objects[QStringLiteral("publisher")] = channel.d_func()->publisher;
     objects[QStringLiteral("test")] = this;
 
     channel.registerObjects(objects);
@@ -95,7 +95,7 @@ void TestWebChannel::testInfoForObject()
     obj.setObjectName("myTestObject");
 
     QWebChannel channel;
-    const QJsonObject info = channel.d->publisher->classInfoForObject(&obj);
+    const QJsonObject info = channel.d_func()->publisher->classInfoForObject(&obj);
 
     QCOMPARE(info.keys(), QStringList() << "enums" << "methods" << "properties" << "signals");
 
@@ -227,19 +227,19 @@ void TestWebChannel::testInvokeMethodConversion()
     {
         int method = metaObject()->indexOfMethod("setInt(int)");
         QVERIFY(method != -1);
-        QVERIFY(!channel.d->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
+        QVERIFY(!channel.d_func()->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
         QCOMPARE(m_lastInt, args.at(0).toInt());
     }
     {
         int method = metaObject()->indexOfMethod("setDouble(double)");
         QVERIFY(method != -1);
-        QVERIFY(!channel.d->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
+        QVERIFY(!channel.d_func()->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
         QCOMPARE(m_lastDouble, args.at(0).toDouble());
     }
     {
         int method = metaObject()->indexOfMethod("setVariant(QVariant)");
         QVERIFY(method != -1);
-        QVERIFY(!channel.d->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
+        QVERIFY(!channel.d_func()->publisher->invokeMethod(this, method, args, QJsonValue()).isEmpty());
         QCOMPARE(m_lastVariant, args.at(0).toVariant());
     }
 }
@@ -265,7 +265,7 @@ void TestWebChannel::benchClassInfo()
 
     QBENCHMARK {
         foreach (const QObject *object, objects) {
-            channel.d->publisher->classInfoForObject(object);
+            channel.d_func()->publisher->classInfoForObject(object);
         }
     }
 }
@@ -278,7 +278,7 @@ void TestWebChannel::benchInitializeClients()
     QObject parent;
     channel.registerObjects(createObjects(&parent));
 
-    QMetaObjectPublisher *publisher = channel.d->publisher;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
     QBENCHMARK {
         publisher->initializeClients();
 
@@ -302,15 +302,15 @@ void TestWebChannel::benchPropertyUpdates()
     }
 
     channel.registerObjects(objects);
-    channel.d->publisher->initializeClients();
+    channel.d_func()->publisher->initializeClients();
 
     QBENCHMARK {
         foreach (BenchObject *obj, objectList) {
             obj->change();
         }
 
-        channel.d->publisher->clientIsIdle = true;
-        channel.d->publisher->sendPendingPropertyUpdates();
+        channel.d_func()->publisher->clientIsIdle = true;
+        channel.d_func()->publisher->sendPendingPropertyUpdates();
     }
 }
 
