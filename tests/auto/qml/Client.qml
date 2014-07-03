@@ -149,7 +149,7 @@ Item {
         verify(msg);
         verify(msg.data);
         compare(msg.data.type, Client.QWebChannelMessageTypes.idle);
-        verify(webChannel.test_clientIsIdle())
+        verify(webChannel.clientIsIdle())
     }
 
     function awaitMessageSkipIdle()

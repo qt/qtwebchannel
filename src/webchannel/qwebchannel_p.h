@@ -44,6 +44,7 @@
 
 #include "qwebchannelglobal.h"
 
+#include <private/qobject_p.h>
 #include <QVector>
 
 QT_BEGIN_NAMESPACE
@@ -54,10 +55,14 @@ class QMetaObjectPublisher;
 
 Q_WEBCHANNEL_EXPORT QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response);
 
-struct Q_WEBCHANNEL_EXPORT QWebChannelPrivate
+class Q_WEBCHANNEL_EXPORT QWebChannelPrivate : public QObjectPrivate
 {
+    Q_DECLARE_PUBLIC(QWebChannel)
+public:
     QVector<QWebChannelAbstractTransport*> transports;
     QMetaObjectPublisher *publisher;
+
+    void init();
 
     void _q_transportDestroyed(QObject* object);
 };
