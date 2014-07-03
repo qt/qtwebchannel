@@ -1,3 +1,5 @@
 TEMPLATE = subdirs
 
-SUBDIRS += standalone
+qtHaveModule(websockets) {
+    SUBDIRS += standalone
+}

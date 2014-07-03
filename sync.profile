@@ -12,7 +12,7 @@
 #
 %dependencies = (
     "qtbase" => "refs/heads/dev",
-    "qtwebsockets" => "refs/heads/dev",
     # optional dependencies:
+    "qtwebsockets" => "refs/heads/dev",
     "qtdeclarative" => "refs/heads/dev",
 );

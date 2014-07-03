@@ -39,30 +39,33 @@
 **
 ****************************************************************************/
 
-#ifndef QWEBCHANNELWEBSOCKETTRANSPORT_H
-#define QWEBCHANNELWEBSOCKETTRANSPORT_H
+#include "websocketclientwrapper.h"
 
-#include <QObject>
-#include <QtWebChannel/QWebChannelAbstractTransport>
-#include <QtWebChannel/qwebchannelglobal.h>
-#include <QtWebSockets/QWebSocket>
+#include <QtWebSockets/QWebSocketServer>
+
+#include "websockettransport.h"
+
+/*!
+    \brief Wrapps connected QWebSockets clients in WebSocketTransport objects.
+
+    This code is all that is required to connect incoming WebSockets to the WebChannel. Any kind
+    of remote JavaScript client that supports WebSockets can thus receive messages and access the
+    published objects.
+*/
 
 QT_BEGIN_NAMESPACE
 
-struct QWebChannelWebSocketTransportPrivate;
-class Q_WEBCHANNEL_EXPORT QWebChannelWebSocketTransport : public QWebChannelAbstractTransport
+WebSocketClientWrapper::WebSocketClientWrapper(QWebSocketServer *server, QObject *parent)
+    : QObject(parent)
+    , m_server(server)
 {
-    Q_OBJECT
-public:
-    explicit QWebChannelWebSocketTransport(QWebSocket *socket);
-    virtual ~QWebChannelWebSocketTransport();
+    connect(server, &QWebSocketServer::newConnection,
+            this, &WebSocketClientWrapper::handleNewConnection);
+}
 
-    void sendTextMessage(const QString &message) Q_DECL_OVERRIDE;
-
-private:
-    QScopedPointer<QWebChannelWebSocketTransportPrivate> d;
-};
+void WebSocketClientWrapper::handleNewConnection()
+{
+    emit clientConnected(new WebSocketTransport(m_server->nextPendingConnection()));
+}
 
 QT_END_NAMESPACE
-
-#endif // QWEBCHANNELWEBSOCKETTRANSPORT_H

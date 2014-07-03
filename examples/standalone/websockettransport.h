@@ -39,96 +39,27 @@
 **
 ****************************************************************************/
 
-#include "qwebchannel.h"
+#ifndef WEBSOCKETTRANSPORT_H
+#define WEBSOCKETTRANSPORT_H
 
-#include <QApplication>
-#include <QDialog>
-#include <QVariantMap>
-#include <QDesktopServices>
-#include <QUrl>
-#include <QDebug>
+#include <QtWebChannel/QWebChannelAbstractTransport>
 
-#include <QtWebSockets/QWebSocketServer>
+QT_BEGIN_NAMESPACE
 
-#include "websocketclientwrapper.h"
-#include "websockettransport.h"
-
-#include "ui_dialog.h"
-
-class Dialog : public QObject
+class QWebSocket;
+class WebSocketTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
-
 public:
-    explicit Dialog(QObject *parent = 0)
-        : QObject(parent)
-    {
-        ui.setupUi(&dialog);
-        dialog.show();
+    explicit WebSocketTransport(QWebSocket *socket);
+    virtual ~WebSocketTransport();
 
-        connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
-    }
-
-    void displayMessage(const QString &message)
-    {
-        ui.output->appendPlainText(message);
-    }
-
-signals:
-    void sendText(const QString &text);
-
-public slots:
-    void receiveText(const QString &text)
-    {
-        displayMessage(tr("Received message: %1").arg(text));
-    }
-
-private slots:
-    void clicked()
-    {
-        const QString text = ui.input->text();
-
-        if (text.isEmpty()) {
-            return;
-        }
-
-        emit sendText(text);
-        displayMessage(tr("Sent message: %1").arg(text));
-
-        ui.input->clear();
-    }
+    void sendTextMessage(const QString &message) Q_DECL_OVERRIDE;
 
 private:
-    QDialog dialog;
-    Ui::Dialog ui;
+    QWebSocket *m_socket;
 };
 
-int main(int argc, char** argv)
-{
-    QApplication app(argc, argv);
+QT_END_NAMESPACE
 
-    QWebChannel channel;
-    QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
-    if (!server.listen(QHostAddress::LocalHost)) {
-        qFatal("Failed to open web socket server.");
-        return 1;
-    }
-
-    WebSocketClientWrapper clientWrapper(&server);
-    QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
-                     &channel, &QWebChannel::connectTo);
-
-    Dialog dialog;
-
-    channel.registerObject(QStringLiteral("dialog"), &dialog);
-
-    QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
-    url.setQuery(QStringLiteral("webChannelBaseUrl=") + server.serverUrl().toString());
-    QDesktopServices::openUrl(url);
-
-    dialog.displayMessage(QObject::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
-
-    return app.exec();
-}
-
-#include "main.moc"
+#endif // WEBSOCKETTRANSPORT_H
