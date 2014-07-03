@@ -1,4 +1,4 @@
-QT += testlib webchannel
+QT += testlib core-private webchannel-private
 TEMPLATE = app
 TARGET = qml
 
@@ -9,10 +9,12 @@ IMPORTPATH += $$OUT_PWD/../../../qml $$PWD
 
 SOURCES += \
     qml.cpp \
-    testtransport.cpp
+    testtransport.cpp \
+    testwebchannel.cpp
 
 HEADERS += \
-    testtransport.h
+    testtransport.h \
+    testwebchannel.h
 
 OTHER_FILES += \
     WebChannelTest.qml \
