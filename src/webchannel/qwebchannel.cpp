@@ -93,6 +93,11 @@ void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
     }
 }
 
+QHash<QString, QObject *> QWebChannel::registeredObjects() const
+{
+    return d->publisher->registeredObjects;
+}
+
 void QWebChannel::registerObject(const QString &id, QObject *object)
 {
     d->publisher->registerObject(id, object);
