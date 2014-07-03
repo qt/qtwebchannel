@@ -1,5 +1,5 @@
 TARGET = QtWebChannel
-QT = core
+QT = core-private
 CONFIG += warn_on strict_flags
 
 load(qt_module)
@@ -28,6 +28,16 @@ SOURCES += \
 qtHaveModule(qml) {
     QT += qml
     DEFINES += HAVE_QML=1
+
+    SOURCES += \
+        qqmlwebchannel.cpp \
+        qqmlwebchannelattached.cpp
+
+    PUBLIC_HEADERS += \
+        qqmlwebchannel.h
+
+    PRIVATE_HEADERS += \
+        qqmlwebchannelattached_p.h
 }
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS

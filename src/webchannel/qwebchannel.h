@@ -90,20 +90,22 @@ public:
      */
     void setBlockUpdates(bool block);
 
-    void connectTo(QWebChannelAbstractTransport *transport);
-    void disconnectFrom(QWebChannelAbstractTransport *transport);
-
 Q_SIGNALS:
     void blockUpdatesChanged(bool block);
 
 public Q_SLOTS:
+    void connectTo(QWebChannelAbstractTransport *transport);
+    void disconnectFrom(QWebChannelAbstractTransport *transport);
+
     void sendMessage(const QJsonValue &id, const QJsonValue &data = QJsonValue()) const;
 
 private:
-    QScopedPointer<QWebChannelPrivate> d;
-    Q_PRIVATE_SLOT(d, void _q_transportDestroyed(QObject*));
+    Q_DECLARE_PRIVATE(QWebChannel)
+    QWebChannel(QWebChannelPrivate &dd, QObject *parent = 0);
+    Q_PRIVATE_SLOT(d_func(), void _q_transportDestroyed(QObject*));
+
     friend class QMetaObjectPublisher;
-    friend class QmlWebChannel;
+    friend class QQmlWebChannel;
     friend class TestWebChannel;
 };
 
