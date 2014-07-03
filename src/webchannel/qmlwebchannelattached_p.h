@@ -44,9 +44,11 @@
 
 #include <QObject>
 
+#include <QtWebChannel/qwebchannelglobal.h>
+
 QT_BEGIN_NAMESPACE
 
-class QmlWebChannelAttached : public QObject
+class Q_WEBCHANNEL_EXPORT QmlWebChannelAttached : public QObject
 {
     Q_OBJECT
 

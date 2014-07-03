@@ -39,11 +39,12 @@
 **
 ****************************************************************************/
 
-#include "qmlwebchannel.h"
+#include "qmlwebchannel_p.h"
 
 #include "qwebchannel_p.h"
 #include "qmetaobjectpublisher_p.h"
 #include "qwebchannelabstracttransport.h"
+#include "qmlwebchannelattached_p.h"
 
 #include <QtQml/QQmlContext>
 

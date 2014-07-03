@@ -39,30 +39,66 @@
 **
 ****************************************************************************/
 
-#include "qmlwebchannelattached.h"
+#ifndef QMLWEBCHANNEL_H
+#define QMLWEBCHANNEL_H
 
-QT_USE_NAMESPACE
+#include <QVector>
 
-QmlWebChannelAttached::QmlWebChannelAttached(QObject *parent)
-    : QObject(parent)
+#include <QtWebChannel/QWebChannel>
+#include <QtWebChannel/qwebchannelglobal.h>
+
+#include <QtQml/qqml.h>
+#include <QtQml/QQmlListProperty>
+
+QT_BEGIN_NAMESPACE
+
+class QmlWebChannelAttached;
+class QmlWebChannelPrivate;
+
+class Q_WEBCHANNEL_EXPORT QmlWebChannel : public QWebChannel
 {
+    Q_OBJECT
 
-}
+    Q_PROPERTY( QQmlListProperty<QObject> transports READ transports );
+    Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
 
-QmlWebChannelAttached::~QmlWebChannelAttached()
-{
+public:
+    explicit QmlWebChannel(QObject *parent = 0);
+    virtual ~QmlWebChannel();
 
-}
+    Q_INVOKABLE void registerObjects(const QVariantMap &objects);
+    QQmlListProperty<QObject> registeredObjects();
 
-QString QmlWebChannelAttached::id() const
-{
-    return m_id;
-}
+    QQmlListProperty<QObject> transports();
 
-void QmlWebChannelAttached::setId(const QString &id)
-{
-    if (id != m_id) {
-        m_id = id;
-        emit idChanged(id);
-    }
-}
+    // TODO: remove this by replacing QML with C++ tests
+    Q_INVOKABLE bool test_clientIsIdle() const;
+
+    static QmlWebChannelAttached *qmlAttachedProperties(QObject *obj);
+
+    Q_INVOKABLE void connectTo(QObject *transport);
+    Q_INVOKABLE void disconnectFrom(QObject *transport);
+
+private Q_SLOTS:
+    void objectIdChanged(const QString &newId);
+
+private:
+    static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *item);
+    static int registeredObjects_count(QQmlListProperty<QObject> *prop);
+    static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
+    static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
+
+    static void transports_append(QQmlListProperty<QObject> *prop, QObject *item);
+    static int transports_count(QQmlListProperty<QObject> *prop);
+    static QObject *transports_at(QQmlListProperty<QObject> *prop, int index);
+    static void transports_clear(QQmlListProperty<QObject> *prop);
+
+    QVector<QObject*> m_registeredObjects;
+};
+
+QML_DECLARE_TYPE( QmlWebChannel )
+QML_DECLARE_TYPEINFO( QmlWebChannel, QML_HAS_ATTACHED_PROPERTIES )
+
+QT_END_NAMESPACE
+
+#endif // QMLWEBCHANNEL_H
