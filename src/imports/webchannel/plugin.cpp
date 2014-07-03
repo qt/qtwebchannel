@@ -42,7 +42,7 @@
 #include <qqml.h>
 #include <QtQml/QQmlExtensionPlugin>
 
-#include "qmlwebchannel.h"
+#include <QtWebChannel/QmlWebChannel>
 
 QT_BEGIN_NAMESPACE
 

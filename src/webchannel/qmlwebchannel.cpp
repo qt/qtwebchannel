@@ -49,8 +49,15 @@
 
 QT_USE_NAMESPACE
 
+class QmlWebChannelPrivate : public QWebChannelPrivate
+{
+    Q_DECLARE_PUBLIC(QmlWebChannel)
+public:
+    QVector<QObject*> registeredObjects;
+};
+
 QmlWebChannel::QmlWebChannel(QObject *parent)
-    : QWebChannel(parent)
+    : QWebChannel(*(new QmlWebChannelPrivate), parent)
 {
 }
 
@@ -61,6 +68,7 @@ QmlWebChannel::~QmlWebChannel()
 
 void QmlWebChannel::registerObjects(const QVariantMap &objects)
 {
+    Q_D(QmlWebChannel);
     QMap<QString, QVariant>::const_iterator it = objects.constBegin();
     for (; it != objects.constEnd(); ++it) {
         QObject *object = it.value().value<QObject*>();
@@ -74,15 +82,16 @@ void QmlWebChannel::registerObjects(const QVariantMap &objects)
 
 bool QmlWebChannel::test_clientIsIdle() const
 {
-    return d->publisher->clientIsIdle;
+    return d_func()->publisher->clientIsIdle;
 }
 
 void QmlWebChannel::objectIdChanged(const QString &newId)
 {
+    Q_D(QmlWebChannel);
     const QmlWebChannelAttached *const attached = qobject_cast<QmlWebChannelAttached*>(sender());
     Q_ASSERT(attached);
     Q_ASSERT(attached->parent());
-    Q_ASSERT(m_registeredObjects.contains(attached->parent()));
+    Q_ASSERT(d->registeredObjects.contains(attached->parent()));
 
     QObject *const object = attached->parent();
     const QString &oldId = d->publisher->registeredObjectIds.value(object);
@@ -140,27 +149,27 @@ void QmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, QO
         // TODO: warning in such cases?
         channel->registerObject(attached->id(), object);
     }
-    channel->m_registeredObjects.append(object);
+    channel->d_func()->registeredObjects.append(object);
     connect(attached, SIGNAL(idChanged(QString)), channel, SLOT(objectIdChanged(QString)));
 }
 
 int QmlWebChannel::registeredObjects_count(QQmlListProperty<QObject> *prop)
 {
-    return static_cast<QmlWebChannel*>(prop->object)->m_registeredObjects.size();
+    return static_cast<QmlWebChannel*>(prop->object)->d_func()->registeredObjects.size();
 }
 
 QObject *QmlWebChannel::registeredObjects_at(QQmlListProperty<QObject> *prop, int index)
 {
-    return static_cast<QmlWebChannel*>(prop->object)->m_registeredObjects.at(index);
+    return static_cast<QmlWebChannel*>(prop->object)->d_func()->registeredObjects.at(index);
 }
 
 void QmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
 {
     QmlWebChannel *channel = static_cast<QmlWebChannel*>(prop->object);
-    foreach (QObject *object, channel->m_registeredObjects) {
+    foreach (QObject *object, channel->d_func()->registeredObjects) {
         channel->deregisterObject(object);
     }
-    return channel->m_registeredObjects.clear();
+    return channel->d_func()->registeredObjects.clear();
 }
 
 QQmlListProperty<QObject> QmlWebChannel::transports()
@@ -180,20 +189,20 @@ void QmlWebChannel::transports_append(QQmlListProperty<QObject> *prop, QObject *
 
 int QmlWebChannel::transports_count(QQmlListProperty<QObject> *prop)
 {
-    return static_cast<QmlWebChannel*>(prop->object)->d->transports.size();
+    return static_cast<QmlWebChannel*>(prop->object)->d_func()->transports.size();
 }
 
 QObject *QmlWebChannel::transports_at(QQmlListProperty<QObject> *prop, int index)
 {
     QmlWebChannel *channel = static_cast<QmlWebChannel*>(prop->object);
-    return dynamic_cast<QObject*>(channel->d->transports.at(index));
+    return dynamic_cast<QObject*>(channel->d_func()->transports.at(index));
 }
 
 void QmlWebChannel::transports_clear(QQmlListProperty<QObject> *prop)
 {
     QWebChannel *channel = static_cast<QWebChannel*>(prop->object);
-    foreach (QWebChannelAbstractTransport *transport, channel->d->transports) {
+    foreach (QWebChannelAbstractTransport *transport, channel->d_func()->transports) {
         channel->disconnectFrom(transport);
     }
-    Q_ASSERT(channel->d->transports.isEmpty());
+    Q_ASSERT(channel->d_func()->transports.isEmpty());
 }

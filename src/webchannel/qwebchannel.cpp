@@ -72,13 +72,26 @@ void QWebChannelPrivate::transportDestroyed(QObject *object)
     }
 }
 
-QWebChannel::QWebChannel(QObject *parent)
-: QObject(parent)
-, d(new QWebChannelPrivate)
+void QWebChannelPrivate::init()
 {
-    d->publisher = new QMetaObjectPublisher(this);
-    connect(d->publisher, SIGNAL(blockUpdatesChanged(bool)),
-            SIGNAL(blockUpdatesChanged(bool)));
+    Q_Q(QWebChannel);
+    publisher = new QMetaObjectPublisher(q);
+    QObject::connect(publisher, SIGNAL(blockUpdatesChanged(bool)),
+                     q, SIGNAL(blockUpdatesChanged(bool)));
+}
+
+QWebChannel::QWebChannel(QObject *parent)
+: QObject(*(new QWebChannelPrivate), parent)
+{
+    Q_D(QWebChannel);
+    d->init();
+}
+
+QWebChannel::QWebChannel(QWebChannelPrivate &dd, QObject *parent)
+: QObject(dd, parent)
+{
+    Q_D(QWebChannel);
+    d->init();
 }
 
 QWebChannel::~QWebChannel()
@@ -87,6 +100,7 @@ QWebChannel::~QWebChannel()
 
 void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
 {
+    Q_D(QWebChannel);
     const QHash<QString, QObject *>::const_iterator end = objects.constEnd();
     for (QHash<QString, QObject *>::const_iterator it = objects.constBegin(); it != end; ++it) {
         d->publisher->registerObject(it.key(), it.value());
@@ -95,32 +109,38 @@ void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
 
 QHash<QString, QObject *> QWebChannel::registeredObjects() const
 {
+    Q_D(const QWebChannel);
     return d->publisher->registeredObjects;
 }
 
 void QWebChannel::registerObject(const QString &id, QObject *object)
 {
+    Q_D(QWebChannel);
     d->publisher->registerObject(id, object);
 }
 
 void QWebChannel::deregisterObject(QObject *object)
 {
+    Q_D(QWebChannel);
     // handling of deregistration is analogously to handling of a destroyed signal
     d->publisher->signalEmitted(object, s_destroyedSignalIndex, QVariantList() << QVariant::fromValue(object));
 }
 
 bool QWebChannel::blockUpdates() const
 {
+    Q_D(const QWebChannel);
     return d->publisher->blockUpdates;
 }
 
 void QWebChannel::setBlockUpdates(bool block)
 {
+    Q_D(QWebChannel);
     d->publisher->setBlockUpdates(block);
 }
 
 void QWebChannel::connectTo(QWebChannelAbstractTransport *transport)
 {
+    Q_D(QWebChannel);
     Q_ASSERT(transport);
     if (!d->transports.contains(transport)) {
         d->transports << transport;
@@ -134,6 +154,7 @@ void QWebChannel::connectTo(QWebChannelAbstractTransport *transport)
 
 void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
 {
+    Q_D(QWebChannel);
     const int idx = d->transports.indexOf(transport);
     if (idx != -1) {
         disconnect(transport, 0, this, 0);
@@ -143,6 +164,7 @@ void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
 
 void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) const
 {
+    Q_D(const QWebChannel);
     if (d->transports.isEmpty()) {
         qWarning("QWebChannel is not connected to any transports, cannot send messages.");
         return;
