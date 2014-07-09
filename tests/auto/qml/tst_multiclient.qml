@@ -57,9 +57,9 @@ TestCase {
         id: client2
     }
 
+    property int bar: 0
     QtObject {
         id: foo
-        property int bar: 0
 
         signal ping()
 
@@ -87,7 +87,7 @@ TestCase {
     {
         channel.objects.foo.ping.connect(function() {
             channel.objects.foo.pong(function(value) {
-                channel.exec({pongAnswer: value});
+                channel.pongAnswer = value;
             });
         });
     }
@@ -109,12 +109,7 @@ TestCase {
         client1.awaitMessage();
         client2.awaitMessage();
 
-        var msg = client1.awaitMessage();
-        compare(msg.data.pongAnswer, 1);
-        msg = client2.awaitMessage();
-        compare(msg.data.pongAnswer, 2);
-
-        client1.awaitIdle();
-        client2.awaitIdle();
+        compare(c1.pongAnswer, 1);
+        compare(c2.pongAnswer, 2);
     }
 }

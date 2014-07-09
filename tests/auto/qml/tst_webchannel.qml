@@ -53,35 +53,248 @@ TestCase {
         id: client
     }
 
+    property var lastMethodArg
+
+    QtObject {
+        id: myObj
+        property int myProperty: 1
+
+        signal mySignal(var arg)
+
+        function myMethod(arg)
+        {
+            lastMethodArg = arg;
+        }
+
+        WebChannel.id: "myObj"
+    }
+    QtObject {
+        id: myOtherObj
+        property var foo: 1
+        property var bar: 1
+        WebChannel.id: "myOtherObj"
+    }
+    QtObject {
+        id: myFactory
+        property var lastObj
+        function create(id)
+        {
+            lastObj = component.createObject(myFactory, {objectName: id});
+            return lastObj;
+        }
+        WebChannel.id: "myFactory"
+    }
+
+    Component {
+        id: component
+        QtObject {
+            property var myProperty : 0
+            function myMethod(arg) {
+                lastMethodArg = arg;
+            }
+            signal mySignal(var arg1, var arg2)
+        }
+    }
+
     TestWebChannel {
         id: webChannel
         transports: [client.serverTransport]
+        registeredObjects: [myObj, myOtherObj, myFactory]
     }
 
-    function cleanup()
+    function init()
     {
+        myObj.myProperty = 1
         client.cleanup();
     }
 
-    function test_receiveRawMessage()
+    function test_property()
     {
-        var channel = client.createChannel(function (channel) {
-            channel.send("foobar");
-        }, true /* raw */);
-        compare(client.awaitRawMessage(), "foobar");
+        compare(myObj.myProperty, 1);
+
+        var initialValue;
+        var changedValue;
+
+        var channel = client.createChannel(function(channel) {
+            initialValue = channel.objects.myObj.myProperty;
+            channel.objects.myObj.myPropertyChanged.connect(function() {
+                changedValue = channel.objects.myObj.myProperty;
+            });
+            // now trigger a write from the client side
+            channel.objects.myObj.myProperty = 3;
+        });
+
+        client.awaitInit();
+        var msg = client.awaitMessage();
+
+        compare(initialValue, 1);
+        compare(myObj.myProperty, 3);
+
+        client.awaitIdle();
+
+        // change property, should be propagated to HTML client and a message be send there
+        myObj.myProperty = 2;
+        compare(myObj.myProperty, 2);
+        client.awaitIdle();
+        compare(changedValue, 2);
     }
 
-    function test_sendMessage()
+    function test_method()
     {
         var channel = client.createChannel(function (channel) {
-            channel.subscribe("myMessage", function(payload) {
-                channel.send("myMessagePong:" + payload);
-            });
-            channel.send("initialized");
-        }, true /* raw */);
+            channel.objects.myObj.myMethod("test");
+        });
 
-        compare(client.awaitRawMessage(), "initialized");
-        webChannel.sendMessage("myMessage", "foobar");
-        compare(client.awaitRawMessage(), "myMessagePong:foobar");
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.object, "myObj");
+        compare(msg.args, ["test"]);
+
+        compare(lastMethodArg, "test")
+
+        client.awaitIdle();
+    }
+
+    function test_signal()
+    {
+        var signalReceivedArg;
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myObj.mySignal.connect(function(arg) {
+                signalReceivedArg = arg;
+            });
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "myObj");
+
+        client.awaitIdle();
+
+        myObj.mySignal("test");
+
+        compare(signalReceivedArg, "test");
+    }
+
+    function test_grouping()
+    {
+        var receivedPropertyUpdates = 0;
+        var properties = 0;
+        var channel = client.createChannel(function(channel) {
+            var originalHandler = channel.handlePropertyUpdate;
+            channel.handlePropertyUpdate = function(message) {
+                originalHandler(message);
+                receivedPropertyUpdates++;
+                properties = [channel.objects.myObj.myProperty, channel.objects.myOtherObj.foo, channel.objects.myOtherObj.bar];
+            };
+        });
+        client.awaitInit();
+        client.awaitIdle();
+
+        // change properties a lot, we expect this to be grouped into a single update notification
+        for (var i = 0; i < 10; ++i) {
+            myObj.myProperty = i;
+            myOtherObj.foo = i;
+            myOtherObj.bar = i;
+        }
+
+        client.awaitIdle();
+        compare(receivedPropertyUpdates, 1);
+        compare(properties, [myObj.myProperty, myOtherObj.foo, myOtherObj.bar]);
+        verify(!client.awaitMessage());
+    }
+
+    function test_wrapper()
+    {
+        var signalArgs;
+        var testObjBeforeDeletion;
+        var testObjAfterDeletion;
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myFactory.create("testObj", function(obj) {
+                channel.objects.testObj = obj;
+                obj.mySignal.connect(function() {
+                    signalArgs = arguments;
+                    testObjBeforeDeletion = obj;
+                    obj.deleteLater();
+                    testObjAfterDeletion = obj;
+                });
+                obj.myProperty = 42;
+                obj.myMethod("foobar");
+            });
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.object, "myFactory");
+        verify(myFactory.lastObj);
+        compare(myFactory.lastObj.objectName, "testObj");
+
+        // deleteLater signal connection
+        msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.connectToSignal);
+        verify(msg.object);
+        var objId = msg.object;
+
+        // mySignal connection
+        msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, objId);
+
+        msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.setProperty);
+        compare(msg.object, objId);
+        compare(myFactory.lastObj.myProperty, 42);
+
+        msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.object, objId);
+        compare(msg.args, ["foobar"]);
+        compare(lastMethodArg, "foobar");
+
+        myFactory.lastObj.mySignal("foobar", 42);
+
+        // deleteLater call
+        msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.object, objId);
+
+        compare(signalArgs, {"0": "foobar", "1": 42});
+
+        client.awaitIdle();
+
+        compare(JSON.stringify(testObjBeforeDeletion), JSON.stringify({}));
+        compare(JSON.stringify(testObjAfterDeletion), JSON.stringify({}));
+        compare(JSON.stringify(channel.objects.testObj), JSON.stringify({}));
+    }
+
+    function test_disconnect()
+    {
+        var signalArg;
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myObj.mySignal.connect(function(arg) {
+                signalArg = arg;
+                channel.objects.myObj.mySignal.disconnect(this);
+            });
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "myObj");
+
+        client.awaitIdle();
+
+        myObj.mySignal(42);
+        compare(signalArg, 42);
+
+        msg = client.awaitMessage();
+        compare(msg.type, Client.QWebChannelMessageTypes.disconnectFromSignal);
+        compare(msg.object, "myObj");
+
+        myObj.mySignal(0);
+        compare(signalArg, 42);
     }
 }
