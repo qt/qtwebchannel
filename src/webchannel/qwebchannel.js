@@ -54,6 +54,42 @@ var QWebChannelMessageTypes = {
     setProperty: 9,
 };
 
+var envNodeJs = 'node';
+var envQML = 'qml';
+var envHTML = 'html';
+
+function getEnvironment() {
+    if (typeof window === 'object')
+        return envHTML;
+    if (typeof module === 'object')
+        return envNodeJs;
+    if (typeof Qt === 'object')
+        return envQML;
+}
+
+//wrap setTimeout because it's not available within QML environment
+function _setTimeout(callback, delay) {
+    if (getEnvironment() === envQML) {
+        //wrap the call to setTimout through a QML Timer object
+        var timerComp = Qt.createComponent("Timer.qml");
+        if (timerComp.status == 1) {
+            var timer = timerComp.createObject();
+            var _delay = delay;
+            //QML Timer won't start running with a delay of zero
+            if (delay < 1)
+                _delay = 1;
+            timer.interval = _delay;
+            timer.running = true;
+            timer.triggered.connect(callback);
+            timer.triggered.connect(function() { timer.destroy(); });
+        } else if (timerComp.status == 3) {
+            console.log("Error " + timerComp.errorString());
+        }
+    } else {
+        setTimeout(callback, delay);
+    }
+}
+
 var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
 {
     var channel = this;
@@ -66,7 +102,14 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
     }
     this.messageReceived = function(message)
     {
-        var jsonData = JSON.parse(message.data);
+        var jsonData;
+        if (getEnvironment() === envQML) {
+            //qml gets message without the data layer... strange.
+            jsonData = JSON.parse(message);
+        } else {
+            jsonData = JSON.parse(message.data);
+        }
+
         if (jsonData.id === undefined) {
             console.error("invalid message received:", message.data);
             return;
@@ -94,13 +137,38 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
     }
 
     if (typeof baseUrlOrSocket === 'object') {
-        this.socket = baseUrlOrSocket;
-        this.socket.send = function(data)
-        {
-            channel.socket.postMessage(data);
+        if (getEnvironment() == envQML) {
+            this.socket = {
+                send: function(msg) {
+                    baseUrlOrSocket.sendTextMessage(msg);
+                }
+            };
+            baseUrlOrSocket.textMessageReceived.connect(function(msg){
+                channel.messageReceived(msg);
+            });
+            baseUrlOrSocket.statusChanged.connect(function(status) {
+                if (status === WebSocket.Open) {
+                    channel.initialized();
+                } else if (status === WebSocket.Closed) {
+                    console.debug("(Websocket) Disconnected from server:", socket.url);
+                    baseUrlOrSocket.active = true;
+                } else if (status === WebSocket.Error) {
+                    console.error("(Websocket) Error:", socket.errorString);
+                    baseUrlOrSocket.active = true;
+                }
+            });
+            baseUrlOrSocket.active = true; //connect
+        } else {
+            this.socket = baseUrlOrSocket;
+            if (typeof this.socket.send !== 'function') {
+                this.socket.send = function(data)
+                {
+                    channel.socket.postMessage(data);
+                }
+            }
+            this.socket.onmessage = this.messageReceived;
+            this.socket.onopen = this.initialized;
         }
-        this.socket.onmessage = this.messageReceived
-        setTimeout(this.initialized, 0);
     } else {
         ///TODO: use QWebChannel protocol, once custom protcols are supported by QtWebSocket
         this.socket = new WebSocket(baseUrlOrSocket/*, "QWebChannel" */);
@@ -176,7 +244,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                         console.warn("Unhandled property update: " + data.object + "::" + data.signal);
                     }
                 }
-                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+                _setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
             }
         );
 
@@ -194,7 +262,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                 if (doneCallback) {
                     doneCallback(channel);
                 }
-                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+                _setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
             }
         );
 
@@ -412,4 +480,11 @@ function QObject(name, data, webChannel)
     for (var name in data.enums) {
         object[name] = data.enums[name];
     }
+}
+
+//required for use with nodejs
+if (getEnvironment() === envNodeJs) {
+    module.exports = {
+        QWebChannel: QWebChannel
+    };
 }
