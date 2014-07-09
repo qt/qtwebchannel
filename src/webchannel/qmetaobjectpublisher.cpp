@@ -59,30 +59,11 @@ QT_BEGIN_NAMESPACE
 
 namespace {
 
-// NOTE: keep in sync with corresponding maps in qwebchannel.js and WebChannelTest.qml
-enum Type {
-    TypeInvalid = 0,
-
-    TYPES_FIRST_VALUE = 1,
-
-    TypeSignal = 1,
-    TypePropertyUpdate = 2,
-    TypeInit = 3,
-    TypeIdle = 4,
-    TypeDebug = 5,
-    TypeInvokeMethod = 6,
-    TypeConnectToSignal = 7,
-    TypeDisconnectFromSignal = 8,
-    TypeSetProperty = 9,
-
-    TYPES_LAST_VALUE = 9
-};
-
-Type toType(const QJsonValue &value)
+MessageType toType(const QJsonValue &value)
 {
     int i = value.toInt(-1);
     if (i >= TYPES_FIRST_VALUE && i <= TYPES_LAST_VALUE) {
-        return static_cast<Type>(i);
+        return static_cast<MessageType>(i);
     } else {
         return TypeInvalid;
     }
@@ -99,12 +80,10 @@ const QString KEY_OBJECT = QStringLiteral("object");
 const QString KEY_DESTROYED = QStringLiteral("destroyed");
 const QString KEY_SIGNAL = QStringLiteral("signal");
 const QString KEY_TYPE = QStringLiteral("type");
-const QString KEY_MESSAGE = QStringLiteral("message");
 const QString KEY_METHOD = QStringLiteral("method");
 const QString KEY_ARGS = QStringLiteral("args");
 const QString KEY_PROPERTY = QStringLiteral("property");
 const QString KEY_VALUE = QStringLiteral("value");
-
 
 QString objectId(const QObject *object)
 {
@@ -261,7 +240,10 @@ void QMetaObjectPublisher::initializeClients()
             objectInfos[it.key()] = info;
         }
     }
-    webChannel->sendMessage(TypeInit, objectInfos);
+    QJsonObject message;
+    message[KEY_TYPE] = TypeInit;
+    message[KEY_DATA] = objectInfos;
+    broadcastMessage(message);
     propertyUpdatesInitialized = true;
     pendingInit = false;
 }
@@ -334,31 +316,34 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
     }
 
     pendingPropertyUpdates.clear();
-    webChannel->sendMessage(TypePropertyUpdate, data);
+    QJsonObject message;
+    message[KEY_TYPE] = TypePropertyUpdate;
+    message[KEY_DATA] = data;
+    broadcastMessage(message);
     setClientIsIdle(false);
 }
 
-QByteArray QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
-                                              const QJsonArray &args, const QJsonValue &id)
+QJsonValue QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
+                                              const QJsonArray &args)
 {
     const QMetaMethod &method = object->metaObject()->method(methodIndex);
 
     if (method.name() == QByteArrayLiteral("deleteLater")) {
         // invoke `deleteLater` on wrapped QObject indirectly
         deleteWrappedObject(object);
-        return QByteArray();
+        return QJsonValue();
     } else if (!method.isValid()) {
         qWarning() << "Cannot invoke unknown method of index" << methodIndex << "on object" << object << '.';
-        return QByteArray();
+        return QJsonValue();
     } else if (method.access() != QMetaMethod::Public) {
         qWarning() << "Cannot invoke non-public method" << method.name() << "on object" << object << '.';
-        return QByteArray();
+        return QJsonValue();
     } else if (method.methodType() != QMetaMethod::Method && method.methodType() != QMetaMethod::Slot) {
         qWarning() << "Cannot invoke non-public method" << method.name() << "on object" << object << '.';
-        return QByteArray();
+        return QJsonValue();
     } else if (args.size() > 10) {
         qWarning() << "Cannot invoke method" << method.name() << "on object" << object << "with more than 10 arguments, as that is not supported by QMetaMethod::invoke.";
-        return QByteArray();
+        return QJsonValue();
     } else if (args.size() > method.parameterCount()) {
         qWarning() << "Ignoring additional arguments while invoking method" << method.name() << "on object" << object << ':'
                    << args.size() << "arguments given, but method only takes" << method.parameterCount() << '.';
@@ -389,8 +374,7 @@ QByteArray QMetaObjectPublisher::invokeMethod(QObject *const object, const int m
                   arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
                   arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
 
-    // and send the return value to the client
-    return generateJSONMessage(id, wrapResult(returnValue), true);
+    return wrapResult(returnValue);
 }
 
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
@@ -399,11 +383,11 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
         return;
     }
     if (!signalToPropertyMap.value(object).contains(signalIndex)) {
-        QJsonObject data;
+        QJsonObject message;
         const QString &objectName = registeredObjectIds.value(object);
         Q_ASSERT(!objectName.isEmpty());
-        data[KEY_OBJECT] = objectName;
-        data[KEY_SIGNAL] = signalIndex;
+        message[KEY_OBJECT] = objectName;
+        message[KEY_SIGNAL] = signalIndex;
         if (!arguments.isEmpty()) {
             // TODO: wrap (new) objects on the fly
             QJsonArray args;
@@ -419,9 +403,10 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
 #else
             args = QJsonArray::fromVariantList(arguments);
 #endif
-            data[KEY_ARGS] = args;
+            message[KEY_ARGS] = args;
         }
-        webChannel->sendMessage(TypeSignal, data);
+        message[KEY_TYPE] = TypeSignal;
+        broadcastMessage(message);
 
         if (signalIndex == s_destroyedSignalIndex) {
             objectDestroyed(object);
@@ -486,77 +471,65 @@ void QMetaObjectPublisher::deleteWrappedObject(QObject *object) const
     object->deleteLater();
 }
 
-QByteArray QMetaObjectPublisher::handleRequest(const QJsonObject &message)
+void QMetaObjectPublisher::broadcastMessage(const QJsonObject &message) const
 {
-    if (!message.contains(KEY_DATA)) {
-        return QByteArray();
+    if (webChannel->d_func()->transports.isEmpty()) {
+        qWarning("QWebChannel is not connected to any transports, cannot send messages.");
+        return;
     }
 
-    const QJsonObject &payload = message.value(KEY_DATA).toObject();
-    if (!payload.contains(KEY_TYPE)) {
-        return QByteArray();
+    foreach (QWebChannelAbstractTransport *transport, webChannel->d_func()->transports) {
+        transport->sendMessage(message);
+    }
+}
+
+void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannelAbstractTransport *transport)
+{
+    if (!message.contains(KEY_TYPE)) {
+        qWarning("JSON message object is missing the type property: %s", QJsonDocument(message).toJson().constData());
+        return;
     }
 
-    const Type type = toType(payload.value(KEY_TYPE));
+    const MessageType type = toType(message.value(KEY_TYPE));
     if (type == TypeIdle) {
         setClientIsIdle(true);
-        return QByteArray();
     } else if (type == TypeInit) {
         if (!blockUpdates) {
             initializeClients();
         } else {
             pendingInit = true;
         }
-        return QByteArray();
     } else if (type == TypeDebug) {
         static QTextStream out(stdout);
-        out << "DEBUG: " << payload.value(KEY_MESSAGE).toString() << endl;
-        return QByteArray();
-    } else if (payload.contains(KEY_OBJECT)) {
-        const QString &objectName = payload.value(KEY_OBJECT).toString();
+        out << "DEBUG: " << message.value(KEY_DATA).toString() << endl;
+    } else if (message.contains(KEY_OBJECT)) {
+        const QString &objectName = message.value(KEY_OBJECT).toString();
         QObject *object = registeredObjects.value(objectName);
         if (!object) {
             qWarning() << "Unknown object encountered" << objectName;
-            return QByteArray();
+            return;
         }
 
         if (type == TypeInvokeMethod) {
-            return invokeMethod(object, payload.value(KEY_METHOD).toInt(-1), payload.value(KEY_ARGS).toArray(), message.value(KEY_ID));
+            QJsonObject response;
+            response[KEY_TYPE] = TypeResponse;
+            response[KEY_ID] = message.value(KEY_ID);
+            response[KEY_DATA] = invokeMethod(object, message.value(KEY_METHOD).toInt(-1), message.value(KEY_ARGS).toArray());
+            transport->sendMessage(response);
         } else if (type == TypeConnectToSignal) {
-            signalHandler.connectTo(object, payload.value(KEY_SIGNAL).toInt(-1));
-            return QByteArray();
+            signalHandler.connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeDisconnectFromSignal) {
-            signalHandler.disconnectFrom(object, payload.value(KEY_SIGNAL).toInt(-1));
-            return QByteArray();
+            signalHandler.disconnectFrom(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeSetProperty) {
-            const int propertyIdx = payload.value(KEY_PROPERTY).toInt(-1);
+            const int propertyIdx = message.value(KEY_PROPERTY).toInt(-1);
             QMetaProperty property = object->metaObject()->property(propertyIdx);
             if (!property.isValid()) {
-                qWarning() << "Cannot set unknown property" << payload.value(KEY_PROPERTY) << "of object" << objectName;
-                return QByteArray();
-            } else if (!object->metaObject()->property(propertyIdx).write(object, payload.value(KEY_VALUE).toVariant())) {
-                qWarning() << "Could not write value " << payload.value(KEY_VALUE)
+                qWarning() << "Cannot set unknown property" << message.value(KEY_PROPERTY) << "of object" << objectName;
+            } else if (!object->metaObject()->property(propertyIdx).write(object, message.value(KEY_VALUE).toVariant())) {
+                qWarning() << "Could not write value " << message.value(KEY_VALUE)
                            << "to property" << property.name() << "of object" << objectName;
-                return QByteArray();
             }
-            return QByteArray();
         }
-    }
-    return QByteArray();
-}
-
-void QMetaObjectPublisher::handleMessage(const QString &message)
-{
-    QWebChannelAbstractTransport *transport = qobject_cast<QWebChannelAbstractTransport*>(sender());
-    Q_ASSERT(transport);
-
-    const QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
-    if (!doc.isObject()) {
-        return;
-    }
-    const QByteArray &response = handleRequest(doc.object());
-    if (!response.isEmpty()) {
-        transport->sendTextMessage(QString::fromUtf8(response));
     }
 }
 

@@ -47,6 +47,7 @@
 
 QT_BEGIN_NAMESPACE
 
+class QJsonObject;
 class Q_WEBCHANNEL_EXPORT QWebChannelAbstractTransport : public QObject
 {
     Q_OBJECT
@@ -58,13 +59,13 @@ public Q_SLOTS:
     /**
      * Send a text @p message to the remote client.
      */
-    virtual void sendTextMessage(const QString &message) = 0;
+    virtual void sendMessage(const QJsonObject &message) = 0;
 
 Q_SIGNALS:
     /**
      * Emitted when a new text message was received from the remote client.
      */
-    void textMessageReceived(const QString &message);
+    void messageReceived(const QJsonObject &message, QWebChannelAbstractTransport *transport);
 };
 
 QT_END_NAMESPACE

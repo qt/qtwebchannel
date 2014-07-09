@@ -41,6 +41,10 @@
 
 #include "websockettransport.h"
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QDebug>
+
 #include <QtWebSockets/QWebSocket>
 
 /*!
@@ -66,9 +70,25 @@ WebSocketTransport::~WebSocketTransport()
 
 }
 
-void WebSocketTransport::sendTextMessage(const QString &message)
+void WebSocketTransport::sendMessage(const QJsonObject &message)
 {
-    m_socket->sendTextMessage(message);
+    QJsonDocument doc(message);
+    m_socket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+}
+
+void WebSocketTransport::textMessageReceived(const QString &messageData)
+{
+    QJsonParseError error;
+    QJsonDocument message = QJsonDocument::fromJson(messageData.toUtf8(), &error);
+    if (error.error) {
+        qWarning() << "Failed to parse text message as JSON object:" << messageData
+                   << "Error is:" << error.errorString();
+        return;
+    } else if (!message.isObject()) {
+        qWarning() << "Received JSON message that is not an object: " << messageData;
+        return;
+    }
+    emit messageReceived(message.object(), this);
 }
 
 QT_END_NAMESPACE
