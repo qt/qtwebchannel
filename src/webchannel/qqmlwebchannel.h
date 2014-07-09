@@ -89,9 +89,9 @@ private:
     static void transports_clear(QQmlListProperty<QObject> *prop);
 };
 
+QT_END_NAMESPACE
+
 QML_DECLARE_TYPE( QQmlWebChannel )
 QML_DECLARE_TYPEINFO( QQmlWebChannel, QML_HAS_ATTACHED_PROPERTIES )
-
-QT_END_NAMESPACE
 
 #endif // QQMLWEBCHANNEL_H

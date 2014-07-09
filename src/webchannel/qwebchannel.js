@@ -52,9 +52,12 @@ var QWebChannelMessageTypes = {
     connectToSignal: 7,
     disconnectFromSignal: 8,
     setProperty: 9,
+    response: 10,
 };
 
-var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
+// TODO: always expect an initialized transport object with a defined interface
+// to be passed in, remove automagic WebSocket code
+var QWebChannel = function(baseUrlOrSocket, initCallback)
 {
     var channel = this;
     this.send = function(data)
@@ -64,33 +67,115 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         }
         channel.socket.send(data);
     }
-    this.messageReceived = function(message)
+    this.onMessageReceived = function(message)
     {
-        var jsonData = JSON.parse(message.data);
-        if (jsonData.id === undefined) {
-            console.error("invalid message received:", message.data);
-            return;
+        var data = message.data;
+        if (typeof data === "string") {
+            data = JSON.parse(data);
         }
-        if (jsonData.data === undefined) {
-            jsonData.data = {};
-        }
-        if (jsonData.response) {
-            channel.execCallbacks[jsonData.id](jsonData.data);
-            delete channel.execCallbacks[jsonData.id];
-        } else if (channel.subscriptions[jsonData.id]) {
-            channel.subscriptions[jsonData.id].forEach(function(callback) {
-                (callback)(jsonData.data); }
-            );
+        switch (data.type) {
+            case QWebChannelMessageTypes.signal:
+                channel.handleSignal(data);
+                break;
+            case QWebChannelMessageTypes.response:
+                channel.handleResponse(data);
+                break;
+            case QWebChannelMessageTypes.propertyUpdate:
+                channel.handlePropertyUpdate(data);
+                break;
+            case QWebChannelMessageTypes.init:
+                channel.handleInit(data);
+                break;
+            default:
+                console.error("invalid message received:", message.data);
+                break;
         }
     }
 
-    this.initialized = function()
+    this.execCallbacks = {};
+    this.execId = 0;
+    this.exec = function(data, callback)
     {
-        if (rawChannel) {
-            initCallback(channel);
-        } else {
-            channel.initMetaObjectPublisher(initCallback);
+        if (!callback) {
+            // if no callback is given, send directly
+            channel.send(data);
+            return;
         }
+        if (channel.execId === Number.MAX_VALUE) {
+            // wrap
+            channel.execId = Number.MIN_VALUE;
+        }
+        if (data.hasOwnProperty("id")) {
+            console.error("Cannot exec message with property id: " + JSON.stringify(data));
+            return;
+        }
+        data.id = channel.execId++;
+        channel.execCallbacks[data.id] = callback;
+        channel.send(data);
+    };
+
+    this.objects = {};
+
+    this.handleSignal = function(message)
+    {
+        var object = channel.objects[message.object];
+        if (object) {
+            object.signalEmitted(message.signal, message.args);
+        } else {
+            console.warn("Unhandled signal: " + message.object + "::" + message.signal);
+        }
+    }
+
+    this.handleResponse = function(message)
+    {
+        if (!message.hasOwnProperty("id")) {
+            console.error("Invalid response message received: ", JSON.stringify(message));
+            return;
+        }
+        channel.execCallbacks[message.id](message.data);
+        delete channel.execCallbacks[message.id];
+    }
+
+    this.handlePropertyUpdate = function(message)
+    {
+        for (var i in message.data) {
+            var data = message.data[i];
+            var object = channel.objects[data.object];
+            if (object) {
+                object.propertyUpdate(data.signals, data.properties);
+            } else {
+                console.warn("Unhandled property update: " + data.object + "::" + data.signal);
+            }
+        }
+        setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+    }
+
+    // prevent multiple initialization which might happen with multiple webchannel clients.
+    this.initialized = false;
+    this.handleInit = function(message)
+    {
+        if (channel.initialized) {
+            return;
+        }
+        channel.initialized = true;
+        for (var objectName in message.data) {
+            var data = message.data[objectName];
+            var object = new QObject(objectName, data, channel);
+        }
+        if (initCallback) {
+            initCallback(channel);
+        }
+        setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+    }
+
+    this.debug = function(message)
+    {
+        channel.send({type: QWebChannelMessageTypes.debug, data: message});
+    };
+
+    this.onSocketReady = function(doneCallback)
+    {
+        channel.exec({type: QWebChannelMessageTypes.init});
     }
 
     if (typeof baseUrlOrSocket === 'object') {
@@ -99,13 +184,13 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         {
             channel.socket.postMessage(data);
         }
-        this.socket.onmessage = this.messageReceived
-        setTimeout(this.initialized, 0);
+        this.socket.onmessage = this.onMessageReceived
+        this.onSocketReady();
     } else {
         ///TODO: use QWebChannel protocol, once custom protcols are supported by QtWebSocket
         this.socket = new WebSocket(baseUrlOrSocket/*, "QWebChannel" */);
 
-        this.socket.onopen = this.initialized
+        this.socket.onopen = this.onSocketReady
         this.socket.onclose = function()
         {
             console.error("web channel closed");
@@ -114,96 +199,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         {
             console.error("web channel error: " + error);
         };
-        this.socket.onmessage = this.messageReceived
-    }
-
-    this.subscriptions = {};
-    this.subscribe = function(id, callback)
-    {
-        if (channel.subscriptions[id]) {
-            channel.subscriptions[id].push(callback);
-        } else {
-            channel.subscriptions[id] = [callback];
-        }
-    };
-
-    this.execCallbacks = {};
-    this.execId = 0;
-    this.exec = function(data, callback)
-    {
-        if (!callback) {
-            // if no callback is given, send directly
-            channel.send({data: data});
-            return;
-        }
-        if (channel.execId === Number.MAX_VALUE) {
-            // wrap
-            channel.execId = Number.MIN_VALUE;
-        }
-        var id = channel.execId++;
-        channel.execCallbacks[id] = callback;
-        channel.send({"id": id, "data": data});
-    };
-
-    this.objects = {};
-
-    this.initMetaObjectPublisher = function(doneCallback)
-    {
-        // prevent multiple initialization which might happen with multiple webchannel clients.
-        var initialized = false;
-
-        channel.subscribe(
-            QWebChannelMessageTypes.signal,
-            function(payload) {
-                var object = channel.objects[payload.object];
-                if (object) {
-                    object.signalEmitted(payload.signal, payload.args);
-                } else {
-                    console.warn("Unhandled signal: " + payload.object + "::" + payload.signal);
-                }
-            }
-        );
-
-        channel.subscribe(
-            QWebChannelMessageTypes.propertyUpdate,
-            function(payload) {
-                for (var i in payload) {
-                    var data = payload[i];
-                    var object = channel.objects[data.object];
-                    if (object) {
-                        object.propertyUpdate(data.signals, data.properties);
-                    } else {
-                        console.warn("Unhandled property update: " + data.object + "::" + data.signal);
-                    }
-                }
-                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
-            }
-        );
-
-        channel.subscribe(
-            QWebChannelMessageTypes.init,
-            function(payload) {
-                if (initialized) {
-                    return;
-                }
-                initialized = true;
-                for (var objectName in payload) {
-                    var data = payload[objectName];
-                    var object = new QObject(objectName, data, channel);
-                }
-                if (doneCallback) {
-                    doneCallback(channel);
-                }
-                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
-            }
-        );
-
-        channel.debug = function(message)
-        {
-            channel.send({"data" : {"type" : QWebChannelMessageTypes.debug, "message" : message}});
-        };
-
-        channel.exec({type: QWebChannelMessageTypes.init});
+        this.socket.onmessage = this.onMessageReceived
     }
 };
 

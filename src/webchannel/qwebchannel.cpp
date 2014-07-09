@@ -50,20 +50,6 @@
 
 QT_BEGIN_NAMESPACE
 
-QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response)
-{
-    QJsonObject obj;
-    if (response) {
-        obj[QStringLiteral("response")] = true;
-    }
-    obj[QStringLiteral("id")] = id;
-    if (!data.isNull()) {
-        obj[QStringLiteral("data")] = data;
-    }
-    QJsonDocument doc(obj);
-    return doc.toJson(QJsonDocument::Compact);
-}
-
 void QWebChannelPrivate::_q_transportDestroyed(QObject *object)
 {
     const int idx = transports.indexOf(static_cast<QWebChannelAbstractTransport*>(object));
@@ -144,7 +130,7 @@ void QWebChannel::connectTo(QWebChannelAbstractTransport *transport)
     Q_ASSERT(transport);
     if (!d->transports.contains(transport)) {
         d->transports << transport;
-        connect(transport, &QWebChannelAbstractTransport::textMessageReceived,
+        connect(transport, &QWebChannelAbstractTransport::messageReceived,
                 d->publisher, &QMetaObjectPublisher::handleMessage,
                 Qt::UniqueConnection);
         connect(transport, SIGNAL(destroyed(QObject*)),
@@ -159,21 +145,6 @@ void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
     if (idx != -1) {
         disconnect(transport, 0, this, 0);
         d->transports.remove(idx);
-    }
-}
-
-void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) const
-{
-    Q_D(const QWebChannel);
-    if (d->transports.isEmpty()) {
-        qWarning("QWebChannel is not connected to any transports, cannot send messages.");
-        return;
-    }
-
-    const QByteArray &message = generateJSONMessage(id, data, false);
-    const QString &messageText = QString::fromUtf8(message);
-    foreach (QWebChannelAbstractTransport *transport, d->transports) {
-        transport->sendTextMessage(messageText);
     }
 }
 
