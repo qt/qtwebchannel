@@ -97,7 +97,7 @@ public Q_SLOTS:
     void connectTo(QWebChannelAbstractTransport *transport);
     void disconnectFrom(QWebChannelAbstractTransport *transport);
 
-    void sendMessage(const QJsonValue &id, const QJsonValue &data = QJsonValue()) const;
+    void sendMessage(int type, const QJsonValue &data = QJsonValue()) const;
 
 private:
     Q_DECLARE_PRIVATE(QWebChannel)

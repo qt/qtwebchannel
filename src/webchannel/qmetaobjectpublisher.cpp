@@ -390,7 +390,7 @@ QByteArray QMetaObjectPublisher::invokeMethod(QObject *const object, const int m
                   arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
 
     // and send the return value to the client
-    return generateJSONMessage(id, wrapResult(returnValue), true);
+    return generateJSONMessage(TypeInvokeMethod, wrapResult(returnValue), id, true);
 }
 
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
@@ -493,11 +493,11 @@ QByteArray QMetaObjectPublisher::handleRequest(const QJsonObject &message)
     }
 
     const QJsonObject &payload = message.value(KEY_DATA).toObject();
-    if (!payload.contains(KEY_TYPE)) {
+    if (!message.contains(KEY_TYPE)) {
         return QByteArray();
     }
 
-    const Type type = toType(payload.value(KEY_TYPE));
+    const Type type = toType(message.value(KEY_TYPE));
     if (type == TypeIdle) {
         setClientIsIdle(true);
         return QByteArray();

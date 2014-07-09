@@ -50,13 +50,19 @@
 
 QT_BEGIN_NAMESPACE
 
-QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response)
+QByteArray generateJSONMessage(int type, const QJsonValue &data, const QJsonValue &id, bool response)
 {
     QJsonObject obj;
-    if (response) {
-        obj[QStringLiteral("response")] = true;
+    obj[QStringLiteral("type")] = type;
+
+    if (!id.isUndefined() && !id.isNull()) {
+        obj[QStringLiteral("id")] = id;
+
+        if (response) {
+            obj[QStringLiteral("response")] = true;
+        }
     }
-    obj[QStringLiteral("id")] = id;
+
     if (!data.isNull()) {
         obj[QStringLiteral("data")] = data;
     }
@@ -162,7 +168,7 @@ void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
     }
 }
 
-void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) const
+void QWebChannel::sendMessage(int type, const QJsonValue &data) const
 {
     Q_D(const QWebChannel);
     if (d->transports.isEmpty()) {
@@ -170,7 +176,7 @@ void QWebChannel::sendMessage(const QJsonValue &id, const QJsonValue &data) cons
         return;
     }
 
-    const QByteArray &message = generateJSONMessage(id, data, false);
+    const QByteArray &message = generateJSONMessage(type, data, QJsonValue(), false);
     const QString &messageText = QString::fromUtf8(message);
     foreach (QWebChannelAbstractTransport *transport, d->transports) {
         transport->sendTextMessage(messageText);

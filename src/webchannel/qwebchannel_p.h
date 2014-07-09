@@ -53,7 +53,7 @@ class QJsonValue;
 class QWebChannelAbstractTransport;
 class QMetaObjectPublisher;
 
-Q_WEBCHANNEL_EXPORT QByteArray generateJSONMessage(const QJsonValue &id, const QJsonValue &data, bool response);
+Q_WEBCHANNEL_EXPORT QByteArray generateJSONMessage(int type, const QJsonValue &data, const QJsonValue &id, bool response);
 
 class Q_WEBCHANNEL_EXPORT QWebChannelPrivate : public QObjectPrivate
 {

@@ -67,7 +67,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
     this.messageReceived = function(message)
     {
         var jsonData = JSON.parse(message.data);
-        if (jsonData.id === undefined) {
+        if (jsonData.type === undefined) {
             console.error("invalid message received:", message.data);
             return;
         }
@@ -75,10 +75,14 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
             jsonData.data = {};
         }
         if (jsonData.response) {
+            if (jsonData.id === undefined) {
+                console.error("invalid message received:", message.data);
+                return;
+            }
             channel.execCallbacks[jsonData.id](jsonData.data);
             delete channel.execCallbacks[jsonData.id];
-        } else if (channel.subscriptions[jsonData.id]) {
-            channel.subscriptions[jsonData.id].forEach(function(callback) {
+        } else if (channel.subscriptions[jsonData.type]) {
+            channel.subscriptions[jsonData.type].forEach(function(callback) {
                 (callback)(jsonData.data); }
             );
         }
@@ -129,11 +133,14 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
 
     this.execCallbacks = {};
     this.execId = 0;
-    this.exec = function(data, callback)
+    this.exec = function(type, data, callback)
     {
+        if (typeof data === "undefined") {
+            data = {};
+        }
         if (!callback) {
             // if no callback is given, send directly
-            channel.send({data: data});
+            channel.send({"type": type, "data": data});
             return;
         }
         if (channel.execId === Number.MAX_VALUE) {
@@ -142,7 +149,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
         }
         var id = channel.execId++;
         channel.execCallbacks[id] = callback;
-        channel.send({"id": id, "data": data});
+        channel.send({"type": type, "id": id, "data": data});
     };
 
     this.objects = {};
@@ -176,7 +183,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                         console.warn("Unhandled property update: " + data.object + "::" + data.signal);
                     }
                 }
-                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+                setTimeout(function() { channel.exec(QWebChannelMessageTypes.idle); }, 0);
             }
         );
 
@@ -194,7 +201,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
                 if (doneCallback) {
                     doneCallback(channel);
                 }
-                setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+                setTimeout(function() { channel.exec(QWebChannelMessageTypes.idle); }, 0);
             }
         );
 
@@ -203,7 +210,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback, rawChannel)
             channel.send({"data" : {"type" : QWebChannelMessageTypes.debug, "message" : message}});
         };
 
-        channel.exec({type: QWebChannelMessageTypes.init});
+        channel.exec(QWebChannelMessageTypes.init);
     }
 };
 
@@ -269,10 +276,9 @@ function QObject(name, data, webChannel)
 
                 if (!isPropertyNotifySignal) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
-                    webChannel.exec({
-                        type: QWebChannelMessageTypes.connectToSignal,
-                        object: object.__id__,
-                        signal: signalIndex
+                    webChannel.exec(QWebChannelMessageTypes.connectToSignal, {
+                        "object": object.__id__,
+                        "signal": signalIndex
                     });
                 }
             },
@@ -290,10 +296,9 @@ function QObject(name, data, webChannel)
                 object.__objectSignals__[signalIndex].splice(idx, 1);
                 if (!isPropertyNotifySignal && object.__objectSignals__[signalIndex].length === 0) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
-                    webChannel.exec({
-                        type: QWebChannelMessageTypes.disconnectFromSignal,
-                        object: object.__id__,
-                        signal: signalIndex
+                    webChannel.exec(QWebChannelMessageTypes.disconnectFromSignal, {
+                        "object": object.__id__,
+                        "signal": signalIndex
                     });
                 }
             }
@@ -347,8 +352,7 @@ function QObject(name, data, webChannel)
                     args.push(arguments[i]);
             }
 
-            webChannel.exec({
-                "type": QWebChannelMessageTypes.invokeMethod,
+            webChannel.exec(QWebChannelMessageTypes.invokeMethod, {
                 "object": object.__id__,
                 "method": methodIdx,
                 "args": args
@@ -382,8 +386,7 @@ function QObject(name, data, webChannel)
                 return;
             }
             object.__propertyCache__[propertyIndex] = value;
-            webChannel.exec({
-                "type": QWebChannelMessageTypes.setProperty,
+            webChannel.exec(QWebChannelMessageTypes.setProperty, {
                 "object": object.__id__,
                 "property": propertyIndex,
                 "value": value
