@@ -41,6 +41,10 @@
 
 #include "testtransport.h"
 
+#include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
+
 QT_BEGIN_NAMESPACE
 
 TestTransport::TestTransport(QObject *parent)
@@ -49,9 +53,25 @@ TestTransport::TestTransport(QObject *parent)
 
 }
 
-void TestTransport::sendTextMessage(const QString &message)
+void TestTransport::sendMessage(const QJsonObject &message)
 {
-    emit sendTextMessageRequested(message);
+    emit sendMessageRequested(message);
+}
+
+void TestTransport::receiveMessage(const QString &message)
+{
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &error);
+    if (error.error) {
+        qWarning("Failed to parse JSON message: %s\nError is: %s",
+                 qPrintable(message), qPrintable(error.errorString()));
+        return;
+    } else if (!doc.isObject()) {
+        qWarning("Received JSON message that is not an object: %s",
+                 qPrintable(message));
+        return;
+    }
+    emit messageReceived(doc.object(), this);
 }
 
 QT_END_NAMESPACE

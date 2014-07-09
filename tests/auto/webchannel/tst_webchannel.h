@@ -57,7 +57,7 @@ public:
     ~DummyTransport() {};
 
 public slots:
-    void sendTextMessage(const QString &/*message*/) Q_DECL_OVERRIDE
+    void sendMessage(const QJsonObject &/*message*/) Q_DECL_OVERRIDE
     {
     }
 };

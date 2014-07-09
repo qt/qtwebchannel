@@ -68,15 +68,17 @@ Item {
                 console.log("client posts message: ", message);
             }
             clientMessages.push(message);
-            serverTransport.textMessageReceived(message);
+            serverTransport.receiveMessage(message);
         }
 
         Component.onCompleted: {
-            serverTransport.sendTextMessageRequested.connect(function(message) {
+            serverTransport.sendMessageRequested.connect(function(message) {
                 if (debug) {
                     console.log("client received message: ", message);
                 }
-                onmessage({data:message});
+                if (onmessage) {
+                    onmessage({data:message});
+                }
             });
         }
     }
@@ -128,8 +130,11 @@ Item {
     function awaitMessage()
     {
         var msg = awaitRawMessage()
+        if (debug) {
+          console.log("handling message: ", msg);
+        }
         if (!msg) {
-            return msg;
+            return false;
         }
         return JSON.parse(msg);
     }
@@ -138,17 +143,15 @@ Item {
     {
         var msg = awaitMessage();
         verify(msg);
-        verify(msg.data);
-        verify(msg.data.type);
-        compare(msg.data.type, JSClient.QWebChannelMessageTypes.init);
+        verify(msg.type);
+        compare(msg.type, JSClient.QWebChannelMessageTypes.init);
     }
 
     function awaitIdle()
     {
         var msg = awaitMessage();
         verify(msg);
-        verify(msg.data);
-        compare(msg.data.type, JSClient.QWebChannelMessageTypes.idle);
+        compare(msg.type, JSClient.QWebChannelMessageTypes.idle);
         verify(webChannel.clientIsIdle())
     }
 
@@ -158,8 +161,7 @@ Item {
         do {
             msg = awaitMessage();
             verify(msg);
-            verify(msg.data);
-        } while (msg.data.type === JSClient.QWebChannelMessageTypes.idle);
+        } while (msg.type === JSClient.QWebChannelMessageTypes.idle);
         return msg;
     }
 

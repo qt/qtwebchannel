@@ -54,7 +54,28 @@
 
 QT_BEGIN_NAMESPACE
 
+// NOTE: keep in sync with corresponding maps in qwebchannel.js and WebChannelTest.qml
+enum MessageType {
+    TypeInvalid = 0,
+
+    TYPES_FIRST_VALUE = 1,
+
+    TypeSignal = 1,
+    TypePropertyUpdate = 2,
+    TypeInit = 3,
+    TypeIdle = 4,
+    TypeDebug = 5,
+    TypeInvokeMethod = 6,
+    TypeConnectToSignal = 7,
+    TypeDisconnectFromSignal = 8,
+    TypeSetProperty = 9,
+    TypeResponse = 10,
+
+    TYPES_LAST_VALUE = 10
+};
+
 class QWebChannel;
+class QWebChannelAbstractTransport;
 class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
     Q_OBJECT
@@ -75,11 +96,9 @@ public:
     void registerObject(const QString &id, QObject *object);
 
     /**
-     * Handle the given WebChannel client request and potentially give a response.
-     *
-     * @return true if the request was handled, false otherwise.
+     * Send the given message to all known transports.
      */
-    QByteArray handleRequest(const QJsonObject &message);
+    void broadcastMessage(const QJsonObject &message) const;
 
     /**
      * Serialize the QMetaObject of @p object and return it in JSON form.
@@ -125,7 +144,7 @@ public:
      * The return value of the method invocation is then serialized and a response message
      * is returned.
      */
-    QByteArray invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args, const QJsonValue &id);
+    QJsonValue invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args);
 
     /**
      * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
@@ -166,7 +185,7 @@ public Q_SLOTS:
     /**
      * Parse the message as JSON and if it succeeds, call handleRequest with the obtained JSON object.
      */
-    void handleMessage(const QString &message);
+    void handleMessage(const QJsonObject &message, QWebChannelAbstractTransport *transport);
 
 protected:
     void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;

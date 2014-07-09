@@ -52,10 +52,12 @@ class TestTransport : public QWebChannelAbstractTransport
 public:
     explicit TestTransport(QObject *parent = 0);
 
-    virtual void sendTextMessage(const QString &message);
+    virtual void sendMessage(const QJsonObject &message) Q_DECL_OVERRIDE;
+
+    Q_INVOKABLE void receiveMessage(const QString &message);
 
 Q_SIGNALS:
-    void sendTextMessageRequested(const QString &message);
+    void sendMessageRequested(const QJsonObject &message);
 };
 
 QT_END_NAMESPACE
