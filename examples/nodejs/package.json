@@ -1,0 +1,13 @@
+{
+  "name": "QSON",
+  "description": "QSON JS API",
+  "author": "basysKom <info@basyskom.com>",
+  "version": "0.0.1",
+  "dependencies": {
+    "faye-websocket": "0.7.x"
+  },
+  "devDependencies": {
+    "mocha": "~1.16.1"
+  },
+  "engine": "node 0.10.x"
+}
