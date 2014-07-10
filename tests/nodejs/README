@@ -1,0 +1,13 @@
+This is a small NodeJS implementation on how to connect to a QWebChannel.
+
+It uses 'mocha' which is a testframework for nodejs. Of course this is not really
+a valid test, because it does no checks, nor is it an automated test.
+The test just sends a message to the standalone chat example.
+
+How to run it:
+
+- Install NodeJS (at least 0.10.x) (http://www.nodejs.org/download/)
+- go to tests/nodejs and execute "npm install". This sets up the nodeJS environment in this folder
+- ensure examples/standalone/standalone is running
+- execute the tests with "mocha test.js"
+- check (manually) if the chat dialog  received the message
