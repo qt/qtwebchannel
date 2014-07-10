@@ -1,5 +1,5 @@
 TEMPLATE = subdirs
 
 qtHaveModule(websockets) {
-    SUBDIRS += standalone
+    SUBDIRS += standalone nodejs
 }
