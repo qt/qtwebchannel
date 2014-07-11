@@ -15,3 +15,5 @@ FORMS += \
     dialog.ui
 
 DEFINES += "SOURCE_DIR=\"\\\""$$PWD"\\\"\""
+
+EXAMPLE_FILES += index.html
