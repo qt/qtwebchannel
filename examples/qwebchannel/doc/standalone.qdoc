@@ -39,56 +39,26 @@
 **
 ****************************************************************************/
 
-#include "websockettransport.h"
-
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QDebug>
-
-#include <QtWebSockets/QWebSocket>
-
 /*!
-    \brief QWebChannelAbstractSocket implementation that uses a QWebSocket internally.
+    \example standalone
+    \title Standalone Example
+    \ingroup qtwebchannel-examples
+    \image standalone-screenshot.png
+    \brief Shows how to use the QWebChannel C++ API to communicate with an external client.
 
-    The transport delegates all messages received over the QWebSocket over its
-    textMessageReceived signal. Analogously, all calls to sendTextMessage will
-    be send over the QWebSocket to the remote client.
+    The standalone example is a simple chat between a pure C++/Qt application and a remote HTML
+    client running in your default browser.
+
+    The C++ app sets up a QWebChannel and publishes a Dialog object over it.
+    For the remote client side, \c index.html is opened. Both show a dialog with the list of
+    received messages and an input box to send messages to the other end.
+
+    The Dialog emits the Dialog::sendText() signal when the user sents a message. The signal
+    automatically gets propagated to the HTML client. When the user enters a message on the HTML
+    side, Dialog::receiveText() is called.
+
+    All communication between the HTML client and the C++/Qt server is done over a WebSocket.
+    The C++ side instantiates a QWebSocketServer and wraps incoming QWebSocket connections
+    in WebSocketTransport objects, which implement QWebChannelAbstractTransport. These objects are
+    then connected to the QWebChannel instance.
 */
-
-QT_BEGIN_NAMESPACE
-
-WebSocketTransport::WebSocketTransport(QWebSocket *socket)
-: QWebChannelAbstractTransport(socket)
-, m_socket(socket)
-{
-    connect(socket, &QWebSocket::textMessageReceived,
-            this, &WebSocketTransport::textMessageReceived);
-}
-
-WebSocketTransport::~WebSocketTransport()
-{
-
-}
-
-void WebSocketTransport::sendMessage(const QJsonObject &message)
-{
-    QJsonDocument doc(message);
-    m_socket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
-}
-
-void WebSocketTransport::textMessageReceived(const QString &messageData)
-{
-    QJsonParseError error;
-    QJsonDocument message = QJsonDocument::fromJson(messageData.toUtf8(), &error);
-    if (error.error) {
-        qWarning() << "Failed to parse text message as JSON object:" << messageData
-                   << "Error is:" << error.errorString();
-        return;
-    } else if (!message.isObject()) {
-        qWarning() << "Received JSON message that is not an object: " << messageData;
-        return;
-    }
-    emit messageReceived(message.object(), this);
-}
-
-QT_END_NAMESPACE

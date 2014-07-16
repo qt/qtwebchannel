@@ -39,96 +39,70 @@
 **
 ****************************************************************************/
 
-#include "qwebchannel.h"
-
-#include <QApplication>
-#include <QDialog>
-#include <QVariantMap>
-#include <QDesktopServices>
-#include <QUrl>
-#include <QDebug>
-
-#include <QtWebSockets/QWebSocketServer>
-
-#include "websocketclientwrapper.h"
 #include "websockettransport.h"
 
-#include "ui_dialog.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QDebug>
 
-class Dialog : public QObject
+#include <QtWebSockets/QWebSocket>
+
+/*!
+    \brief QWebChannelAbstractSocket implementation that uses a QWebSocket internally.
+
+    The transport delegates all messages received over the QWebSocket over its
+    textMessageReceived signal. Analogously, all calls to sendTextMessage will
+    be send over the QWebSocket to the remote client.
+*/
+
+QT_BEGIN_NAMESPACE
+
+/*!
+    Construct the transport object and wrap the given socket.
+
+    The socket is also set as the parent of the transport object.
+*/
+WebSocketTransport::WebSocketTransport(QWebSocket *socket)
+: QWebChannelAbstractTransport(socket)
+, m_socket(socket)
 {
-    Q_OBJECT
-
-public:
-    explicit Dialog(QObject *parent = 0)
-        : QObject(parent)
-    {
-        ui.setupUi(&dialog);
-        dialog.show();
-
-        connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
-    }
-
-    void displayMessage(const QString &message)
-    {
-        ui.output->appendPlainText(message);
-    }
-
-signals:
-    void sendText(const QString &text);
-
-public slots:
-    void receiveText(const QString &text)
-    {
-        displayMessage(tr("Received message: %1").arg(text));
-    }
-
-private slots:
-    void clicked()
-    {
-        const QString text = ui.input->text();
-
-        if (text.isEmpty()) {
-            return;
-        }
-
-        emit sendText(text);
-        displayMessage(tr("Sent message: %1").arg(text));
-
-        ui.input->clear();
-    }
-
-private:
-    QDialog dialog;
-    Ui::Dialog ui;
-};
-
-int main(int argc, char** argv)
-{
-    QApplication app(argc, argv);
-
-    QWebChannel channel;
-    QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
-    if (!server.listen(QHostAddress::LocalHost)) {
-        qFatal("Failed to open web socket server.");
-        return 1;
-    }
-
-    WebSocketClientWrapper clientWrapper(&server);
-    QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
-                     &channel, &QWebChannel::connectTo);
-
-    Dialog dialog;
-
-    channel.registerObject(QStringLiteral("dialog"), &dialog);
-
-    QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
-    url.setQuery(QStringLiteral("webChannelBaseUrl=") + server.serverUrl().toString());
-    QDesktopServices::openUrl(url);
-
-    dialog.displayMessage(QObject::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
-
-    return app.exec();
+    connect(socket, &QWebSocket::textMessageReceived,
+            this, &WebSocketTransport::textMessageReceived);
 }
 
-#include "main.moc"
+/*!
+    Destroys the WebSocketTransport.
+*/
+WebSocketTransport::~WebSocketTransport()
+{
+
+}
+
+/*!
+    Serialize the JSON message and send it as a text message via the WebSocket to the client.
+*/
+void WebSocketTransport::sendMessage(const QJsonObject &message)
+{
+    QJsonDocument doc(message);
+    m_socket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+}
+
+/*!
+    Deserialize the stringified JSON messageData and emit messageReceived.
+*/
+void WebSocketTransport::textMessageReceived(const QString &messageData)
+{
+    QJsonParseError error;
+    QJsonDocument message = QJsonDocument::fromJson(messageData.toUtf8(), &error);
+    if (error.error) {
+        qWarning() << "Failed to parse text message as JSON object:" << messageData
+                   << "Error is:" << error.errorString();
+        return;
+    } else if (!message.isObject()) {
+        qWarning() << "Received JSON message that is not an object: " << messageData;
+        return;
+    }
+    emit messageReceived(message.object(), this);
+}
+
+QT_END_NAMESPACE
