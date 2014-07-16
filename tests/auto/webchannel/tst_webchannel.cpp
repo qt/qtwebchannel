@@ -244,6 +244,14 @@ void TestWebChannel::testInvokeMethodConversion()
     }
 }
 
+void TestWebChannel::testDisconnect()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+    channel.disconnectFrom(m_dummyTransport);
+    m_dummyTransport->emitMessageReceived(QJsonObject());
+}
+
 static QHash<QString, QObject*> createObjects(QObject *parent)
 {
     const int num = 100;

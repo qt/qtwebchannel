@@ -56,6 +56,11 @@ public:
     {}
     ~DummyTransport() {};
 
+    void emitMessageReceived(const QJsonObject &message)
+    {
+        emit messageReceived(message, this);
+    }
+
 public slots:
     void sendMessage(const QJsonObject &/*message*/) Q_DECL_OVERRIDE
     {
@@ -217,6 +222,7 @@ private slots:
     void testRegisterObjects();
     void testInfoForObject();
     void testInvokeMethodConversion();
+    void testDisconnect();
 
     void benchClassInfo();
     void benchInitializeClients();
