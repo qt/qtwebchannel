@@ -43,7 +43,7 @@
 #define QWEBCHANNELABSTRACTTRANSPORT_H
 
 #include <QObject>
-#include <qwebchannelglobal.h>
+#include <QtWebChannel/qwebchannelglobal.h>
 
 QT_BEGIN_NAMESPACE
 
