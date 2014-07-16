@@ -57,6 +57,11 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    Construct the transport object and wrap the given socket.
+
+    The socket is also set as the parent of the transport object.
+*/
 WebSocketTransport::WebSocketTransport(QWebSocket *socket)
 : QWebChannelAbstractTransport(socket)
 , m_socket(socket)
@@ -65,17 +70,26 @@ WebSocketTransport::WebSocketTransport(QWebSocket *socket)
             this, &WebSocketTransport::textMessageReceived);
 }
 
+/*!
+    Destroys the WebSocketTransport.
+*/
 WebSocketTransport::~WebSocketTransport()
 {
 
 }
 
+/*!
+    Serialize the JSON message and send it as a text message via the WebSocket to the client.
+*/
 void WebSocketTransport::sendMessage(const QJsonObject &message)
 {
     QJsonDocument doc(message);
     m_socket->sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
 }
 
+/*!
+    Deserialize the stringified JSON messageData and emit messageReceived.
+*/
 void WebSocketTransport::textMessageReceived(const QString &messageData)
 {
     QJsonParseError error;

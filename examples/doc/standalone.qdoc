@@ -39,57 +39,25 @@
 **
 ****************************************************************************/
 
-#include "qwebchannelabstracttransport.h"
-
-QT_BEGIN_NAMESPACE
-
 /*!
-    \class QWebChannelAbstractTransport
+    \example standalone
+    \title Standalone Example
+    \ingroup qtwebchannel-examples
+    \brief Shows how to use the QWebChannel C++ API to communicate with an external client.
 
-    \inmodule QtWebChannel
-    \brief Communication channel between the C++ QWebChannel server and a HTML/JS client.
-    \since 5.4
+    The standalone example is a simple chat between a pure C++/Qt application and a remote HTML
+    client running in your default browser.
 
-    Users of the QWebChannel must implement this interface and connect instances of it
-    to the QWebChannel server for every client that should be connected to the QWebChannel.
-    The {Standalone Example} shows how this can be done using QtWebSockets. QtWebKit implements
-    this interface internally and uses the native WebKit IPC mechanism to transmit messages
-    to HTML clients.
+    The C++ app sets up a QWebChannel and publishes a Dialog object over it.
+    For the remote client side, \c index.html is opened. Both show a dialog with the list of
+    received messages and an input box to send messages to the other end.
 
-    \note The JSON message protocol is considered internal and might change over time.
+    The Dialog emits the Dialog::sendText() signal when the user sents a message. The signal
+    automatically gets propagated to the HTML client. When the user enters a message on the HTML
+    side, Dialog::receiveText() is called.
 
-    \sa {Standalone Example}
+    All communication between the HTML client and the C++/Qt server is done over a WebSocket.
+    The C++ side instantiates a QWebSocketServer and wraps incoming QWebSocket connections
+    in WebSocketTransport objects, which implement QWebChannelAbstractTransport. These objects are
+    then connected to the QWebChannel.
 */
-
-/*!
-    \fn QWebChannelAbstractTransport::messageReceived(const QJsonObject &message, QWebChannelAbstractTransport *transport)
-
-    This signal must be emitted when a new JSON \a message was received from the remote client. The
-    \a transport argument should be set to this transport object.
-*/
-
-/*!
-    \fn QWebChannelAbstractTransport::sendMessage(const QJsonObject &message)
-
-    Send a JSON \a message to the remote client. An implementation would serialize the message and
-    transmit it to the remote JavaScript client.
-*/
-
-/*!
-    Constructs a transport object with the given \a parent.
-*/
-QWebChannelAbstractTransport::QWebChannelAbstractTransport(QObject *parent)
-: QObject(parent)
-{
-
-}
-
-/*!
-    Destroys the transport object.
-*/
-QWebChannelAbstractTransport::~QWebChannelAbstractTransport()
-{
-
-}
-
-QT_END_NAMESPACE

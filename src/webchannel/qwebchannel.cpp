@@ -50,6 +50,37 @@
 
 QT_BEGIN_NAMESPACE
 
+/*!
+    \class QWebChannel
+
+    \inmodule QtWebChannel
+    \brief Expose QObjects to remote HTML clients.
+    \since 5.4
+
+    The QWebChannel fills the gap between C++ applications and HTML/JavaScript
+    applications. By publishing a QObject derived object to a QWebChannel and
+    using \l{qtwebchannel-javascript.html}{\c qwebchannel.js} on the HTML side, one can transparently access
+    properties and public slots and methods of the QObject. No manual message
+    passing and serialization of data is required, property updates and signal emission
+    on the C++ side get automatically transmitted to the potentially remotely running HTML clients.
+    There a JavaScript object for any published C++ QObject is available with an intuitive API
+    mirrored after the C++ object's API.
+
+    The C++ QWebChannel API makes it possible to talk to any HTML client, which could run on a local
+    or even remote machine. The only limitation is that the HTML client supports the JavaScript
+    features used by \l{qtwebchannel-javascript.html}{\c qwebchannel.js}. As such, one can interact
+    with basically any modern HTML browser or standalone JavaScript runtime, such as node.js.
+
+    There also exists a declarative WebChannel API.
+
+    \sa {Standalone Example}
+*/
+
+/*!
+    \internal
+
+    Remove a destroyed transport object from the list of known transports.
+*/
 void QWebChannelPrivate::_q_transportDestroyed(QObject *object)
 {
     const int idx = transports.indexOf(static_cast<QWebChannelAbstractTransport*>(object));
@@ -58,6 +89,11 @@ void QWebChannelPrivate::_q_transportDestroyed(QObject *object)
     }
 }
 
+/*!
+    \internal
+
+    Shared code to initialize the QWebChannel from both constructors.
+*/
 void QWebChannelPrivate::init()
 {
     Q_Q(QWebChannel);
@@ -66,6 +102,13 @@ void QWebChannelPrivate::init()
                      q, SIGNAL(blockUpdatesChanged(bool)));
 }
 
+/*!
+    Constructs the QWebChannel object with the given \a parent.
+
+    Note that a QWebChannel is only fully operational once you connect it to a
+    QWebChannelAbstractTransport. The HTML clients also need to be setup appropriately
+    using \l{qtwebchannel-javascript.html}{\c qwebchannel.js}.
+*/
 QWebChannel::QWebChannel(QObject *parent)
 : QObject(*(new QWebChannelPrivate), parent)
 {
@@ -73,6 +116,13 @@ QWebChannel::QWebChannel(QObject *parent)
     d->init();
 }
 
+/*!
+    \internal
+
+    Construct a QWebChannel from an ancestor class with the given \a parent.
+
+    \sa QQmlWebChannel
+*/
 QWebChannel::QWebChannel(QWebChannelPrivate &dd, QObject *parent)
 : QObject(dd, parent)
 {
@@ -80,10 +130,23 @@ QWebChannel::QWebChannel(QWebChannelPrivate &dd, QObject *parent)
     d->init();
 }
 
+/*!
+    Destroys the QWebChannel.
+*/
 QWebChannel::~QWebChannel()
 {
 }
 
+/*!
+    Register a group of objects to the QWebChannel.
+
+    The properties, signals and public methods of the objects are published to the remote clients.
+    There, an object with the identifier used as key in the \a objects map is then constructed.
+
+    \note A current limitation is that objects must be registered before any client is initialized.
+
+    \sa QWebChannel::registerObject(), QWebChannel::deregisterObject(), QWebChannel::registeredObjects()
+*/
 void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
 {
     Q_D(QWebChannel);
@@ -93,24 +156,56 @@ void QWebChannel::registerObjects(const QHash< QString, QObject * > &objects)
     }
 }
 
+/*!
+    Returns the map of registered objects that are published to remote clients.
+
+    \sa QWebChannel::registerObjects(), QWebChannel::registerObject(), QWebChannel::deregisterObject()
+*/
 QHash<QString, QObject *> QWebChannel::registeredObjects() const
 {
     Q_D(const QWebChannel);
     return d->publisher->registeredObjects;
 }
 
+/*!
+    Register a single object to the QWebChannel.
+
+    The properties, signals and public methods of the \a object are published to the remote clients.
+    There, an object with the identifier \a id is then constructed.
+
+    \note A current limitation is that objects must be registered before any client is initialized.
+
+    \sa QWebChannel::registerObjects(), QWebChannel::deregisterObject(), QWebChannel::registeredObjects()
+*/
 void QWebChannel::registerObject(const QString &id, QObject *object)
 {
     Q_D(QWebChannel);
     d->publisher->registerObject(id, object);
 }
 
+/*!
+    Deregister the given \a object from the QWebChannel.
+
+    Remote clients will receive a \c destroyed signal for the given object.
+
+    \sa QWebChannel::registerObjects(), QWebChannel::registerObject(), QWebChannel::registeredObjects()
+*/
 void QWebChannel::deregisterObject(QObject *object)
 {
     Q_D(QWebChannel);
     // handling of deregistration is analogously to handling of a destroyed signal
     d->publisher->signalEmitted(object, s_destroyedSignalIndex, QVariantList() << QVariant::fromValue(object));
 }
+
+/*!
+    \property QWebChannel::blockUpdates
+
+    \brief When set to true, updates are blocked and remote clients will not be notified about property changes.
+
+    The changes are recorded and sent to the clients once updates become unblocked again by setting
+    this property to false.
+*/
+
 
 bool QWebChannel::blockUpdates() const
 {
@@ -124,6 +219,14 @@ void QWebChannel::setBlockUpdates(bool block)
     d->publisher->setBlockUpdates(block);
 }
 
+/*!
+    Connects the QWebChannel to the given \a transport object.
+
+    The transport object then handles the communication between the C++ application and a remote
+    HTML client.
+
+    \sa QWebChannelAbstractTransport, QWebChannel::disconnectFrom()
+*/
 void QWebChannel::connectTo(QWebChannelAbstractTransport *transport)
 {
     Q_D(QWebChannel);
@@ -138,6 +241,11 @@ void QWebChannel::connectTo(QWebChannelAbstractTransport *transport)
     }
 }
 
+/*!
+    Disconnects the QWebChannel from the \a transport object.
+
+    \sa QWebChannel::connectTo()
+*/
 void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
 {
     Q_D(QWebChannel);

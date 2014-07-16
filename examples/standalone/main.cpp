@@ -55,6 +55,9 @@
 
 #include "ui_dialog.h"
 
+/*!
+    An instance of this class gets published over the WebChannel and is then accessible to HTML clients.
+*/
 class Dialog : public QObject
 {
     Q_OBJECT
@@ -75,15 +78,24 @@ public:
     }
 
 signals:
+    /*!
+        This signal is emitted from the C++ side and the text displayed on the HTML client side.
+    */
     void sendText(const QString &text);
 
 public slots:
+    /*!
+        This slot is invoked from the HTML client side and the text displayed on the server side.
+    */
     void receiveText(const QString &text)
     {
         displayMessage(tr("Received message: %1").arg(text));
     }
 
 private slots:
+    /*!
+        Note that this slot is private and thus not accessible to HTML clients.
+    */
     void clicked()
     {
         const QString text = ui.input->text();
@@ -107,21 +119,26 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
-    QWebChannel channel;
+    // setup the QWebSocketServer
     QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
     if (!server.listen(QHostAddress::LocalHost)) {
         qFatal("Failed to open web socket server.");
         return 1;
     }
 
+    // wrap WebSocket clients in QWebChannelAbstractTransport objects
     WebSocketClientWrapper clientWrapper(&server);
+
+    // setup the channel
+    QWebChannel channel;
     QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
                      &channel, &QWebChannel::connectTo);
 
+    // setup the dialog and publish it to the QWebChannel
     Dialog dialog;
-
     channel.registerObject(QStringLiteral("dialog"), &dialog);
 
+    // open a browser window with the client HTML page
     QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
     url.setQuery(QStringLiteral("webChannelBaseUrl=") + server.serverUrl().toString());
     QDesktopServices::openUrl(url);
