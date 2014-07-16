@@ -44,7 +44,7 @@ import QtTest 1.0
 
 import QtWebChannel 1.0
 import QtWebChannel.Tests 1.0
-import "qrc:///qtwebchannel/qwebchannel.js" as Client
+import "qrc:///qtwebchannel/qwebchannel.js" as JSClient
 
 TestCase {
     name: "MetaObjectPublisher"
@@ -160,7 +160,7 @@ TestCase {
         webChannel.sendMessage("invokeMethod", "test");
 
         var msg = client.awaitMessage();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, "myObj");
         compare(msg.data.args, ["test"]);
 
@@ -177,7 +177,7 @@ TestCase {
         client.awaitInit();
 
         var msg = client.awaitMessage();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, "myObj");
 
         client.awaitIdle();
@@ -192,7 +192,7 @@ TestCase {
     function test_grouping()
     {
         var channel = client.createChannel(function(channel) {
-            channel.subscribe(Client.QWebChannelMessageTypes.propertyUpdate, function() {
+            channel.subscribe(JSClient.QWebChannelMessageTypes.propertyUpdate, function() {
                 channel.exec({label: "gotPropertyUpdate", values: [channel.objects.myObj.myProperty, channel.objects.myOtherObj.foo, channel.objects.myOtherObj.bar]});
             });
         });
@@ -235,27 +235,27 @@ TestCase {
         client.awaitInit();
 
         var msg = client.awaitMessageSkipIdle();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, "myFactory");
         verify(myFactory.lastObj);
         compare(myFactory.lastObj.objectName, "testObj");
 
         msg = client.awaitMessageSkipIdle();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         verify(msg.data.object);
         var objId = msg.data.object;
 
         msg = client.awaitMessageSkipIdle();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, objId);
 
         msg = client.awaitMessageSkipIdle();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.setProperty);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.setProperty);
         compare(msg.data.object, objId);
         compare(myFactory.lastObj.myProperty, 42);
 
         msg = client.awaitMessageSkipIdle();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, objId);
         compare(msg.data.args, ["foobar"]);
 
@@ -267,7 +267,7 @@ TestCase {
         webChannel.sendMessage("triggerDelete");
 
         msg = client.awaitMessageSkipIdle();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.data.object, objId);
 
         client.awaitIdle();
@@ -293,7 +293,7 @@ TestCase {
         client.awaitInit();
 
         var msg = client.awaitMessage();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(msg.data.object, "myObj");
 
         client.awaitIdle();
@@ -305,7 +305,7 @@ TestCase {
         compare(msg.data.args, [42]);
 
         msg = client.awaitMessage();
-        compare(msg.data.type, Client.QWebChannelMessageTypes.disconnectFromSignal);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.disconnectFromSignal);
         compare(msg.data.object, "myObj");
 
         myObj.mySignal(0);
