@@ -474,7 +474,7 @@ void QMetaObjectPublisher::deleteWrappedObject(QObject *object) const
 void QMetaObjectPublisher::broadcastMessage(const QJsonObject &message) const
 {
     if (webChannel->d_func()->transports.isEmpty()) {
-        qWarning("QWebChannel is not connected to any transports, cannot send messages.");
+        qWarning("QWebChannel is not connected to any transports, cannot send message: %s", QJsonDocument(message).toJson().constData());
         return;
     }
 
@@ -485,6 +485,8 @@ void QMetaObjectPublisher::broadcastMessage(const QJsonObject &message) const
 
 void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannelAbstractTransport *transport)
 {
+    Q_ASSERT(webChannel->d_func()->transports.contains(transport));
+
     if (!message.contains(KEY_TYPE)) {
         qWarning("JSON message object is missing the type property: %s", QJsonDocument(message).toJson().constData());
         return;

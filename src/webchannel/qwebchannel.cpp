@@ -252,6 +252,7 @@ void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
     const int idx = d->transports.indexOf(transport);
     if (idx != -1) {
         disconnect(transport, 0, this, 0);
+        disconnect(transport, 0, d->publisher, 0);
         d->transports.remove(idx);
     }
 }
