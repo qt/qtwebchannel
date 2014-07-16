@@ -59,10 +59,9 @@ Item {
     QtObject {
         id: clientTransport
 
-        property var send;
         property var onmessage;
 
-        function postMessage(message)
+        function send(message)
         {
             if (debug) {
                 console.log("client posts message: ", message);
