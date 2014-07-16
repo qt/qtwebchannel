@@ -56,15 +56,9 @@ public:
     virtual ~QWebChannelAbstractTransport();
 
 public Q_SLOTS:
-    /**
-     * Send a text @p message to the remote client.
-     */
     virtual void sendMessage(const QJsonObject &message) = 0;
 
 Q_SIGNALS:
-    /**
-     * Emitted when a new text message was received from the remote client.
-     */
     void messageReceived(const QJsonObject &message, QWebChannelAbstractTransport *transport);
 };
 

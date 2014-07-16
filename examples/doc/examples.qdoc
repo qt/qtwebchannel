@@ -39,57 +39,15 @@
 **
 ****************************************************************************/
 
-#include "qwebchannelabstracttransport.h"
-
-QT_BEGIN_NAMESPACE
-
 /*!
-    \class QWebChannelAbstractTransport
+    \title Qt WebChannel Examples
+    \page qtwebchannel-examples.html
+    \brief List of Qt WebChannel examples
 
-    \inmodule QtWebChannel
-    \brief Communication channel between the C++ QWebChannel server and a HTML/JS client.
-    \since 5.4
+    The examples below can be used as a guide to using the QWebChannel C++ and WebChannel QML API.
 
-    Users of the QWebChannel must implement this interface and connect instances of it
-    to the QWebChannel server for every client that should be connected to the QWebChannel.
-    The {Standalone Example} shows how this can be done using QtWebSockets. QtWebKit implements
-    this interface internally and uses the native WebKit IPC mechanism to transmit messages
-    to HTML clients.
-
-    \note The JSON message protocol is considered internal and might change over time.
-
-    \sa {Standalone Example}
+    \list
+    \li \l standalone is a pure C++/Qt example which uses the QWebChannel to communicate with an
+    external client running in the browser of your choice. Communication is handled via WebSockets.
+    \endlist
 */
-
-/*!
-    \fn QWebChannelAbstractTransport::messageReceived(const QJsonObject &message, QWebChannelAbstractTransport *transport)
-
-    This signal must be emitted when a new JSON \a message was received from the remote client. The
-    \a transport argument should be set to this transport object.
-*/
-
-/*!
-    \fn QWebChannelAbstractTransport::sendMessage(const QJsonObject &message)
-
-    Send a JSON \a message to the remote client. An implementation would serialize the message and
-    transmit it to the remote JavaScript client.
-*/
-
-/*!
-    Constructs a transport object with the given \a parent.
-*/
-QWebChannelAbstractTransport::QWebChannelAbstractTransport(QObject *parent)
-: QObject(parent)
-{
-
-}
-
-/*!
-    Destroys the transport object.
-*/
-QWebChannelAbstractTransport::~QWebChannelAbstractTransport()
-{
-
-}
-
-QT_END_NAMESPACE

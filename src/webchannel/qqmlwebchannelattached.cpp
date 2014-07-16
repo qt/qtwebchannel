@@ -54,6 +54,15 @@ QQmlWebChannelAttached::~QQmlWebChannelAttached()
 
 }
 
+/*!
+    \qmlattachedproperty QString WebChannel::id
+
+    \brief The identifier under which an object, registered to a WebChannel, is known to remote clients.
+
+    This property must be set for every object that should be published over the WebChannel.
+    While no restrictions are enforced on the format of the id, it is usually a good idea to
+    chose a string that is also a valid JavaScript identifier.
+*/
 QString QQmlWebChannelAttached::id() const
 {
     return m_id;
