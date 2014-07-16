@@ -44,7 +44,7 @@ import QtTest 1.0
 
 import QtWebChannel 1.0
 import QtWebChannel.Tests 1.0
-import "qrc:///qtwebchannel/qwebchannel.js" as Client
+import "qrc:///qtwebchannel/qwebchannel.js" as JSClient
 
 Item {
     TestTransport {
@@ -108,7 +108,7 @@ Item {
 
     function createChannel(callback, raw)
     {
-        return new Client.QWebChannel(clientTransport, callback, raw);
+        return new JSClient.QWebChannel(clientTransport, callback, raw);
     }
 
     function cleanup()
@@ -140,7 +140,7 @@ Item {
         verify(msg);
         verify(msg.data);
         verify(msg.data.type);
-        compare(msg.data.type, Client.QWebChannelMessageTypes.init);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.init);
     }
 
     function awaitIdle()
@@ -148,7 +148,7 @@ Item {
         var msg = awaitMessage();
         verify(msg);
         verify(msg.data);
-        compare(msg.data.type, Client.QWebChannelMessageTypes.idle);
+        compare(msg.data.type, JSClient.QWebChannelMessageTypes.idle);
         verify(webChannel.clientIsIdle())
     }
 
@@ -159,7 +159,7 @@ Item {
             msg = awaitMessage();
             verify(msg);
             verify(msg.data);
-        } while (msg.data.type === Client.QWebChannelMessageTypes.idle);
+        } while (msg.data.type === JSClient.QWebChannelMessageTypes.idle);
         return msg;
     }
 
