@@ -10,30 +10,47 @@
                 var output = document.getElementById("output");
                 output.innerHTML = output.innerHTML + message + "\n";
             }
-            var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
-            new QWebChannel(baseUrl, function(channel) {
-                // make dialog object accessible globally
-                window.dialog = channel.objects.dialog;
+            window.onload = function() {
+                var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
+                output("Connecting to WebSocket server at " + baseUrl + ".");
+                var socket = new WebSocket(baseUrl);
 
-                document.getElementById("send").onclick = function() {
-                    var input = document.getElementById("input");
-                    var text = input.value;
-                    if (!text) {
-                        return;
-                    }
+                socket.onclose = function()
+                {
+                    console.error("web channel closed");
+                };
+                socket.onerror = function(error)
+                {
+                    console.error("web channel error: " + error);
+                };
+                socket.onopen = function()
+                {
+                    output("WebSocket connected, setting up QWebChannel.");
+                    new QWebChannel(socket, function(channel) {
+                        // make dialog object accessible globally
+                        window.dialog = channel.objects.dialog;
 
-                    output("Sent message: " + text);
-                    input.value = "";
-                    dialog.receiveText(text);
+                        document.getElementById("send").onclick = function() {
+                            var input = document.getElementById("input");
+                            var text = input.value;
+                            if (!text) {
+                                return;
+                            }
+
+                            output("Sent message: " + text);
+                            input.value = "";
+                            dialog.receiveText(text);
+                        }
+
+                        dialog.sendText.connect(function(message) {
+                            output("Received message: " + message);
+                        });
+
+                        dialog.receiveText("Client connected, ready to send/receive messages!");
+                        output("Connected to WebChannel, ready to send/receive messages!");
+                    });
                 }
-
-                dialog.sendText.connect(function(message) {
-                    output("Received message: " + message);
-                });
-
-                dialog.receiveText("Client connected, ready to send/receive messages!");
-                output("Connected to WebChannel, ready to send/receive messages!");
-            });
+            }
             //END SETUP
         </script>
         <style type="text/css">

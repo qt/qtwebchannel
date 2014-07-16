@@ -55,19 +55,26 @@ var QWebChannelMessageTypes = {
     response: 10,
 };
 
-// TODO: always expect an initialized transport object with a defined interface
-// to be passed in, remove automagic WebSocket code
-var QWebChannel = function(baseUrlOrSocket, initCallback)
+var QWebChannel = function(transport, initCallback)
 {
+    if (typeof transport !== "object" || typeof transport.send !== "function") {
+        console.error("The QWebChannel expects a transport object with a send function and onmessage callback property." +
+                      " Given is: transport: " + typeof(transport) + ", transport.send: " + typeof(transport.send));
+        return;
+    }
+
     var channel = this;
+    this.transport = transport;
+
     this.send = function(data)
     {
         if (typeof(data) !== "string") {
             data = JSON.stringify(data);
         }
-        channel.socket.send(data);
+        channel.transport.send(data);
     }
-    this.onMessageReceived = function(message)
+
+    this.transport.onmessage = function(message)
     {
         var data = message.data;
         if (typeof data === "string") {
@@ -173,34 +180,7 @@ var QWebChannel = function(baseUrlOrSocket, initCallback)
         channel.send({type: QWebChannelMessageTypes.debug, data: message});
     };
 
-    this.onSocketReady = function(doneCallback)
-    {
-        channel.exec({type: QWebChannelMessageTypes.init});
-    }
-
-    if (typeof baseUrlOrSocket === 'object') {
-        this.socket = baseUrlOrSocket;
-        this.socket.send = function(data)
-        {
-            channel.socket.postMessage(data);
-        }
-        this.socket.onmessage = this.onMessageReceived
-        this.onSocketReady();
-    } else {
-        ///TODO: use QWebChannel protocol, once custom protcols are supported by QtWebSocket
-        this.socket = new WebSocket(baseUrlOrSocket/*, "QWebChannel" */);
-
-        this.socket.onopen = this.onSocketReady
-        this.socket.onclose = function()
-        {
-            console.error("web channel closed");
-        };
-        this.socket.onerror = function(error)
-        {
-            console.error("web channel error: " + error);
-        };
-        this.socket.onmessage = this.onMessageReceived
-    }
+    channel.exec({type: QWebChannelMessageTypes.init});
 };
 
 function QObject(name, data, webChannel)
