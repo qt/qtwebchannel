@@ -376,29 +376,31 @@ function QObject(name, data, webChannel)
             addSignal(notifySignalData, true);
         }
 
-        object.__defineSetter__(propertyName, function(value) {
-            if (value === undefined) {
-                console.warn("Property setter for " + propertyName + " called with undefined value!");
-                return;
-            }
-            object.__propertyCache__[propertyIndex] = value;
-            webChannel.exec({
-                "type": QWebChannelMessageTypes.setProperty,
-                "object": object.__id__,
-                "property": propertyIndex,
-                "value": value
-            });
+        Object.defineProperty(object, propertyName, {
+            get: function () {
+                var propertyValue = object.__propertyCache__[propertyIndex];
+                if (propertyValue === undefined) {
+                    // This shouldn't happen
+                    console.warn("Undefined value in property cache for property \"" + propertyName + "\" in object " + object.__id__);
+                }
 
-        });
-        object.__defineGetter__(propertyName, function () {
-            var propertyValue = object.__propertyCache__[propertyIndex];
-            if (propertyValue === undefined) {
-                // This shouldn't happen
-                console.warn("Undefined value in property cache for property \"" + propertyName + "\" in object " + object.__id__);
+                return propertyValue;
+            },
+            set: function(value) {
+                if (value === undefined) {
+                    console.warn("Property setter for " + propertyName + " called with undefined value!");
+                    return;
+                }
+                object.__propertyCache__[propertyIndex] = value;
+                webChannel.exec({
+                    "type": QWebChannelMessageTypes.setProperty,
+                    "object": object.__id__,
+                    "property": propertyIndex,
+                    "value": value
+                });
             }
-
-            return propertyValue;
         });
+
     }
 
     // ----------------------------------------------------------------------
