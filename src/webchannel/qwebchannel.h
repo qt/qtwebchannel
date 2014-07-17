@@ -50,7 +50,7 @@
 
 QT_BEGIN_NAMESPACE
 
-struct QWebChannelPrivate;
+class QWebChannelPrivate;
 class QWebChannelAbstractTransport;
 
 class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
