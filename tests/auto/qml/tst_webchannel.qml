@@ -185,7 +185,7 @@ TestCase {
         var channel = client.createChannel(function(channel) {
             var originalHandler = channel.handlePropertyUpdate;
             channel.handlePropertyUpdate = function(message) {
-                originalHandler(message);
+                originalHandler.call(this, message);
                 receivedPropertyUpdates++;
                 properties = [channel.objects.myObj.myProperty, channel.objects.myOtherObj.foo, channel.objects.myOtherObj.bar];
             };

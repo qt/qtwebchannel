@@ -64,17 +64,7 @@ var QWebChannel = function(transport, initCallback)
     }
 
     var channel = this;
-    this.transport = transport;
-
-    this.send = function(data)
-    {
-        if (typeof(data) !== "string") {
-            data = JSON.stringify(data);
-        }
-        channel.transport.send(data);
-    }
-
-    this.transport.onmessage = function(message)
+    transport.onmessage = function(message)
     {
         var data = message.data;
         if (typeof data === "string") {
@@ -99,89 +89,104 @@ var QWebChannel = function(transport, initCallback)
         }
     }
 
+    this.transport = transport;
     this.execCallbacks = {};
     this.execId = 0;
-    this.exec = function(data, callback)
-    {
-        if (!callback) {
-            // if no callback is given, send directly
-            channel.send(data);
-            return;
-        }
-        if (channel.execId === Number.MAX_VALUE) {
-            // wrap
-            channel.execId = Number.MIN_VALUE;
-        }
-        if (data.hasOwnProperty("id")) {
-            console.error("Cannot exec message with property id: " + JSON.stringify(data));
-            return;
-        }
-        data.id = channel.execId++;
-        channel.execCallbacks[data.id] = callback;
-        channel.send(data);
-    };
-
+    // list of objects that accessible through this QWebChannel
     this.objects = {};
+    // gets invoked once initialization has finished
+    this.initCallback = initCallback;
 
-    this.handleSignal = function(message)
-    {
-        var object = channel.objects[message.object];
-        if (object) {
-            object.signalEmitted(message.signal, message.args);
-        } else {
-            console.warn("Unhandled signal: " + message.object + "::" + message.signal);
-        }
-    }
-
-    this.handleResponse = function(message)
-    {
-        if (!message.hasOwnProperty("id")) {
-            console.error("Invalid response message received: ", JSON.stringify(message));
-            return;
-        }
-        channel.execCallbacks[message.id](message.data);
-        delete channel.execCallbacks[message.id];
-    }
-
-    this.handlePropertyUpdate = function(message)
-    {
-        for (var i in message.data) {
-            var data = message.data[i];
-            var object = channel.objects[data.object];
-            if (object) {
-                object.propertyUpdate(data.signals, data.properties);
-            } else {
-                console.warn("Unhandled property update: " + data.object + "::" + data.signal);
-            }
-        }
-        setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
-    }
-
-    // prevent multiple initialization which might happen with multiple webchannel clients.
-    this.initialized = false;
-    this.handleInit = function(message)
-    {
-        if (channel.initialized) {
-            return;
-        }
-        channel.initialized = true;
-        for (var objectName in message.data) {
-            var data = message.data[objectName];
-            var object = new QObject(objectName, data, channel);
-        }
-        if (initCallback) {
-            initCallback(channel);
-        }
-        setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
-    }
-
-    this.debug = function(message)
-    {
-        channel.send({type: QWebChannelMessageTypes.debug, data: message});
-    };
-
-    channel.exec({type: QWebChannelMessageTypes.init});
+    // start initialization
+    this.exec({type: QWebChannelMessageTypes.init});
 };
+
+QWebChannel.prototype.send = function(data)
+{
+    if (typeof(data) !== "string") {
+        data = JSON.stringify(data);
+    }
+    this.transport.send(data);
+}
+
+QWebChannel.prototype.exec = function(data, callback)
+{
+    if (!callback) {
+        // if no callback is given, send directly
+        this.send(data);
+        return;
+    }
+    if (this.execId === Number.MAX_VALUE) {
+        // wrap
+        this.execId = Number.MIN_VALUE;
+    }
+    if (data.hasOwnProperty("id")) {
+        console.error("Cannot exec message with property id: " + JSON.stringify(data));
+        return;
+    }
+    data.id = this.execId++;
+    this.execCallbacks[data.id] = callback;
+    this.send(data);
+}
+
+QWebChannel.prototype.handleSignal = function(message)
+{
+    var object = this.objects[message.object];
+    if (object) {
+        object.signalEmitted(message.signal, message.args);
+    } else {
+        console.warn("Unhandled signal: " + message.object + "::" + message.signal);
+    }
+}
+
+QWebChannel.prototype.handleResponse = function(message)
+{
+    if (!message.hasOwnProperty("id")) {
+        console.error("Invalid response message received: ", JSON.stringify(message));
+        return;
+    }
+    this.execCallbacks[message.id](message.data);
+    delete this.execCallbacks[message.id];
+}
+
+QWebChannel.prototype.handlePropertyUpdate = function(message)
+{
+    for (var i in message.data) {
+        var data = message.data[i];
+        var object = this.objects[data.object];
+        if (object) {
+            object.propertyUpdate(data.signals, data.properties);
+        } else {
+            console.warn("Unhandled property update: " + data.object + "::" + data.signal);
+        }
+    }
+    var channel = this;
+    setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+}
+
+// prevent multiple initialization which might happen with multiple webchannel clients.
+QWebChannel.prototype.initialized = false;
+QWebChannel.prototype.handleInit = function(message)
+{
+    if (this.initialized) {
+        return;
+    }
+    this.initialized = true;
+    for (var objectName in message.data) {
+        var data = message.data[objectName];
+        var object = new QObject(objectName, data, this);
+    }
+    if (this.initCallback) {
+        this.initCallback(this);
+    }
+    var channel = this;
+    setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+}
+
+QWebChannel.prototype.debug = function(message)
+{
+    this.send({type: QWebChannelMessageTypes.debug, data: message});
+}
 
 function QObject(name, data, webChannel)
 {
