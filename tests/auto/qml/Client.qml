@@ -64,16 +64,19 @@ Item {
         function send(message)
         {
             if (debug) {
-                console.log("client posts message: ", message);
+                console.log("client posts message: ", message, "is idle:", webChannel.clientIsIdle());
             }
             clientMessages.push(message);
             serverTransport.receiveMessage(message);
+            if (message && message.type && message.type === JSClient.QWebChannelMessageTypes.idle) {
+                verify(webChannel.clientIsIdle());
+            }
         }
 
         Component.onCompleted: {
             serverTransport.sendMessageRequested.connect(function(message) {
                 if (debug) {
-                    console.log("client received message: ", message);
+                    console.log("client received message: ", JSON.stringify(message));
                 }
                 if (onmessage) {
                     onmessage({data:message});
@@ -151,7 +154,6 @@ Item {
         var msg = awaitMessage();
         verify(msg);
         compare(msg.type, JSClient.QWebChannelMessageTypes.idle);
-        verify(webChannel.clientIsIdle())
     }
 
     function awaitMessageSkipIdle()
