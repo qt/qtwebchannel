@@ -49,6 +49,7 @@
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QUuid>
 
 #if HAVE_QML
 #include <QtQml/QJSValue>
@@ -84,11 +85,6 @@ const QString KEY_METHOD = QStringLiteral("method");
 const QString KEY_ARGS = QStringLiteral("args");
 const QString KEY_PROPERTY = QStringLiteral("property");
 const QString KEY_VALUE = QStringLiteral("value");
-
-QString objectId(const QObject *object)
-{
-    return QString::number(quintptr(object), 16);
-}
 
 /// TODO: what is the proper value here?
 const int PROPERTY_UPDATE_INTERVAL = 50;
@@ -442,8 +438,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
             return objectInfo;
         } // else the object is not yet wrapped, do it now
 
-        const QString &id = objectId(object);
-        Q_ASSERT(!registeredObjects.contains(id));
+        const QString &id = QUuid::createUuid().toString();
         Q_ASSERT(!registeredObjectIds.contains(object));
 
         objectInfo[KEY_QOBJECT] = true;
