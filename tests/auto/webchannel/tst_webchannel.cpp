@@ -282,7 +282,7 @@ void TestWebChannel::benchInitializeClients()
 
     QMetaObjectPublisher *publisher = channel.d_func()->publisher;
     QBENCHMARK {
-        publisher->initializeClients();
+        publisher->initializeClient();
 
         publisher->propertyUpdatesInitialized = false;
         publisher->signalToPropertyMap.clear();
@@ -304,7 +304,7 @@ void TestWebChannel::benchPropertyUpdates()
     }
 
     channel.registerObjects(objects);
-    channel.d_func()->publisher->initializeClients();
+    channel.d_func()->publisher->initializeClient();
 
     QBENCHMARK {
         foreach (BenchObject *obj, objectList) {

@@ -73,6 +73,15 @@ const QString KEY_ARGS = QStringLiteral("args");
 const QString KEY_PROPERTY = QStringLiteral("property");
 const QString KEY_VALUE = QStringLiteral("value");
 
+QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
+{
+    QJsonObject response;
+    response[KEY_TYPE] = TypeResponse;
+    response[KEY_ID] = id;
+    response[KEY_DATA] = data;
+    return response;
+}
+
 /// TODO: what is the proper value here?
 const int PROPERTY_UPDATE_INTERVAL = 50;
 }
@@ -83,7 +92,6 @@ QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
     , signalHandler(this)
     , clientIsIdle(false)
     , blockUpdates(false)
-    , pendingInit(false)
     , propertyUpdatesInitialized(false)
 {
 }
@@ -208,12 +216,8 @@ void QMetaObjectPublisher::setClientIsIdle(bool isIdle)
     }
 }
 
-void QMetaObjectPublisher::initializeClients()
+QJsonObject QMetaObjectPublisher::initializeClient()
 {
-    if (!webChannel) {
-        return;
-    }
-
     QJsonObject objectInfos;
     {
         const QHash<QString, QObject *>::const_iterator end = registeredObjects.constEnd();
@@ -225,12 +229,8 @@ void QMetaObjectPublisher::initializeClients()
             objectInfos[it.key()] = info;
         }
     }
-    QJsonObject message;
-    message[KEY_TYPE] = TypeInit;
-    message[KEY_DATA] = objectInfos;
-    broadcastMessage(message);
     propertyUpdatesInitialized = true;
-    pendingInit = false;
+    return objectInfos;
 }
 
 void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo)
@@ -474,11 +474,12 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
     if (type == TypeIdle) {
         setClientIsIdle(true);
     } else if (type == TypeInit) {
-        if (!blockUpdates) {
-            initializeClients();
-        } else {
-            pendingInit = true;
+        if (!message.contains(KEY_ID)) {
+            qWarning("JSON message object is missing the id property: %s",
+                      QJsonDocument(message).toJson().constData());
+            return;
         }
+        transport->sendMessage(createResponse(message.value(KEY_ID), initializeClient()));
     } else if (type == TypeDebug) {
         static QTextStream out(stdout);
         out << "DEBUG: " << message.value(KEY_DATA).toString() << endl;
@@ -496,11 +497,9 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
                           QJsonDocument(message).toJson().constData());
                 return;
             }
-            QJsonObject response;
-            response[KEY_TYPE] = TypeResponse;
-            response[KEY_ID] = message.value(KEY_ID);
-            response[KEY_DATA] = invokeMethod(object, message.value(KEY_METHOD).toInt(-1), message.value(KEY_ARGS).toArray());
-            transport->sendMessage(response);
+            transport->sendMessage(createResponse(message.value(KEY_ID),
+                invokeMethod(object, message.value(KEY_METHOD).toInt(-1),
+                             message.value(KEY_ARGS).toArray())));
         } else if (type == TypeConnectToSignal) {
             signalHandler.connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeDisconnectFromSignal) {
@@ -526,11 +525,7 @@ void QMetaObjectPublisher::setBlockUpdates(bool block)
     blockUpdates = block;
 
     if (!blockUpdates) {
-        if (pendingInit) {
-            initializeClients();
-        } else {
-            sendPendingPropertyUpdates();
-        }
+        sendPendingPropertyUpdates();
     } else if (timer.isActive()) {
         timer.stop();
     }

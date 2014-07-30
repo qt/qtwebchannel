@@ -108,7 +108,7 @@ public:
      *
      * Furthermore, if that was not done already, connect to their property notify signals.
      */
-    void initializeClients();
+    QJsonObject initializeClient();
 
     /**
      * Go through all properties of the given object and connect to their notify signal.
@@ -194,10 +194,6 @@ private:
 
     // true when no property updates should be sent, false otherwise
     bool blockUpdates;
-
-    // true when at least one client needs to be initialized,
-    // i.e. when a Qt.init came in which was not handled yet.
-    bool pendingInit;
 
     // true when at least one client was initialized and thus
     // the property updates have been initialized and the
