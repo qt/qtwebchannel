@@ -3,7 +3,7 @@
 The Qt WebChannel module offers Qt applications a seamless way to publish `QObjects` for interaction
 with HTML/JavaScript clients. These clients can either be inside local Qt `WebView`s or any other,
 potentially remote, client which supports JavaScript, as long as a communication channel such
-as WebSockets is available.
+as WebSocket is available.
 
 Qt WebChannel uses introspection on the `QObject`s and sends this serialized data to the clients.
 There, with the help of a small JavaScript library, an object is created which simulates the API of
@@ -12,7 +12,7 @@ written. Additionally you can connect to signals and register JavaScript callbac
 
 ### Dependencies
 
-This module depends on Qt Core only. Optionally, an additional plugin for Qt Quick is build, which
+This module depends on Qt Core only. Optionally, an additional plugin for Qt Quick can be built, which
 makes it easy to use a `QWebChannel` from QML. Note that this module alone is not functional. It
 is being used in e.g. Qt WebKit to provide a seamless integration of QML/C++ QObjects into JavaScript
 clients. You can integrate it in your projects as well, by providing an implementation of the
@@ -30,7 +30,7 @@ To use the Qt/C++ library, add the following to your `QMake` project:
 
     QT += webchannel
 
-Then, in your C++ code, construct a a webchannel, then publish your `QObject`s:
+Then, in your C++ code, construct a webchannel, then publish your `QObject`s:
 
     QWebChannel channel;
     channel.registerObject(QStringLiteral("foo"), myFooObj);

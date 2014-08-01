@@ -140,7 +140,7 @@ QWebChannel::~QWebChannel()
 /*!
     Register a group of objects to the QWebChannel.
 
-    The properties, signals and public methods of the objects are published to the remote clients.
+    The properties, signals and public invokable methods of the objects are published to the remote clients.
     There, an object with the identifier used as key in the \a objects map is then constructed.
 
     \note A current limitation is that objects must be registered before any client is initialized.
@@ -203,7 +203,7 @@ void QWebChannel::deregisterObject(QObject *object)
     \brief When set to true, updates are blocked and remote clients will not be notified about property changes.
 
     The changes are recorded and sent to the clients once updates become unblocked again by setting
-    this property to false.
+    this property to false. By default, updates are not blocked.
 */
 
 

@@ -31,7 +31,7 @@
     \ingroup modules
     \qtvariable webchannel
     \since 5.4
-    \brief List of C++ classes that provide the QtWebChannel functionality.
+    \brief List of C++ classes that provide the Qt WebChannel functionality.
 
     To use these classes in your application, use the following include
     statement:

@@ -52,7 +52,7 @@ QT_BEGIN_NAMESPACE
 
     Users of the QWebChannel must implement this interface and connect instances of it
     to the QWebChannel server for every client that should be connected to the QWebChannel.
-    The {Standalone Example} shows how this can be done using QtWebSockets. QtWebKit implements
+    The {Standalone Example} shows how this can be done using Qt WebSockets. Qt WebKit implements
     this interface internally and uses the native WebKit IPC mechanism to transmit messages
     to HTML clients.
 

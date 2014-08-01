@@ -34,7 +34,7 @@
     \section1 Setup
 
     To communicate with a QWebChannel or WebChannel, any HTML client must use and setup the
-    JavaScript API provided by \c qwebchannel.js. For HTML clients run inside QtWebKit, you
+    JavaScript API provided by \c qwebchannel.js. For HTML clients run inside Qt WebKit, you
     can load the file via \c qrc:///qtwebchannel/qwebchannel.js. For external clients you will
     need to copy the file to your webserver. Then instantiate a QWebChannel object and pass
     it a transport object and a callback function, which will be invoked once the
@@ -44,7 +44,7 @@
     with a \c send() function, which takes a stringified JSON message and transmits it to the
     server-side QWebChannelAbstractTransport object. Furthermore, its \c onmessage property should
     be called when a message from the server was received. This interface is implemented internally
-    by the QtWebKit navigator.qtWebChannelTransport object. Alternatively, you can also use a
+    by the Qt WebKit navigator.qtWebChannelTransport object. Alternatively, you can also use a
     WebSocket, which also implements this interface.
 
     Note that the JavaScript QWebChannel object should be constructed once the transport object is
