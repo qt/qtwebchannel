@@ -139,7 +139,7 @@ int main(int argc, char** argv)
     channel.registerObject(QStringLiteral("dialog"), &dialog);
 
     // open a browser window with the client HTML page
-    QUrl url = QUrl::fromLocalFile(SOURCE_DIR "/index.html");
+    QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
     url.setQuery(QStringLiteral("webChannelBaseUrl=") + server.serverUrl().toString());
     QDesktopServices::openUrl(url);
 

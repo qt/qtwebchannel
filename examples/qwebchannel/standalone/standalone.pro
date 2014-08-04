@@ -14,6 +14,9 @@ HEADERS += \
 FORMS += \
     dialog.ui
 
-DEFINES += "SOURCE_DIR=\"\\\""$$PWD"\\\"\""
+DEFINES += "BUILD_DIR=\"\\\""$$OUT_PWD"\\\"\""
 
-EXAMPLE_FILES += index.html
+exampleassets.files += \
+    index.html
+exampleassets.path = $$[QT_INSTALL_EXAMPLES]/qwebchannel/standalone
+include(../exampleassets.pri)
