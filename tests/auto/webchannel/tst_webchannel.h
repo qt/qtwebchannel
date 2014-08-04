@@ -47,6 +47,8 @@
 
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
+QT_BEGIN_NAMESPACE
+
 class DummyTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
@@ -236,5 +238,7 @@ private:
     double m_lastDouble;
     QVariant m_lastVariant;
 };
+
+QT_END_NAMESPACE
 
 #endif // TST_WEBCHANNEL_H

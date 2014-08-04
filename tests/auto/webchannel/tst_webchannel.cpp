@@ -47,6 +47,8 @@
 
 #include <QtTest>
 
+QT_USE_NAMESPACE
+
 TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
     , m_dummyTransport(new DummyTransport(this))
