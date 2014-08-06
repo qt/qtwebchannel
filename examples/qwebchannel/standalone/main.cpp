@@ -121,7 +121,7 @@ int main(int argc, char** argv)
 
     // setup the QWebSocketServer
     QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
-    if (!server.listen(QHostAddress::LocalHost)) {
+    if (!server.listen(QHostAddress::LocalHost, 12345)) {
         qFatal("Failed to open web socket server.");
         return 1;
     }
