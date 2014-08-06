@@ -211,9 +211,11 @@ TestCase {
         var signalArgs;
         var testObjBeforeDeletion;
         var testObjAfterDeletion;
+        var testObjId;
         var channel = client.createChannel(function(channel) {
             channel.objects.myFactory.create("testObj", function(obj) {
-                channel.objects.testObj = obj;
+                testObjId = obj.__id__;
+                compare(channel.objects[testObjId], obj);
                 obj.mySignal.connect(function() {
                     signalArgs = arguments;
                     testObjBeforeDeletion = obj;
@@ -231,26 +233,26 @@ TestCase {
         compare(msg.object, "myFactory");
         verify(myFactory.lastObj);
         compare(myFactory.lastObj.objectName, "testObj");
+        compare(channel.objects[testObjId].objectName, "testObj");
 
         // deleteLater signal connection
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
-        verify(msg.object);
-        var objId = msg.object;
+        compare(msg.object, testObjId);
 
         // mySignal connection
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
-        compare(msg.object, objId);
+        compare(msg.object, testObjId);
 
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.setProperty);
-        compare(msg.object, objId);
+        compare(msg.object, testObjId);
         compare(myFactory.lastObj.myProperty, 42);
 
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
-        compare(msg.object, objId);
+        compare(msg.object, testObjId);
         compare(msg.args, ["foobar"]);
         compare(lastMethodArg, "foobar");
 
@@ -259,7 +261,7 @@ TestCase {
         // deleteLater call
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
-        compare(msg.object, objId);
+        compare(msg.object, testObjId);
 
         compare(signalArgs, {"0": "foobar", "1": 42});
 
@@ -267,7 +269,38 @@ TestCase {
 
         compare(JSON.stringify(testObjBeforeDeletion), JSON.stringify({}));
         compare(JSON.stringify(testObjAfterDeletion), JSON.stringify({}));
-        compare(JSON.stringify(channel.objects.testObj), JSON.stringify({}));
+        compare(typeof channel.objects[testObjId], "undefined");
+    }
+
+    // test if returned QObjects get inserted into list of
+    // objects even if no callback function is set
+    function test_wrapper_wrapEveryQObject()
+    {
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myFactory.create("testObj");
+        });
+        client.awaitInit();
+
+        // ignore first message (call to myFactory.create())
+        client.awaitMessage();
+
+        // second message connects to destroyed signal and contains the new objects ID
+        var msg = client.awaitMessage();
+        verify(msg.object);
+
+        var testObjId = msg.object;
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+        compare(typeof channel.objects[testObjId], "object");
+
+        channel.objects[testObjId].deleteLater();
+        msg = client.awaitMessage();
+
+        // after receiving the destroyed signal the client deletes
+        // local objects and sends back a idle message
+        client.awaitIdle();
+
+        compare(myFactory.lastObj, null);
+        compare(typeof channel.objects[testObjId], "undefined");
     }
 
     function test_disconnect()

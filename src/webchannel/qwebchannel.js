@@ -200,7 +200,8 @@ function QObject(name, data, webChannel)
 
     function unwrapQObject( response )
     {
-        if (!response["__QObject*__"]
+        if (!response
+            || !response["__QObject*__"]
             || response["id"] === undefined
             || response["data"] === undefined) {
             return response;
@@ -329,8 +330,11 @@ function QObject(name, data, webChannel)
                 "method": methodIdx,
                 "args": args
             }, function(response) {
-                if ( (response !== undefined) && callback ) {
-                    (callback)(unwrapQObject(response));
+                if (response !== undefined) {
+                    var result = unwrapQObject(response);
+                    if (callback) {
+                        (callback)(result);
+                    }
                 }
             });
         };
