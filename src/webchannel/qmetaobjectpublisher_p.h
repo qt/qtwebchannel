@@ -40,6 +40,8 @@
 #include <QStringList>
 #include <QMetaObject>
 #include <QBasicTimer>
+#include <QPointer>
+#include <QJsonValue>
 
 #include "qwebchannelglobal.h"
 
@@ -217,8 +219,14 @@ private:
     typedef QHash<const QObject *, SignalToArgumentsMap> PendingPropertyUpdates;
     PendingPropertyUpdates pendingPropertyUpdates;
 
+    // Struct containing the object itself and its ObjectInfo
+    struct ObjectInfo {
+        QObject* object;
+        QJsonValue info;
+    };
+
     // Maps wrapped object to class info
-    QHash<const QObject *, QJsonObject> wrappedObjects;
+    QHash<QString, ObjectInfo> wrappedObjects;
 
     // Aggregate property updates since we get multiple Qt.idle message when we have multiple
     // clients. They all share the same QWebProcess though so we must take special care to

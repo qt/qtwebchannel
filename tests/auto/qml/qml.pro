@@ -17,9 +17,11 @@ HEADERS += \
     testwebchannel.h
 
 OTHER_FILES += \
+    Client.qml \
     WebChannelTest.qml \
     tst_webchannel.qml \
     tst_metaobjectpublisher.qml \
-    tst_bench.qml
+    tst_bench.qml \
+    tst_multiclient.qml \
 
 TESTDATA = data/*

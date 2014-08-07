@@ -398,38 +398,42 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
 {
     const QString &id = registeredObjectIds.take(object);
     Q_ASSERT(!id.isEmpty());
-    bool removed = registeredObjects.remove(id);
+    bool removed = registeredObjects.remove(id)
+            || wrappedObjects.remove(id);
     Q_ASSERT(removed);
     Q_UNUSED(removed);
 
     signalToPropertyMap.remove(object);
     pendingPropertyUpdates.remove(object);
-    wrappedObjects.remove(object);
 }
 
 QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
 {
     if (QObject *object = result.value<QObject *>()) {
-        QJsonObject &objectInfo = wrappedObjects[object];
-        if (!objectInfo.isEmpty()) {
-            // already registered, use cached information
-            Q_ASSERT(registeredObjectIds.contains(object));
-            return objectInfo;
-        } // else the object is not yet wrapped, do it now
+        QString id = registeredObjectIds.value(object);
 
-        const QString &id = QUuid::createUuid().toString();
-        Q_ASSERT(!registeredObjectIds.contains(object));
+        QJsonObject objectInfo;
 
-        QJsonObject info = classInfoForObject(object);
-        objectInfo[KEY_QOBJECT] = true;
-        objectInfo[KEY_ID] = id;
-        objectInfo[KEY_DATA] = info;
+        if (!id.isEmpty() && wrappedObjects.contains(id)) {
+            Q_ASSERT(object == wrappedObjects.value(id).object);
+            return wrappedObjects.value(id).info;
+        } else {
+            id = QUuid::createUuid().toString();
 
-        registeredObjectIds[object] = id;
-        registeredObjects[id] = object;
-        wrappedObjects.insert(object, objectInfo);
+            QJsonObject info = classInfoForObject(object);
+            objectInfo[KEY_QOBJECT] = true;
+            objectInfo[KEY_ID] = id;
+            objectInfo[KEY_DATA] = info;
 
-        initializePropertyUpdates(object, info);
+            if (!registeredObjects.contains(id)) {
+                registeredObjectIds[object] = id;
+                ObjectInfo oi = { object, objectInfo };
+                wrappedObjects.insert(id, oi);
+
+                initializePropertyUpdates(object, info);
+            }
+        }
+
         return objectInfo;
     }
 
@@ -439,7 +443,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
 
 void QMetaObjectPublisher::deleteWrappedObject(QObject *object) const
 {
-    if (!wrappedObjects.contains(object)) {
+    if (!wrappedObjects.contains(registeredObjectIds.value(object))) {
         qWarning() << "Not deleting non-wrapped object" << object;
         return;
     }
@@ -486,6 +490,9 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
     } else if (message.contains(KEY_OBJECT)) {
         const QString &objectName = message.value(KEY_OBJECT).toString();
         QObject *object = registeredObjects.value(objectName);
+        if (!object)
+            object = wrappedObjects.value(objectName).object;
+
         if (!object) {
             qWarning() << "Unknown object encountered" << objectName;
             return;

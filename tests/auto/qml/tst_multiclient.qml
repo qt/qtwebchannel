@@ -1,6 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2014 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2014 basysKom GmbH, info@basyskom.com, author Lutz Schönemann <lutz.schoenemann@basyskom.com>
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -37,6 +38,8 @@ import QtTest 1.0
 import QtWebChannel 1.0
 import QtWebChannel.Tests 1.0
 
+import "qrc:///qtwebchannel/qwebchannel.js" as JSClient
+
 TestCase {
     name: "MultiClient"
 
@@ -62,16 +65,83 @@ TestCase {
         WebChannel.id: "foo"
     }
 
+    property var lastMethodArg
+    QtObject {
+        id: myObj
+        property int myProperty: 1
+
+        signal mySignal(var arg)
+
+        function myMethod(arg)
+        {
+            lastMethodArg = arg;
+        }
+
+        WebChannel.id: "myObj"
+    }
+
+    QtObject {
+        id: myOtherObj
+        property var foo: 1
+        property var bar: 1
+        WebChannel.id: "myOtherObj"
+    }
+
+    QtObject {
+        id: myFactory
+        property var lastObj
+        property var createdObjects: []
+
+        function cleanup() {
+            while (createdObjects.length) {
+                var obj = createdObjects.shift();
+                if (obj) {
+                    obj.destroy();
+                }
+            }
+        }
+
+        function create(id)
+        {
+            lastObj = component.createObject(myFactory, {objectName: id});
+            createdObjects.push(lastObj);
+            return lastObj;
+        }
+        WebChannel.id: "myFactory"
+    }
+
+    Component {
+        id: component
+        QtObject {
+            property var myProperty : 0
+            function myMethod(arg) {
+                lastMethodArg = arg;
+            }
+            signal mySignal(var arg1, var arg2)
+        }
+    }
+
     TestWebChannel {
         id: webChannel
         transports: [client1.serverTransport, client2.serverTransport]
-        registeredObjects: [foo]
+        registeredObjects: [foo, myObj, myOtherObj, myFactory]
     }
 
     function init()
     {
+        myObj.myProperty = 1
         client1.cleanup();
         client2.cleanup();
+    }
+
+    function cleanup() {
+        client1.debug = false;
+        client2.debug = false;
+        // delete all created objects
+        myFactory.cleanup();
+        myFactory.lastObj = undefined;
+        // reschedule current task to end of event loop
+        wait(1);
     }
 
     function clientInitCallback(channel)
@@ -102,5 +172,76 @@ TestCase {
 
         compare(c1.pongAnswer, 1);
         compare(c2.pongAnswer, 2);
+    }
+
+    function test_autowrappedObjectsNotInInit() {
+        var testObj1;
+        var testObj1Id;
+
+        var channel1 = client1.createChannel(function (channel1) {
+            channel1.objects.myFactory.create("testObj1", function (obj1) {
+                testObj1 = myFactory.lastObj;
+                testObj1Id = obj1.__id__;
+
+                // create second channel after factory has created first
+                // object to make sure that a dynamically created object
+                // exists but does not get exposed to new channels
+                createSecondChannel();
+            });
+        });
+        var channel2;
+        function createSecondChannel() {
+            // dismiss all messges received before channel creation
+            client2.cleanup();
+
+            channel2 = client2.createChannel(function (channel2) {
+            });
+        }
+
+        client1.awaitInit();
+        var msg1 = client1.awaitMessage();
+        compare(msg1.type, JSClient.QWebChannelMessageTypes.invokeMethod); // create
+
+        client1.awaitIdle();
+
+        client2.awaitInit();
+        client2.awaitIdle();
+
+        compare(typeof channel2.objects[testObj1Id], "undefined")
+    }
+
+    function test_autowrappedObjectsNotBroadcasted() {
+        var testObj2;
+        var testObj2Id;
+
+        var channel1 = client1.createChannel(function (channel1) {
+            // create second channel after first channel to make sure
+            // that a dynamically created object do not get exposed to
+            // existing channels
+            createSecondChannel();
+        });
+        var channel2;
+        function createSecondChannel() {
+            // dismiss all messges received before channel creation
+            client2.cleanup();
+
+            channel2 = client2.createChannel(function (channel2) {
+                channel2.objects.myFactory.create("testObj2", function (obj2) {
+                    testObj2 = myFactory.lastObj;
+                    testObj2Id = obj2.__id__;
+                });
+            });
+        }
+
+        client1.awaitInit();
+        client1.awaitIdle();
+
+        client2.awaitInit();
+        var msg2 = client2.awaitMessage();
+        compare(msg2.type, JSClient.QWebChannelMessageTypes.invokeMethod); // create
+
+        client2.awaitIdle();
+
+        compare(typeof channel1.objects[testObj2Id], "undefined")
     }
 }

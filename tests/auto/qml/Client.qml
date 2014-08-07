@@ -39,12 +39,15 @@ import QtWebChannel.Tests 1.0
 import "qrc:///qtwebchannel/qwebchannel.js" as JSClient
 
 Item {
+    id: root
+
     TestTransport {
         id: serverTransport
     }
     readonly property var serverTransport: serverTransport
 
     property var clientMessages: []
+    property var serverMessages: []
 
     property bool debug: false
 
@@ -55,24 +58,21 @@ Item {
 
         function send(message)
         {
-            if (debug) {
-                console.log("client posts message: ", message, "is idle:", webChannel.clientIsIdle());
-            }
-            clientMessages.push(message);
+            if (debug)
+                console.log("client", (root.objectName ? "(" + root.objectName + ")" : ""), "posts message: ", message, "is idle:", webChannel.clientIsIdle());
+            clientMessages.push(JSON.parse(message));
             serverTransport.receiveMessage(message);
-            if (message && message.type && message.type === JSClient.QWebChannelMessageTypes.idle) {
+            if (message && message.type && message.type === JSClient.QWebChannelMessageTypes.idle)
                 verify(webChannel.clientIsIdle());
-            }
         }
 
         Component.onCompleted: {
-            serverTransport.sendMessageRequested.connect(function(message) {
-                if (debug) {
-                    console.log("client received message: ", JSON.stringify(message));
-                }
-                if (onmessage) {
+            serverTransport.sendMessageRequested.connect(function receive(message) {
+                if (debug)
+                    console.log("client", (root.objectName ? "(" + root.objectName + ")" : ""), "received message:", JSON.stringify(message));
+                serverMessages.push(message);
+                if (onmessage)
                     onmessage({data:message});
-                }
             });
         }
     }
@@ -86,51 +86,82 @@ Item {
     function cleanup()
     {
         clientMessages = [];
+        serverMessages = [];
     }
 
-    function awaitRawMessage()
+    function awaitRawMessage(from)
     {
-        for (var i = 0; i < 10 && !clientMessages.length; ++i) {
+        if (!from || typeof from !== "string")
+            from = "clientMessages";
+        else
+            from += "Messages";
+
+        for (var i = 0; i < 10 && !root[from].length; ++i)
             wait(10);
-        }
-        return clientMessages.shift();
+        return root[from].shift();
     }
 
-    function awaitMessage()
+    function awaitMessage(from)
     {
-        var msg = awaitRawMessage()
-        if (debug) {
-          console.log("handling message: ", msg);
-        }
-        if (!msg) {
+        var msg = awaitRawMessage(from)
+        if (debug)
+          console.log((root.objectName ? "(" + root.objectName + ")" : ""), "handling message: ", JSON.stringify(msg));
+        if (!msg)
             return false;
-        }
-        return JSON.parse(msg);
+        return msg;
     }
 
-    function awaitInit()
-    {
-        var msg = awaitMessage();
-        verify(msg);
-        verify(msg.type);
-        compare(msg.type, JSClient.QWebChannelMessageTypes.init);
-    }
-
-    function awaitIdle()
-    {
-        var msg = awaitMessage();
-        verify(msg);
-        compare(msg.type, JSClient.QWebChannelMessageTypes.idle);
-    }
-
-    function awaitMessageSkipIdle()
-    {
+    function await(type, from, skip) {
         var msg;
         do {
             msg = awaitMessage();
             verify(msg);
-        } while (msg.type === JSClient.QWebChannelMessageTypes.idle);
+        } while (skip && (msg.type === JSClient.QWebChannelMessageTypes.idle));
+        if (type !== null) {
+            verify(msg);
+            verify(msg.type);
+            compare(msg.type, type);
+        }
         return msg;
     }
 
+    function awaitInit() {
+        return await(JSClient.QWebChannelMessageTypes.init);
+    }
+
+    function awaitIdle() {
+        return await(JSClient.QWebChannelMessageTypes.idle);
+    }
+
+    function awaitMessageSkipIdle() {
+        return awaitFunc(null, null, true);
+    }
+
+    function awaitServerInit() {
+        return await(JSClient.QWebChannelMessageTypes.init, "server");
+    }
+
+    function awaitSignal()
+    {
+        return await(JSClient.QWebChannelMessageTypes.signal, "server");
+    }
+
+    function awaitPropertyUpdate()
+    {
+        return await(JSClient.QWebChannelMessageTypes.propertyUpdate, "server");
+    }
+
+    function awaitResponse()
+    {
+        return await(JSClient.QWebChannelMessageTypes.response, "server");
+    }
+
+    function skipToMessage(type, from, max) {
+        do {
+            var msg = awaitMessage(from);
+            if (msg && msg.type === type)
+                return msg
+        } while (--max > 0);
+        return false;
+    }
 }
