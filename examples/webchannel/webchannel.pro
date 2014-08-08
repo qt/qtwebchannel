@@ -4,4 +4,4 @@ qtHaveModule(widgets):qtHaveModule(websockets) {
     SUBDIRS += standalone
 }
 
-SUBDIRS += nodejs
+SUBDIRS += nodejs qwclient
