@@ -154,7 +154,7 @@ var QWebChannel = function(transport, initCallback)
                 console.warn("Unhandled property update: " + data.object + "::" + data.signal);
             }
         }
-        setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+        channel.exec({type: QWebChannelMessageTypes.idle});
     }
 
     // prevent multiple initialization which might happen with multiple webchannel clients.
@@ -172,7 +172,7 @@ var QWebChannel = function(transport, initCallback)
         if (initCallback) {
             initCallback(channel);
         }
-        setTimeout(function() { channel.exec({type: QWebChannelMessageTypes.idle}); }, 0);
+        channel.exec({type: QWebChannelMessageTypes.idle});
     }
 
     this.debug = function(message)

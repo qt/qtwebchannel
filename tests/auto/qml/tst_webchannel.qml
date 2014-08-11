@@ -256,6 +256,8 @@ TestCase {
         compare(msg.args, ["foobar"]);
         compare(lastMethodArg, "foobar");
 
+        client.awaitIdle();
+
         myFactory.lastObj.mySignal("foobar", 42);
 
         // deleteLater call
@@ -292,8 +294,12 @@ TestCase {
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(typeof channel.objects[testObjId], "object");
 
+        client.awaitIdle();
+
         channel.objects[testObjId].deleteLater();
         msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.object, testObjId);
 
         // after receiving the destroyed signal the client deletes
         // local objects and sends back a idle message

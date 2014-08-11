@@ -86,30 +86,6 @@ Item {
     }
     readonly property var clientTransport: clientTransport
 
-    Timer {
-        id: timer
-        running: false
-        repeat: false
-
-        property var callback
-
-        onTriggered: {
-            callback();
-        }
-    }
-
-    function setTimeout(callback, delay)
-    {
-        if (timer.running) {
-            console.error("nested calls to setTimeout are not supported!", JSON.stringify(callback), JSON.stringify(timer.callback));
-            return;
-        }
-        timer.callback = callback;
-        // note: an interval of 0 is directly triggered, so add a little padding
-        timer.interval = delay + 1;
-        timer.running = true;
-    }
-
     function createChannel(callback, raw)
     {
         return new JSClient.QWebChannel(clientTransport, callback, raw);
@@ -118,7 +94,6 @@ Item {
     function cleanup()
     {
         clientMessages = [];
-        timer.running = false;
     }
 
     function awaitRawMessage()
