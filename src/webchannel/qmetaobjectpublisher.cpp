@@ -315,8 +315,8 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
     QJsonObject message;
     message[KEY_TYPE] = TypePropertyUpdate;
     message[KEY_DATA] = data;
-    broadcastMessage(message);
     setClientIsIdle(false);
+    broadcastMessage(message);
 }
 
 QJsonValue QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
