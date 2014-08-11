@@ -94,10 +94,26 @@ TestCase {
         registeredObjects: [myObj, myOtherObj, myFactory]
     }
 
+    function initChannel() {
+        client.serverTransport.receiveMessage(JSON.stringify({type: JSClient.QWebChannelMessageTypes.idle}));
+        webChannel.blockUpdates = true;
+        webChannel.blockUpdates = false;
+    }
+
     function init()
     {
         myObj.myProperty = 1
+        // immediately send pending updates
+        // to avoid property changed signals
+        // during run of test case
+        initChannel();
         client.cleanup();
+    }
+    function cleanup() {
+        // make tests a bit more strict and predictable
+        // by assuming that a test consumes all messages
+        initChannel();
+        compare(client.clientMessages.length, 0);
     }
 
     function test_property()
@@ -122,12 +138,13 @@ TestCase {
         compare(initialValue, 1);
         compare(myObj.myProperty, 3);
 
-        client.awaitIdle();
+        client.awaitIdle(); // init
+        client.awaitIdle(); // property update
 
         // change property, should be propagated to HTML client and a message be send there
         myObj.myProperty = 2;
         compare(myObj.myProperty, 2);
-        client.awaitIdle();
+        client.awaitIdle(); // property update
         compare(changedValue, 2);
     }
 
@@ -163,7 +180,7 @@ TestCase {
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(msg.object, "myObj");
 
-        client.awaitIdle();
+        client.awaitIdle(); // initialization
 
         myObj.mySignal("test");
 
@@ -259,7 +276,7 @@ TestCase {
 
         compare(signalArgs, {"0": "foobar", "1": 42});
 
-        client.awaitIdle();
+        client.awaitIdle(); // destroyed signal
 
         compare(JSON.stringify(testObjBeforeDeletion), JSON.stringify({}));
         compare(JSON.stringify(testObjAfterDeletion), JSON.stringify({}));
