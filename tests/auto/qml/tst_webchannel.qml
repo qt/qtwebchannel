@@ -139,7 +139,6 @@ TestCase {
         compare(myObj.myProperty, 3);
 
         client.awaitIdle(); // init
-        client.awaitIdle(); // property update
 
         // change property, should be propagated to HTML client and a message be send there
         myObj.myProperty = 2;
@@ -332,6 +331,7 @@ TestCase {
         compare(channel.objects[testObjId].myProperty, 42);
 
         channel.objects[testObjId].deleteLater();
+        client.awaitIdle();
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
     }

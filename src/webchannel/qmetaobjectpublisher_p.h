@@ -41,7 +41,7 @@
 #include <QMetaObject>
 #include <QBasicTimer>
 #include <QPointer>
-#include <QJsonValue>
+#include <QJsonObject>
 
 #include "qwebchannelglobal.h"
 
@@ -72,7 +72,6 @@ class QWebChannelAbstractTransport;
 class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
     Q_OBJECT
-
 public:
     explicit QMetaObjectPublisher(QWebChannel *webChannel);
     virtual ~QMetaObjectPublisher();
@@ -137,7 +136,7 @@ public:
      * The return value of the method invocation is then serialized and a response message
      * is returned.
      */
-    QJsonValue invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args);
+    QVariant invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args);
 
     /**
      * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
@@ -159,7 +158,7 @@ public:
      *
      * TODO: support wrapping of initially-registered objects
      */
-    QJsonValue wrapResult(const QVariant &result);
+    QJsonValue wrapResult(const QVariant &result, QWebChannelAbstractTransport *transport);
 
     /**
      * Invoke delete later on @p object.
@@ -208,6 +207,24 @@ private:
     // Map the registered objects to their id.
     QHash<const QObject *, QString> registeredObjectIds;
 
+    // Groups individually wrapped objects with their class information and the transports that have access to it.
+    struct ObjectInfo
+    {
+        ObjectInfo()
+            : object(Q_NULLPTR)
+        {}
+        ObjectInfo(QObject *o, const QJsonObject &i)
+            : object(o)
+            , classinfo(i)
+        {}
+        QObject *object;
+        QJsonObject classinfo;
+        QVector<QWebChannelAbstractTransport*> transports;
+    };
+
+    // Map of objects wrapped from invocation returns
+    QHash<QString, ObjectInfo> wrappedObjects;
+
     // Map of objects to maps of signal indices to a set of all their property indices.
     // The last value is a set as a signal can be the notify signal of multiple properties.
     typedef QHash<int, QSet<int> > SignalToPropertyNameMap;
@@ -218,15 +235,6 @@ private:
     typedef QHash<int, QVariantList> SignalToArgumentsMap;
     typedef QHash<const QObject *, SignalToArgumentsMap> PendingPropertyUpdates;
     PendingPropertyUpdates pendingPropertyUpdates;
-
-    // Struct containing the object itself and its ObjectInfo
-    struct ObjectInfo {
-        QObject* object;
-        QJsonValue info;
-    };
-
-    // Maps wrapped object to class info
-    QHash<QString, ObjectInfo> wrappedObjects;
 
     // Aggregate property updates since we get multiple Qt.idle message when we have multiple
     // clients. They all share the same QWebProcess though so we must take special care to

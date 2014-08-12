@@ -41,6 +41,7 @@
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJSValue>
 #include <QUuid>
 
 QT_BEGIN_NAMESPACE
@@ -272,6 +273,7 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
     }
 
     QJsonArray data;
+    QHash<QWebChannelAbstractTransport*, QJsonArray> specificUpdates;
 
     // convert pending property updates to JSON data
     const PendingPropertyUpdates::const_iterator end = pendingPropertyUpdates.constEnd();
@@ -294,21 +296,41 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
             sigs[QString::number(sigIt.key())] = QJsonArray::fromVariantList(sigIt.value());
         }
         QJsonObject obj;
-        obj[KEY_OBJECT] = registeredObjectIds.value(object);
+        const QString objectId = registeredObjectIds.value(object);
+        obj[KEY_OBJECT] = objectId;
         obj[KEY_SIGNALS] = sigs;
         obj[KEY_PROPERTIES] = properties;
-        data.push_back(obj);
+
+        // if the object is auto registered, just send the update only to clients which know this object
+        if (wrappedObjects.contains(objectId)) {
+            foreach (QWebChannelAbstractTransport *transport, wrappedObjects.value(objectId).transports) {
+                QJsonArray &arr = specificUpdates[transport];
+                arr.push_back(obj);
+            }
+        } else {
+            data.push_back(obj);
+        }
     }
 
     pendingPropertyUpdates.clear();
     QJsonObject message;
     message[KEY_TYPE] = TypePropertyUpdate;
-    message[KEY_DATA] = data;
+    message[KEY_DATA] = data;  // data does not contain specific updates
+
     setClientIsIdle(false);
+
     broadcastMessage(message);
+
+    // send every property update which is not supposed to be broadcasted
+    const QHash<QWebChannelAbstractTransport*, QJsonArray>::const_iterator suend = specificUpdates.constEnd();
+    for (QHash<QWebChannelAbstractTransport*, QJsonArray>::const_iterator it = specificUpdates.constBegin(); it != suend; ++it) {
+        message[KEY_TYPE] = TypePropertyUpdate;
+        message[KEY_DATA] = it.value();
+        it.key()->sendMessage(message);
+    }
 }
 
-QJsonValue QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
+QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
                                               const QJsonArray &args)
 {
     const QMetaMethod &method = object->metaObject()->method(methodIndex);
@@ -359,7 +381,7 @@ QJsonValue QMetaObjectPublisher::invokeMethod(QObject *const object, const int m
                   arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
                   arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
 
-    return wrapResult(returnValue);
+    return returnValue;
 }
 
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
@@ -381,7 +403,15 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
             message[KEY_ARGS] = args;
         }
         message[KEY_TYPE] = TypeSignal;
-        broadcastMessage(message);
+
+        // if the object is wrapped, just send the response to clients which know this object
+        if (wrappedObjects.contains(objectName)) {
+            foreach (QWebChannelAbstractTransport *transport, wrappedObjects.value(objectName).transports) {
+                transport->sendMessage(message);
+            }
+        } else {
+            broadcastMessage(message);
+        }
 
         if (signalIndex == s_destroyedSignalIndex) {
             objectDestroyed(object);
@@ -407,7 +437,7 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     pendingPropertyUpdates.remove(object);
 }
 
-QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
+QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelAbstractTransport *transport)
 {
     if (QObject *object = result.value<QObject *>()) {
         QString id = registeredObjectIds.value(object);
@@ -416,7 +446,10 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
 
         if (!id.isEmpty() && wrappedObjects.contains(id)) {
             Q_ASSERT(object == wrappedObjects.value(id).object);
-            return wrappedObjects.value(id).info;
+            // check if this transport is already assigned to the object
+            if (!wrappedObjects.value(id).transports.contains(transport))
+                wrappedObjects[id].transports.append(transport);
+            return wrappedObjects.value(id).classinfo;
         } else {
             id = QUuid::createUuid().toString();
 
@@ -427,18 +460,25 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
 
             if (!registeredObjects.contains(id)) {
                 registeredObjectIds[object] = id;
-                ObjectInfo oi = { object, objectInfo };
+                ObjectInfo oi(object, objectInfo);
+                oi.transports.append(transport);
                 wrappedObjects.insert(id, oi);
 
                 initializePropertyUpdates(object, info);
             }
         }
-
         return objectInfo;
     }
 
-    // no need to wrap this
-    return QJsonValue::fromVariant(result);
+    // Workaround for keeping QJSValues from QVariant.
+    // Calling QJSValue::toVariant() converts JS-objects/arrays to QVariantMap/List
+    // instead of stashing a QJSValue itself into a variant.
+    // TODO: Improve QJSValue-QJsonValue conversion in Qt.
+    QVariant jsvVariant = result;
+    if (result.canConvert<QJSValue>())
+        jsvVariant = result.value<QJSValue>().toVariant();
+
+    return QJsonValue::fromVariant(jsvVariant);
 }
 
 void QMetaObjectPublisher::deleteWrappedObject(QObject *object) const
@@ -504,9 +544,10 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
                           QJsonDocument(message).toJson().constData());
                 return;
             }
+
             transport->sendMessage(createResponse(message.value(KEY_ID),
-                invokeMethod(object, message.value(KEY_METHOD).toInt(-1),
-                             message.value(KEY_ARGS).toArray())));
+                wrapResult(invokeMethod(object, message.value(KEY_METHOD).toInt(-1),
+                             message.value(KEY_ARGS).toArray()), transport)));
         } else if (type == TypeConnectToSignal) {
             signalHandler.connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeDisconnectFromSignal) {

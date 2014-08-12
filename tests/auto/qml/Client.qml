@@ -98,7 +98,12 @@ Item {
 
         for (var i = 0; i < 10 && !root[from].length; ++i)
             wait(10);
-        return root[from].shift();
+
+        var msg = root[from].shift();
+        if (debug) {
+            console.log((root.objectName ? "(" + root.objectName + ")" : ""), "Shifting Message " + from + ":" + JSON.stringify(msg));
+        }
+        return msg;
     }
 
     function awaitMessage(from)
@@ -114,7 +119,7 @@ Item {
     function await(type, from, skip) {
         var msg;
         do {
-            msg = awaitMessage();
+            msg = awaitMessage(from);
             verify(msg);
         } while (skip && (msg.type === JSClient.QWebChannelMessageTypes.idle));
         if (type !== null) {

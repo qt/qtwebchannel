@@ -22,6 +22,9 @@ OTHER_FILES += \
     tst_webchannel.qml \
     tst_metaobjectpublisher.qml \
     tst_bench.qml \
-    tst_multiclient.qml \
+    tst_multiclient.qml
 
 TESTDATA = data/*
+
+DISTFILES += \
+    tst_webchannelseparation.qml
