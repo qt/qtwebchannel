@@ -41,7 +41,7 @@
 
 /*!
     \example standalone
-    \title Standalone Example
+    \title Qt WebChannel Standalone Example
     \ingroup qtwebchannel-examples
     \image standalone-screenshot.png
     \brief Shows how to use the QWebChannel C++ API to communicate with an external client.
@@ -49,11 +49,15 @@
     The standalone example is a simple chat between a pure C++/Qt application and a remote HTML
     client running in your default browser.
 
-    The C++ app sets up a QWebChannel and publishes a Dialog object over it.
+    \include examples-run.qdocinc
+
+    \section1 Overview
+
+    The C++ application sets up a QWebChannel instance and publishes a Dialog object over it.
     For the remote client side, \c index.html is opened. Both show a dialog with the list of
     received messages and an input box to send messages to the other end.
 
-    The Dialog emits the Dialog::sendText() signal when the user sents a message. The signal
+    The Dialog emits the Dialog::sendText() signal when the user sends a message. The signal
     automatically gets propagated to the HTML client. When the user enters a message on the HTML
     side, Dialog::receiveText() is called.
 

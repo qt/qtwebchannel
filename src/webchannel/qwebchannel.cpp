@@ -73,7 +73,7 @@ QT_BEGIN_NAMESPACE
 
     There also exists a declarative WebChannel API.
 
-    \sa {Standalone Example}
+    \sa {Qt WebChannel Standalone Example}
 */
 
 /*!
