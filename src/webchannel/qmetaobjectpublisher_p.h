@@ -48,7 +48,6 @@
 #include <QStringList>
 #include <QMetaObject>
 #include <QBasicTimer>
-#include <QPointer>
 
 #include "qwebchannelglobal.h"
 
