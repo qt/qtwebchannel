@@ -57,7 +57,7 @@ class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
-    Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged);
+    Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged)
 public:
     explicit QWebChannel(QObject *parent = 0);
     ~QWebChannel();
@@ -81,7 +81,7 @@ public Q_SLOTS:
 private:
     Q_DECLARE_PRIVATE(QWebChannel)
     QWebChannel(QWebChannelPrivate &dd, QObject *parent = 0);
-    Q_PRIVATE_SLOT(d_func(), void _q_transportDestroyed(QObject*));
+    Q_PRIVATE_SLOT(d_func(), void _q_transportDestroyed(QObject*))
 
     friend class QMetaObjectPublisher;
     friend class QQmlWebChannel;

@@ -57,7 +57,7 @@ class Q_WEBCHANNEL_EXPORT QQmlWebChannel : public QWebChannel
     Q_OBJECT
     Q_DISABLE_COPY(QQmlWebChannel)
 
-    Q_PROPERTY( QQmlListProperty<QObject> transports READ transports );
+    Q_PROPERTY( QQmlListProperty<QObject> transports READ transports )
     Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
 
 public:
@@ -76,7 +76,7 @@ public:
 
 private:
     Q_DECLARE_PRIVATE(QQmlWebChannel)
-    Q_PRIVATE_SLOT(d_func(), void _q_objectIdChanged(const QString &newId));
+    Q_PRIVATE_SLOT(d_func(), void _q_objectIdChanged(const QString &newId))
 
     static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *item);
     static int registeredObjects_count(QQmlListProperty<QObject> *prop);
