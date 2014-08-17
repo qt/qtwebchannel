@@ -46,7 +46,7 @@
     \image standalone-screenshot.png
     \brief Shows how to use the QWebChannel C++ API to communicate with an external client.
 
-    The standalone example is a simple chat between a pure C++/Qt application and a remote HTML
+    The standalone example is a simple chat between a C++ application and a remote HTML
     client running in your default browser.
 
     \include examples-run.qdocinc
@@ -61,8 +61,10 @@
     automatically gets propagated to the HTML client. When the user enters a message on the HTML
     side, Dialog::receiveText() is called.
 
-    All communication between the HTML client and the C++/Qt server is done over a WebSocket.
+    All communication between the HTML client and the C++ server is done over a WebSocket.
     The C++ side instantiates a QWebSocketServer and wraps incoming QWebSocket connections
     in WebSocketTransport objects, which implement QWebChannelAbstractTransport. These objects are
     then connected to the QWebChannel instance.
+
+    \sa {Qt WebChannel JavaScript API}
 */

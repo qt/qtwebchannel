@@ -59,7 +59,7 @@ QT_BEGIN_NAMESPACE
 
     The QWebChannel fills the gap between C++ applications and HTML/JavaScript
     applications. By publishing a QObject derived object to a QWebChannel and
-    using \l{qtwebchannel-javascript.html}{\c qwebchannel.js} on the HTML side, one can transparently access
+    using the \l{Qt WebChannel JavaScript API}{qwebchannel.js} on the HTML side, one can transparently access
     properties and public slots and methods of the QObject. No manual message
     passing and serialization of data is required, property updates and signal emission
     on the C++ side get automatically transmitted to the potentially remotely running HTML clients.
@@ -68,12 +68,12 @@ QT_BEGIN_NAMESPACE
 
     The C++ QWebChannel API makes it possible to talk to any HTML client, which could run on a local
     or even remote machine. The only limitation is that the HTML client supports the JavaScript
-    features used by \l{qtwebchannel-javascript.html}{\c qwebchannel.js}. As such, one can interact
+    features used by \c{qwebchannel.js}. As such, one can interact
     with basically any modern HTML browser or standalone JavaScript runtime, such as node.js.
 
     There also exists a declarative WebChannel API.
 
-    \sa {Qt WebChannel Standalone Example}
+    \sa {Qt WebChannel Standalone Example}, {Qt WebChannel JavaScript API}{JavaScript API}
 */
 
 /*!

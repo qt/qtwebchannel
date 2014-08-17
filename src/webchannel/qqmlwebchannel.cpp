@@ -63,7 +63,7 @@ QT_BEGIN_NAMESPACE
     The WebChannel provides a mechanism to transparently access QObject or QML objects from HTML
     clients. All properties, signals and public slots can be used from the HTML clients.
 
-    \sa QWebChannel
+    \sa QWebChannel, {Qt WebChannel JavaScript API}{JavaScript API}
 */
 
 /*!

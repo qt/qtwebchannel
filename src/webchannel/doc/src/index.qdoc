@@ -29,9 +29,9 @@
     \page qtwebchannel-index.html
     \since 5.4
     \title Qt WebChannel
-    \brief Bridges the gap between C++/QML and HTML/JavaScript.
+    \brief Bridges the gap between Qt applications and HTML/JavaScript.
 
-    The Qt WebChannel module provides a library for seamless integration of C++/QML applications
+    The Qt WebChannel module provides a library for seamless integration of C++ and QML applications
     with HTML/JavaScript clients. Any QObject can be published to remote clients, where its public
     API becomes available.
 
@@ -40,8 +40,9 @@
     For more information on how to use this module, please refer to the following pages:
 
     \list
-    \li \l{Qt WebChannel C++ Classes} explains QWebChannel C++ API.
-    \li \l{Qt WebChannel QML Types} explains the WebChannel QML API.
-    \li The \l{Qt WebChannel Examples} show how use the API in practice.
+    \li \l{Qt WebChannel JavaScript API}{JavaScript API}
+    \li \l{Qt WebChannel C++ Classes}{C++ API}
+    \li \l{Qt WebChannel QML Types}{QML API}
+    \li \l{Qt WebChannel Examples}{Examples} - show how use the API in practice
     \endlist
 */
