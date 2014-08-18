@@ -303,6 +303,36 @@ TestCase {
         compare(typeof channel.objects[testObjId], "undefined");
     }
 
+    function test_wrapper_propertyUpdateOfWrappedObjects() {
+        var testObj;
+        var testObjId;
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myFactory.create("testObj", function(obj) {
+                testObj = myFactory.lastObj;
+                testObjId = obj.__id__;
+            });
+        });
+        client.awaitInit();
+
+        // first message (call to myFactory.create())
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+
+        // second message connects to destroyed signal
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+
+        client.awaitIdle();
+
+        testObj.myProperty = 42;
+        client.awaitIdle();
+        compare(channel.objects[testObjId].myProperty, 42);
+
+        channel.objects[testObjId].deleteLater();
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+    }
+
     function test_disconnect()
     {
         var signalArg;

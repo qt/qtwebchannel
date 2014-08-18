@@ -441,15 +441,16 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result)
         const QString &id = QUuid::createUuid().toString();
         Q_ASSERT(!registeredObjectIds.contains(object));
 
+        QJsonObject info = classInfoForObject(object);
         objectInfo[KEY_QOBJECT] = true;
         objectInfo[KEY_ID] = id;
-        objectInfo[KEY_DATA] = classInfoForObject(object);
+        objectInfo[KEY_DATA] = info;
 
         registeredObjectIds[object] = id;
         registeredObjects[id] = object;
         wrappedObjects.insert(object, objectInfo);
 
-        initializePropertyUpdates(object, objectInfo);
+        initializePropertyUpdates(object, info);
         return objectInfo;
     }
 
