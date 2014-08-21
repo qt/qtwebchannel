@@ -50,6 +50,7 @@ sourcedirs                                          += .. \
 
 
 exampledirs                                         += ../../../examples/webchannel
+examples.fileextensions                             += "*.html *.json"
 
 navigation.landingpage                              = "Qt WebChannel"
 navigation.cppclassespage                           = "Qt WebChannel C++ Classes"

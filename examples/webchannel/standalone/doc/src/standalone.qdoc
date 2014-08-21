@@ -54,8 +54,8 @@
     \section1 Overview
 
     The C++ application sets up a QWebChannel instance and publishes a Dialog object over it.
-    For the remote client side, \c index.html is opened. Both show a dialog with the list of
-    received messages and an input box to send messages to the other end.
+    For the remote client side, \l {standalone/index.html}{index.html} is opened. Both show a
+    dialog with the list of received messages and an input box to send messages to the other end.
 
     The Dialog emits the Dialog::sendText() signal when the user sends a message. The signal
     automatically gets propagated to the HTML client. When the user enters a message on the HTML
