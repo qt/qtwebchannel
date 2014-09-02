@@ -5,35 +5,27 @@
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
 **
-** $QT_BEGIN_LICENSE:LGPL$
+** $QT_BEGIN_LICENSE:LGPL21$
 ** Commercial License Usage
 ** Licensees holding valid commercial Qt licenses may use this file in
 ** accordance with the commercial license agreement provided with the
 ** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and Digia.  For licensing terms and
-** conditions see http://qt.digia.com/licensing.  For further information
+** a written agreement between you and Digia. For licensing terms and
+** conditions see http://qt.digia.com/licensing. For further information
 ** use the contact form at http://qt.digia.com/contact-us.
 **
 ** GNU Lesser General Public License Usage
 ** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 2.1 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL included in the
-** packaging of this file.  Please review the following information to
-** ensure the GNU Lesser General Public License version 2.1 requirements
-** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
 ** In addition, as a special exception, Digia gives you certain additional
-** rights.  These rights are described in the Digia Qt LGPL Exception
+** rights. These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3.0 as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL included in the
-** packaging of this file.  Please review the following information to
-** ensure the GNU General Public License version 3.0 requirements will be
-** met: http://www.gnu.org/copyleft/gpl.html.
-**
 **
 ** $QT_END_LICENSE$
 **
@@ -102,10 +94,26 @@ TestCase {
         registeredObjects: [myObj, myOtherObj, myFactory]
     }
 
+    function initChannel() {
+        client.serverTransport.receiveMessage(JSON.stringify({type: JSClient.QWebChannelMessageTypes.idle}));
+        webChannel.blockUpdates = true;
+        webChannel.blockUpdates = false;
+    }
+
     function init()
     {
         myObj.myProperty = 1
+        // immediately send pending updates
+        // to avoid property changed signals
+        // during run of test case
+        initChannel();
         client.cleanup();
+    }
+    function cleanup() {
+        // make tests a bit more strict and predictable
+        // by assuming that a test consumes all messages
+        initChannel();
+        compare(client.clientMessages.length, 0);
     }
 
     function test_property()
@@ -130,12 +138,13 @@ TestCase {
         compare(initialValue, 1);
         compare(myObj.myProperty, 3);
 
-        client.awaitIdle();
+        client.awaitIdle(); // init
+        client.awaitIdle(); // property update
 
         // change property, should be propagated to HTML client and a message be send there
         myObj.myProperty = 2;
         compare(myObj.myProperty, 2);
-        client.awaitIdle();
+        client.awaitIdle(); // property update
         compare(changedValue, 2);
     }
 
@@ -171,7 +180,7 @@ TestCase {
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(msg.object, "myObj");
 
-        client.awaitIdle();
+        client.awaitIdle(); // initialization
 
         myObj.mySignal("test");
 
@@ -256,6 +265,8 @@ TestCase {
         compare(msg.args, ["foobar"]);
         compare(lastMethodArg, "foobar");
 
+        client.awaitIdle();
+
         myFactory.lastObj.mySignal("foobar", 42);
 
         // deleteLater call
@@ -265,7 +276,7 @@ TestCase {
 
         compare(signalArgs, {"0": "foobar", "1": 42});
 
-        client.awaitIdle();
+        client.awaitIdle(); // destroyed signal
 
         compare(JSON.stringify(testObjBeforeDeletion), JSON.stringify({}));
         compare(JSON.stringify(testObjAfterDeletion), JSON.stringify({}));
@@ -292,8 +303,12 @@ TestCase {
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(typeof channel.objects[testObjId], "object");
 
+        client.awaitIdle();
+
         channel.objects[testObjId].deleteLater();
         msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        compare(msg.object, testObjId);
 
         // after receiving the destroyed signal the client deletes
         // local objects and sends back a idle message
@@ -301,6 +316,36 @@ TestCase {
 
         compare(myFactory.lastObj, null);
         compare(typeof channel.objects[testObjId], "undefined");
+    }
+
+    function test_wrapper_propertyUpdateOfWrappedObjects() {
+        var testObj;
+        var testObjId;
+        var channel = client.createChannel(function(channel) {
+            channel.objects.myFactory.create("testObj", function(obj) {
+                testObj = myFactory.lastObj;
+                testObjId = obj.__id__;
+            });
+        });
+        client.awaitInit();
+
+        // first message (call to myFactory.create())
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+
+        // second message connects to destroyed signal
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+
+        client.awaitIdle();
+
+        testObj.myProperty = 42;
+        client.awaitIdle();
+        compare(channel.objects[testObjId].myProperty, 42);
+
+        channel.objects[testObjId].deleteLater();
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
     }
 
     function test_disconnect()
