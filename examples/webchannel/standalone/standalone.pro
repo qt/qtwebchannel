@@ -4,12 +4,12 @@ CONFIG += warn_on
 
 SOURCES += \
     main.cpp \
-    websockettransport.cpp \
-    websocketclientwrapper.cpp
+    ../shared/websockettransport.cpp \
+    ../shared/websocketclientwrapper.cpp
 
 HEADERS += \
-    websockettransport.h \
-    websocketclientwrapper.h
+    ../shared/websockettransport.h \
+    ../shared/websocketclientwrapper.h
 
 FORMS += \
     dialog.ui

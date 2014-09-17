@@ -1,7 +1,11 @@
 TEMPLATE = subdirs
-
-qtHaveModule(widgets):qtHaveModule(websockets) {
-    SUBDIRS += standalone
+qtHaveModule(websockets) {
+    SUBDIRS += chatserver-cpp \
+               chatclient-qml
+    qtHaveModule(widgets) {
+        SUBDIRS += standalone
+    }
 }
 
-SUBDIRS += nodejs
+SUBDIRS += nodejs \
+           chatclient-html
