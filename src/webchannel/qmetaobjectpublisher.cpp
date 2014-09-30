@@ -368,6 +368,8 @@ QJsonValue QMetaObjectPublisher::invokeMethod(QObject *const object, const int m
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
 {
     if (!webChannel || webChannel->d_func()->transports.isEmpty()) {
+        if (signalIndex == s_destroyedSignalIndex)
+            objectDestroyed(object);
         return;
     }
     if (!signalToPropertyMap.value(object).contains(signalIndex)) {
