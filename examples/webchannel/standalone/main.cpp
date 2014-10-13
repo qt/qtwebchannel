@@ -42,8 +42,8 @@
 
 #include <QtWebSockets/QWebSocketServer>
 
-#include "../shared/websocketclientwrapper.h"
-#include "../shared/websockettransport.h"
+#include "websocketclientwrapper.h"
+#include "websockettransport.h"
 
 #include "ui_dialog.h"
 
