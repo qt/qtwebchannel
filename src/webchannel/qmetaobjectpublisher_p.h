@@ -94,7 +94,7 @@ public:
     /**
      * Serialize the QMetaObject of @p object and return it in JSON form.
      */
-    QJsonObject classInfoForObject(const QObject *object) const;
+    QJsonObject classInfoForObject(const QObject *object);
 
     /**
      * Set the client to idle or busy, based on the value of @p isIdle.
@@ -154,10 +154,15 @@ public:
      * return the objects class information.
      *
      * All other input types are returned as-is.
-     *
-     * TODO: support wrapping of initially-registered objects
      */
     QJsonValue wrapResult(const QVariant &result);
+
+    /**
+     * Convert a list of variant values for consumption by the client.
+     *
+     * This properly handles QML values and also wraps the result if required.
+     */
+    QJsonArray wrapList(const QVariantList &list);
 
     /**
      * Invoke delete later on @p object.

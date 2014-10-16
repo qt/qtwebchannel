@@ -66,6 +66,8 @@ TestCase {
         property var bar: 1
         WebChannel.id: "myOtherObj"
     }
+    QtObject{ id: bar; objectName: "bar" }
+    QtObject{ id: baz; objectName: "baz" }
     QtObject {
         id: myFactory
         property var lastObj
@@ -74,9 +76,13 @@ TestCase {
             lastObj = component.createObject(myFactory, {objectName: id});
             return lastObj;
         }
+        property var objectInProperty: QtObject {
+            objectName: "foo"
+        }
+        property var otherObject: myObj
+        property var objects: [ bar, baz ];
         WebChannel.id: "myFactory"
     }
-
     Component {
         id: component
         QtObject {
@@ -263,6 +269,15 @@ TestCase {
         client.awaitIdle();
 
         myFactory.lastObj.mySignal("foobar", 42);
+
+        // property should be wrapped
+        compare(channel.objects.myFactory.objectInProperty.objectName, "foo");
+        // list property as well
+        compare(channel.objects.myFactory.objects.length, 2);
+        compare(channel.objects.myFactory.objects[0].objectName, "bar");
+        compare(channel.objects.myFactory.objects[1].objectName, "baz");
+        // also works with properties that reference other registered objects
+        compare(channel.objects.myFactory.otherObject, channel.objects.myObj);
 
         // deleteLater call
         msg = client.awaitMessage();
