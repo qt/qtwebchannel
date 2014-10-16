@@ -194,7 +194,9 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object) cons
     data[KEY_SIGNALS] = qtSignals;
     data[KEY_METHODS] = qtMethods;
     data[KEY_PROPERTIES] = qtProperties;
-    data[KEY_ENUMS] = qtEnums;
+    if (!qtEnums.isEmpty()) {
+        data[KEY_ENUMS] = qtEnums;
+    }
     return data;
 }
 
