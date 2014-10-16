@@ -236,8 +236,9 @@ function QObject(name, data, webChannel)
                 object.__objectSignals__[signalIndex] = object.__objectSignals__[signalIndex] || [];
                 object.__objectSignals__[signalIndex].push(callback);
 
-                if (!isPropertyNotifySignal) {
+                if (!isPropertyNotifySignal && signalName !== "destroyed") {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
+                    // also note that we always get notified about the destroyed signal
                     webChannel.exec({
                         type: QWebChannelMessageTypes.connectToSignal,
                         object: object.__id__,
