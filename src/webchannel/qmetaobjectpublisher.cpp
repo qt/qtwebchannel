@@ -43,11 +43,6 @@
 #include <QJsonArray>
 #include <QUuid>
 
-#if HAVE_QML
-#include <QtQml/QJSValue>
-#include <QtQml/QJSEngine>
-#endif
-
 QT_BEGIN_NAMESPACE
 
 namespace {
@@ -194,7 +189,9 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object) cons
     data[KEY_SIGNALS] = qtSignals;
     data[KEY_METHODS] = qtMethods;
     data[KEY_PROPERTIES] = qtProperties;
-    data[KEY_ENUMS] = qtEnums;
+    if (!qtEnums.isEmpty()) {
+        data[KEY_ENUMS] = qtEnums;
+    }
     return data;
 }
 
@@ -380,19 +377,7 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
         message[KEY_SIGNAL] = signalIndex;
         if (!arguments.isEmpty()) {
             // TODO: wrap (new) objects on the fly
-            QJsonArray args;
-#if HAVE_QML
-            foreach (const QVariant &arg, arguments) {
-                if (arg.canConvert<QJSValue>()) {
-                    const QJSValue &jsValue = arg.value<QJSValue>();
-                    args.append(qjsvalue_cast<QJsonValue>(jsValue));
-                } else {
-                    args.append(QJsonValue::fromVariant(arg));
-                }
-            }
-#else
-            args = QJsonArray::fromVariantList(arguments);
-#endif
+            QJsonArray args = QJsonArray::fromVariantList(arguments);
             message[KEY_ARGS] = args;
         }
         message[KEY_TYPE] = TypeSignal;

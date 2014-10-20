@@ -244,11 +244,6 @@ TestCase {
         compare(myFactory.lastObj.objectName, "testObj");
         compare(channel.objects[testObjId].objectName, "testObj");
 
-        // deleteLater signal connection
-        msg = client.awaitMessage();
-        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
-        compare(msg.object, testObjId);
-
         // mySignal connection
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
@@ -287,26 +282,23 @@ TestCase {
     // objects even if no callback function is set
     function test_wrapper_wrapEveryQObject()
     {
+        var testObj;
         var channel = client.createChannel(function(channel) {
-            channel.objects.myFactory.create("testObj");
+            channel.objects.myFactory.create("testObj", function(obj) {
+                testObj = obj;
+            });
         });
         client.awaitInit();
 
         // ignore first message (call to myFactory.create())
         client.awaitMessage();
-
-        // second message connects to destroyed signal and contains the new objects ID
-        var msg = client.awaitMessage();
-        verify(msg.object);
-
-        var testObjId = msg.object;
-        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
-        compare(typeof channel.objects[testObjId], "object");
-
         client.awaitIdle();
 
-        channel.objects[testObjId].deleteLater();
-        msg = client.awaitMessage();
+        verify(testObj);
+        var testObjId = testObj.__id__;
+
+        testObj.deleteLater();
+        var msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.object, testObjId);
 
@@ -329,13 +321,9 @@ TestCase {
         });
         client.awaitInit();
 
-        // first message (call to myFactory.create())
+        // call to myFactory.create()
         var msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
-
-        // second message connects to destroyed signal
-        msg = client.awaitMessage();
-        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
 
         client.awaitIdle();
 

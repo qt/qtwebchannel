@@ -29,7 +29,6 @@ SOURCES += \
 
 qtHaveModule(qml) {
     QT += qml
-    DEFINES += HAVE_QML=1
 
     SOURCES += \
         qqmlwebchannel.cpp \
