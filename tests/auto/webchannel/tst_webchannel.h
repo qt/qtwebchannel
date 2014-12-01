@@ -214,6 +214,7 @@ public:
 
 private slots:
     void testRegisterObjects();
+    void testDeregisterObjects();
     void testInfoForObject();
     void testInvokeMethodConversion();
     void testDisconnect();

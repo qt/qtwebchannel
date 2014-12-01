@@ -403,6 +403,7 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     Q_ASSERT(removed);
     Q_UNUSED(removed);
 
+    signalHandler.remove(object);
     signalToPropertyMap.remove(object);
     pendingPropertyUpdates.remove(object);
     wrappedObjects.remove(object);

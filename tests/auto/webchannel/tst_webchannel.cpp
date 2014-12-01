@@ -83,6 +83,30 @@ void TestWebChannel::testRegisterObjects()
     channel.registerObjects(objects);
 }
 
+void TestWebChannel::testDeregisterObjects()
+{
+    QWebChannel channel;
+    TestObject testObject;
+    testObject.setObjectName("myTestObject");
+
+
+    channel.registerObject(testObject.objectName(), &testObject);
+
+    channel.connectTo(m_dummyTransport);
+    channel.d_func()->publisher->initializeClients();
+
+    QJsonObject connectMessage =
+            QJsonDocument::fromJson(("{\"type\": 7,"
+                                    "\"object\": \"myTestObject\","
+                                    "\"signal\": " + QString::number(testObject.metaObject()->indexOfSignal("sig1()"))
+                                    + "}").toLatin1()).object();
+    channel.d_func()->publisher->handleMessage(connectMessage, m_dummyTransport);
+
+    emit testObject.sig1();
+    channel.deregisterObject(&testObject);
+    emit testObject.sig1();
+}
+
 void TestWebChannel::testInfoForObject()
 {
     TestObject obj;
