@@ -193,7 +193,7 @@ function QObject(name, data, webChannel)
         }
         if (!response
             || !response["__QObject*__"]
-            || response["id"] === undefined) {
+            || response.id === undefined) {
             return response;
         }
 

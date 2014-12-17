@@ -148,6 +148,12 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray method;
+            method.append(QStringLiteral("setObjectProperty"));
+            method.append(obj.metaObject()->indexOfMethod("setObjectProperty(QObject*)"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
             method.append(QStringLiteral("method1"));
             method.append(obj.metaObject()->indexOfMethod("method1()"));
             expected.append(method);
@@ -230,6 +236,19 @@ void TestWebChannel::testInfoForObject()
             property.append(obj.bar());
             expected.append(property);
         }
+        {
+            QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("objectProperty"));
+            property.append(QStringLiteral("objectProperty"));
+            {
+                QJsonArray signal;
+                signal.append(1);
+                signal.append(obj.metaObject()->indexOfMethod("objectPropertyChanged()"));
+                property.append(signal);
+            }
+            property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.objectProperty())));
+            expected.append(property);
+        }
         QCOMPARE(info["properties"].toArray(), expected);
     }
 }
@@ -268,6 +287,43 @@ void TestWebChannel::testDisconnect()
     channel.connectTo(m_dummyTransport);
     channel.disconnectFrom(m_dummyTransport);
     m_dummyTransport->emitMessageReceived(QJsonObject());
+}
+
+void TestWebChannel::testWrapRegisteredObject()
+{
+    QWebChannel channel;
+    TestObject obj;
+    obj.setObjectName("myTestObject");
+
+    channel.registerObject(obj.objectName(), &obj);
+    channel.connectTo(m_dummyTransport);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QJsonObject objectInfo = channel.d_func()->publisher->wrapResult(QVariant::fromValue(&obj), m_dummyTransport).toObject();
+
+    QCOMPARE(2, objectInfo.length());
+    QVERIFY(objectInfo.contains("id"));
+    QVERIFY(objectInfo.contains("__QObject*__"));
+    QVERIFY(objectInfo.value("__QObject*__").isBool() && objectInfo.value("__QObject*__").toBool());
+
+    QString returnedId = objectInfo.value("id").toString();
+
+    QCOMPARE(&obj, channel.d_func()->publisher->registeredObjects.value(obj.objectName()));
+    QCOMPARE(obj.objectName(), channel.d_func()->publisher->registeredObjectIds.value(&obj));
+    QCOMPARE(obj.objectName(), returnedId);
+}
+
+void TestWebChannel::testInfiniteRecursion()
+{
+    QWebChannel channel;
+    TestObject obj;
+    obj.setObjectProperty(&obj);
+    obj.setObjectName("myTestObject");
+
+    channel.connectTo(m_dummyTransport);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QJsonObject objectInfo = channel.d_func()->publisher->wrapResult(QVariant::fromValue(&obj), m_dummyTransport).toObject();
 }
 
 static QHash<QString, QObject*> createObjects(QObject *parent)

@@ -449,15 +449,17 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
 {
     if (QObject *object = result.value<QObject *>()) {
         QString id = registeredObjectIds.value(object);
+
         QJsonObject classInfo;
         if (id.isEmpty()) {
             // neither registered, nor wrapped, do so now
             id = QUuid::createUuid().toString();
-            Q_ASSERT(!registeredObjects.contains(id));
+            // store ID before the call to classInfoForObject()
+            // in case of self-contained objects it avoids
+            // infinite loops
+            registeredObjectIds[object] = id;
 
             classInfo = classInfoForObject(object, transport);
-
-            registeredObjectIds[object] = id;
 
             ObjectInfo oi(object, classInfo);
             if (transport) {
@@ -485,6 +487,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
         objectInfo[KEY_ID] = id;
         if (!classInfo.isEmpty())
             objectInfo[KEY_DATA] = classInfo;
+
         return objectInfo;
     } else if (result.canConvert<QJSValue>()) {
         // Workaround for keeping QJSValues from QVariant.
