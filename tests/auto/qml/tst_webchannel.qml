@@ -66,13 +66,13 @@ TestCase {
         property var bar: 1
         WebChannel.id: "myOtherObj"
     }
+    property var lastFactoryObj
     QtObject {
         id: myFactory
-        property var lastObj
         function create(id)
         {
-            lastObj = component.createObject(myFactory, {objectName: id});
-            return lastObj;
+            lastFactoryObj = component.createObject(myFactory, {objectName: id});
+            return lastFactoryObj;
         }
         WebChannel.id: "myFactory"
     }
@@ -235,12 +235,15 @@ TestCase {
             });
         });
         client.awaitInit();
+        client.awaitResponse();
 
+        // create testObj
         var msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.object, "myFactory");
-        verify(myFactory.lastObj);
-        compare(myFactory.lastObj.objectName, "testObj");
+        client.awaitResponse();
+        verify(lastFactoryObj);
+        compare(lastFactoryObj.objectName, "testObj");
         compare(channel.objects[testObjId].objectName, "testObj");
 
         // mySignal connection
@@ -248,29 +251,42 @@ TestCase {
         compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
         compare(msg.object, testObjId);
 
+        // set myProperty
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.setProperty);
         compare(msg.object, testObjId);
-        compare(myFactory.lastObj.myProperty, 42);
+        compare(lastFactoryObj.myProperty, 42);
 
+        // call myMethod
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.object, testObjId);
         compare(msg.args, ["foobar"]);
+        client.awaitResponse();
         compare(lastMethodArg, "foobar");
 
         client.awaitIdle();
 
-        myFactory.lastObj.mySignal("foobar", 42);
+        // the server should eventually notify the client about the property update
+        client.awaitPropertyUpdate();
+
+        client.awaitIdle();
+
+        // trigger a signal and ensure it gets transmitted
+        lastFactoryObj.mySignal("foobar", 42);
+        client.awaitSignal();
 
         // deleteLater call
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.object, testObjId);
+        client.awaitResponse();
 
+        // now the signalArgs should also be set
         compare(signalArgs, {"0": "foobar", "1": 42});
 
-        client.awaitIdle(); // destroyed signal
+        // and also a destroyed signal
+        client.awaitSignal();
 
         compare(JSON.stringify(testObjBeforeDeletion), JSON.stringify({}));
         compare(JSON.stringify(testObjAfterDeletion), JSON.stringify({}));
@@ -288,52 +304,61 @@ TestCase {
             });
         });
         client.awaitInit();
+        client.awaitResponse();
 
-        // ignore first message (call to myFactory.create())
-        client.awaitMessage();
+        // call to myFactory.create()
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        client.awaitResponse();
+
         client.awaitIdle();
 
         verify(testObj);
         var testObjId = testObj.__id__;
 
         testObj.deleteLater();
-        var msg = client.awaitMessage();
+        msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
         compare(msg.object, testObjId);
+        client.awaitResponse();
+        // destroyed signal
+        client.awaitSignal();
 
-        // after receiving the destroyed signal the client deletes
-        // local objects and sends back a idle message
-        client.awaitIdle();
-
-        compare(myFactory.lastObj, null);
+        compare(lastFactoryObj, null);
         compare(typeof channel.objects[testObjId], "undefined");
     }
 
-    function test_wrapper_propertyUpdateOfWrappedObjects() {
+    function test_wrapper_propertyUpdateOfWrappedObjects()
+    {
         var testObj;
         var testObjId;
         var channel = client.createChannel(function(channel) {
             channel.objects.myFactory.create("testObj", function(obj) {
-                testObj = myFactory.lastObj;
+                testObj = lastFactoryObj;
                 testObjId = obj.__id__;
             });
         });
         client.awaitInit();
+        client.awaitResponse();
 
         // call to myFactory.create()
         var msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        client.awaitResponse();
 
         client.awaitIdle();
 
         testObj.myProperty = 42;
+        client.awaitPropertyUpdate();
         client.awaitIdle();
         compare(channel.objects[testObjId].myProperty, 42);
 
         channel.objects[testObjId].deleteLater();
-        client.awaitIdle();
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        client.awaitResponse();
+        // destroyed signal
+        client.awaitSignal();
     }
 
     function test_disconnect()

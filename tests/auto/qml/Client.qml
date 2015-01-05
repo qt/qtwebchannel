@@ -91,17 +91,21 @@ Item {
 
     function awaitRawMessage(from)
     {
-        if (!from || typeof from !== "string")
-            from = "clientMessages";
-        else
-            from += "Messages";
+        var messages;
+        if (!from || typeof from !== "string" || from == "client") {
+            from = "client";
+            messages = clientMessages;
+        } else {
+            from = "server";
+            messages = serverMessages;
+        }
 
-        for (var i = 0; i < 10 && !root[from].length; ++i)
+        for (var i = 0; i < 10 && !messages.length; ++i)
             wait(10);
 
-        var msg = root[from].shift();
+        var msg = messages.shift();
         if (debug) {
-            console.log((root.objectName ? "(" + root.objectName + ")" : ""), "Shifting Message " + from + ":" + JSON.stringify(msg));
+            console.log((root.objectName ? "(" + root.objectName + ")" : ""), "shifting message " + from + "[" + messages.length + "]" + ":" + JSON.stringify(msg));
         }
         return msg;
     }
@@ -120,11 +124,15 @@ Item {
         var msg;
         do {
             msg = awaitMessage(from);
-            verify(msg);
+            if (!msg) {
+                console.trace();
+                verify(msg);
+            }
         } while (skip && (msg.type === JSClient.QWebChannelMessageTypes.idle));
         if (type !== null) {
+            if (!msg || msg.type != type)
+                console.trace();
             verify(msg);
-            verify(msg.type);
             compare(msg.type, type);
         }
         return msg;

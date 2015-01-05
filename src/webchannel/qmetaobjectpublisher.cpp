@@ -315,16 +315,18 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
     pendingPropertyUpdates.clear();
     QJsonObject message;
     message[KEY_TYPE] = TypePropertyUpdate;
-    message[KEY_DATA] = data;  // data does not contain specific updates
 
-    setClientIsIdle(false);
+    // data does not contain specific updates
+    if (!data.isEmpty()) {
+        setClientIsIdle(false);
 
-    broadcastMessage(message);
+        message[KEY_DATA] = data;
+        broadcastMessage(message);
+    }
 
     // send every property update which is not supposed to be broadcasted
     const QHash<QWebChannelAbstractTransport*, QJsonArray>::const_iterator suend = specificUpdates.constEnd();
     for (QHash<QWebChannelAbstractTransport*, QJsonArray>::const_iterator it = specificUpdates.constBegin(); it != suend; ++it) {
-        message[KEY_TYPE] = TypePropertyUpdate;
         message[KEY_DATA] = it.value();
         it.key()->sendMessage(message);
     }
