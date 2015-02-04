@@ -87,14 +87,14 @@ TestCase {
         WebChannel.id: "myOtherObj"
     }
 
+    property var lastFactoryObj
+    property var createdFactoryObjects: []
     QtObject {
         id: myFactory
-        property var lastObj
-        property var createdObjects: []
 
         function cleanup() {
-            while (createdObjects.length) {
-                var obj = createdObjects.shift();
+            while (createdFactoryObjects.length) {
+                var obj = createdFactoryObjects.shift();
                 if (obj) {
                     obj.destroy();
                 }
@@ -103,9 +103,9 @@ TestCase {
 
         function create(id)
         {
-            lastObj = component.createObject(myFactory, {objectName: id});
-            createdObjects.push(lastObj);
-            return lastObj;
+            lastFactoryObj = component.createObject(myFactory, {objectName: id});
+            createdFactoryObjects.push(lastFactoryObj);
+            return lastFactoryObj;
         }
         WebChannel.id: "myFactory"
     }
@@ -139,7 +139,8 @@ TestCase {
         client2.debug = false;
         // delete all created objects
         myFactory.cleanup();
-        myFactory.lastObj = undefined;
+        lastFactoryObj = undefined;
+        createdFactoryObjects = [];
         // reschedule current task to end of event loop
         wait(1);
     }
@@ -180,7 +181,7 @@ TestCase {
 
         var channel1 = client1.createChannel(function (channel1) {
             channel1.objects.myFactory.create("testObj1", function (obj1) {
-                testObj1 = myFactory.lastObj;
+                testObj1 = lastFactoryObj;
                 testObj1Id = obj1.__id__;
 
                 // create second channel after factory has created first
@@ -227,7 +228,7 @@ TestCase {
 
             channel2 = client2.createChannel(function (channel2) {
                 channel2.objects.myFactory.create("testObj2", function (obj2) {
-                    testObj2 = myFactory.lastObj;
+                    testObj2 = lastFactoryObj;
                     testObj2Id = obj2.__id__;
                 });
             });

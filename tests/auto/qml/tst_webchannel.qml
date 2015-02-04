@@ -67,6 +67,8 @@ TestCase {
         WebChannel.id: "myOtherObj"
     }
     property var lastFactoryObj
+    QtObject{ id: bar; objectName: "bar" }
+    QtObject{ id: baz; objectName: "baz" }
     QtObject {
         id: myFactory
         function create(id)
@@ -74,9 +76,13 @@ TestCase {
             lastFactoryObj = component.createObject(myFactory, {objectName: id});
             return lastFactoryObj;
         }
+        property var objectInProperty: QtObject {
+            objectName: "foo"
+        }
+        property var otherObject: myObj
+        property var objects: [ bar, baz ];
         WebChannel.id: "myFactory"
     }
-
     Component {
         id: component
         QtObject {
@@ -275,6 +281,15 @@ TestCase {
         // trigger a signal and ensure it gets transmitted
         lastFactoryObj.mySignal("foobar", 42);
         client.awaitSignal();
+
+        // property should be wrapped
+        compare(channel.objects.myFactory.objectInProperty.objectName, "foo");
+        // list property as well
+        compare(channel.objects.myFactory.objects.length, 2);
+        compare(channel.objects.myFactory.objects[0].objectName, "bar");
+        compare(channel.objects.myFactory.objects[1].objectName, "baz");
+        // also works with properties that reference other registered objects
+        compare(channel.objects.myFactory.otherObject, channel.objects.myObj);
 
         // deleteLater call
         msg = client.awaitMessage();

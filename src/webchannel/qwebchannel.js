@@ -155,6 +155,10 @@ var QWebChannel = function(transport, initCallback)
         for (var objectName in data) {
             var object = new QObject(objectName, data[objectName], channel);
         }
+        // now unwrap properties, which might reference other registered objects
+        for (var objectName in channel.objects) {
+            channel.objects[objectName].unwrapProperties();
+        }
         if (initCallback) {
             initCallback(channel);
         }
@@ -177,17 +181,30 @@ function QObject(name, data, webChannel)
 
     // ----------------------------------------------------------------------
 
-    function unwrapQObject( response )
+    this.unwrapQObject = function(response)
     {
+        if (response instanceof Array) {
+            // support list of objects
+            var ret = new Array(response.length);
+            for (var i = 0; i < response.length; ++i) {
+                ret[i] = object.unwrapQObject(response[i]);
+            }
+            return ret;
+        }
         if (!response
             || !response["__QObject*__"]
-            || response["id"] === undefined
-            || response["data"] === undefined) {
+            || response["id"] === undefined) {
             return response;
         }
+
         var objectId = response.id;
         if (webChannel.objects[objectId])
             return webChannel.objects[objectId];
+
+        if (!response.data) {
+            console.error("Cannot unwrap unknown QObject " + objectId + " without data.");
+            return;
+        }
 
         var qObject = new QObject( objectId, response.data, webChannel );
         qObject.destroyed.connect(function() {
@@ -206,7 +223,16 @@ function QObject(name, data, webChannel)
                 }
             }
         });
+        // here we are already initialized, and thus must directly unwrap the properties
+        qObject.unwrapProperties();
         return qObject;
+    }
+
+    this.unwrapProperties = function()
+    {
+        for (var propertyIdx in object.__propertyCache__) {
+            object.__propertyCache__[propertyIdx] = object.unwrapQObject(object.__propertyCache__[propertyIdx]);
+        }
     }
 
     function addSignal(signalData, isPropertyNotifySignal)
@@ -311,7 +337,7 @@ function QObject(name, data, webChannel)
                 "args": args
             }, function(response) {
                 if (response !== undefined) {
-                    var result = unwrapQObject(response);
+                    var result = object.unwrapQObject(response);
                     if (callback) {
                         (callback)(result);
                     }
@@ -326,6 +352,8 @@ function QObject(name, data, webChannel)
         var propertyName = propertyInfo[1];
         var notifySignalData = propertyInfo[2];
         // initialize property cache with current value
+        // NOTE: if this is an object, it is not directly unwrapped as it might
+        // reference other QObject that we do not know yet
         object.__propertyCache__[propertyIndex] = propertyInfo[3];
 
         if (notifySignalData) {

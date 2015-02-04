@@ -104,15 +104,18 @@ QMetaObjectPublisher::~QMetaObjectPublisher()
 
 void QMetaObjectPublisher::registerObject(const QString &id, QObject *object)
 {
-    if (propertyUpdatesInitialized) {
-        qWarning("Registered new object after initialization. This does not work!");
-        return;
-    }
     registeredObjects[id] = object;
     registeredObjectIds[object] = id;
+    if (propertyUpdatesInitialized) {
+        if (!webChannel->d_func()->transports.isEmpty()) {
+            qWarning("Registered new object after initialization, existing clients won't be notified!");
+            // TODO: send a message to clients that an object was added
+        }
+        initializePropertyUpdates(object, classInfoForObject(object, Q_NULLPTR));
+    }
 }
 
-QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object) const
+QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWebChannelAbstractTransport *transport)
 {
     QJsonObject data;
     if (!object) {
@@ -160,7 +163,7 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object) cons
                      prop.name(), object->metaObject()->className());
         }
         propertyInfo.append(signalInfo);
-        propertyInfo.append(QJsonValue::fromVariant(prop.read(object)));
+        propertyInfo.append(wrapResult(prop.read(object), transport));
         qtProperties.append(propertyInfo);
     }
     for (int i = 0; i < metaObject->methodCount(); ++i) {
@@ -217,13 +220,13 @@ void QMetaObjectPublisher::setClientIsIdle(bool isIdle)
     }
 }
 
-QJsonObject QMetaObjectPublisher::initializeClient()
+QJsonObject QMetaObjectPublisher::initializeClient(QWebChannelAbstractTransport *transport)
 {
     QJsonObject objectInfos;
     {
         const QHash<QString, QObject *>::const_iterator end = registeredObjects.constEnd();
         for (QHash<QString, QObject *>::const_iterator it = registeredObjects.constBegin(); it != end; ++it) {
-            const QJsonObject &info = classInfoForObject(it.value());
+            const QJsonObject &info = classInfoForObject(it.value(), transport);
             if (!propertyUpdatesInitialized) {
                 initializePropertyUpdates(it.value(), info);
             }
@@ -280,6 +283,7 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
     for (PendingPropertyUpdates::const_iterator it = pendingPropertyUpdates.constBegin(); it != end; ++it) {
         const QObject *object = it.key();
         const QMetaObject *const metaObject = object->metaObject();
+        const QString objectId = registeredObjectIds.value(object);
         const SignalToPropertyNameMap &objectsSignalToPropertyMap = signalToPropertyMap.value(object);
         // maps property name to current property value
         QJsonObject properties;
@@ -291,12 +295,11 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
             foreach (const int propertyIndex, objectsSignalToPropertyMap.value(sigIt.key())) {
                 const QMetaProperty &property = metaObject->property(propertyIndex);
                 Q_ASSERT(property.isValid());
-                properties[QString::number(propertyIndex)] = QJsonValue::fromVariant(property.read(object));
+                properties[QString::number(propertyIndex)] = wrapResult(property.read(object), Q_NULLPTR, objectId);
             }
             sigs[QString::number(sigIt.key())] = QJsonArray::fromVariantList(sigIt.value());
         }
         QJsonObject obj;
-        const QString objectId = registeredObjectIds.value(object);
         obj[KEY_OBJECT] = objectId;
         obj[KEY_SIGNALS] = sigs;
         obj[KEY_PROPERTIES] = properties;
@@ -400,9 +403,7 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
         message[KEY_OBJECT] = objectName;
         message[KEY_SIGNAL] = signalIndex;
         if (!arguments.isEmpty()) {
-            // TODO: wrap (new) objects on the fly
-            QJsonArray args = QJsonArray::fromVariantList(arguments);
-            message[KEY_ARGS] = args;
+            message[KEY_ARGS] = wrapList(arguments, Q_NULLPTR, objectName);
         }
         message[KEY_TYPE] = TypeSignal;
 
@@ -435,52 +436,77 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     Q_ASSERT(removed);
     Q_UNUSED(removed);
 
+    signalHandler.remove(object);
     signalToPropertyMap.remove(object);
     pendingPropertyUpdates.remove(object);
 }
 
-QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelAbstractTransport *transport)
+// NOTE: transport can be a nullptr
+//       in such a case, we need to ensure that the property is registered to
+//       the target transports of the parentObjectId
+QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelAbstractTransport *transport,
+                                            const QString &parentObjectId)
 {
     if (QObject *object = result.value<QObject *>()) {
         QString id = registeredObjectIds.value(object);
+        QJsonObject classInfo;
+        if (id.isEmpty()) {
+            // neither registered, nor wrapped, do so now
+            id = QUuid::createUuid().toString();
+            Q_ASSERT(!registeredObjects.contains(id));
 
-        QJsonObject objectInfo;
+            classInfo = classInfoForObject(object, transport);
 
-        if (!id.isEmpty() && wrappedObjects.contains(id)) {
+            registeredObjectIds[object] = id;
+
+            ObjectInfo oi(object, classInfo);
+            if (transport) {
+                oi.transports.append(transport);
+            } else {
+                // use the transports from the parent object
+                oi.transports = wrappedObjects.value(parentObjectId).transports;
+                // or fallback to all transports if the parent is not wrapped
+                if (oi.transports.isEmpty())
+                    oi.transports = webChannel->d_func()->transports;
+            }
+            wrappedObjects.insert(id, oi);
+
+            initializePropertyUpdates(object, classInfo);
+        } else if (wrappedObjects.contains(id)) {
             Q_ASSERT(object == wrappedObjects.value(id).object);
             // check if this transport is already assigned to the object
-            if (!wrappedObjects.value(id).transports.contains(transport))
+            if (transport && !wrappedObjects.value(id).transports.contains(transport))
                 wrappedObjects[id].transports.append(transport);
-            return wrappedObjects.value(id).classinfo;
-        } else {
-            id = QUuid::createUuid().toString();
-
-            QJsonObject info = classInfoForObject(object);
-            objectInfo[KEY_QOBJECT] = true;
-            objectInfo[KEY_ID] = id;
-            objectInfo[KEY_DATA] = info;
-
-            if (!registeredObjects.contains(id)) {
-                registeredObjectIds[object] = id;
-                ObjectInfo oi(object, objectInfo);
-                oi.transports.append(transport);
-                wrappedObjects.insert(id, oi);
-
-                initializePropertyUpdates(object, info);
-            }
+            classInfo = wrappedObjects.value(id).classinfo;
         }
+
+        QJsonObject objectInfo;
+        objectInfo[KEY_QOBJECT] = true;
+        objectInfo[KEY_ID] = id;
+        if (!classInfo.isEmpty())
+            objectInfo[KEY_DATA] = classInfo;
         return objectInfo;
+    } else if (result.canConvert<QJSValue>()) {
+        // Workaround for keeping QJSValues from QVariant.
+        // Calling QJSValue::toVariant() converts JS-objects/arrays to QVariantMap/List
+        // instead of stashing a QJSValue itself into a variant.
+        // TODO: Improve QJSValue-QJsonValue conversion in Qt.
+        return wrapResult(result.value<QJSValue>().toVariant(), transport, parentObjectId);
+    } else if (result.canConvert<QVariantList>()) {
+        // recurse and potentially wrap contents of the array
+        return wrapList(result.toList(), transport);
     }
 
-    // Workaround for keeping QJSValues from QVariant.
-    // Calling QJSValue::toVariant() converts JS-objects/arrays to QVariantMap/List
-    // instead of stashing a QJSValue itself into a variant.
-    // TODO: Improve QJSValue-QJsonValue conversion in Qt.
-    QVariant jsvVariant = result;
-    if (result.canConvert<QJSValue>())
-        jsvVariant = result.value<QJSValue>().toVariant();
+    return QJsonValue::fromVariant(result);
+}
 
-    return QJsonValue::fromVariant(jsvVariant);
+QJsonArray QMetaObjectPublisher::wrapList(const QVariantList &list, QWebChannelAbstractTransport *transport, const QString &parentObjectId)
+{
+    QJsonArray array;
+    foreach (const QVariant &arg, list) {
+        array.append(wrapResult(arg, transport, parentObjectId));
+    }
+    return array;
 }
 
 void QMetaObjectPublisher::deleteWrappedObject(QObject *object) const
@@ -525,7 +551,7 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
                       QJsonDocument(message).toJson().constData());
             return;
         }
-        transport->sendMessage(createResponse(message.value(KEY_ID), initializeClient()));
+        transport->sendMessage(createResponse(message.value(KEY_ID), initializeClient(transport)));
     } else if (type == TypeDebug) {
         static QTextStream out(stdout);
         out << "DEBUG: " << message.value(KEY_DATA).toString() << endl;

@@ -95,7 +95,7 @@ public:
     /**
      * Serialize the QMetaObject of @p object and return it in JSON form.
      */
-    QJsonObject classInfoForObject(const QObject *object) const;
+    QJsonObject classInfoForObject(const QObject *object, QWebChannelAbstractTransport *transport);
 
     /**
      * Set the client to idle or busy, based on the value of @p isIdle.
@@ -109,7 +109,7 @@ public:
      *
      * Furthermore, if that was not done already, connect to their property notify signals.
      */
-    QJsonObject initializeClient();
+    QJsonObject initializeClient(QWebChannelAbstractTransport *transport);
 
     /**
      * Go through all properties of the given object and connect to their notify signal.
@@ -155,10 +155,17 @@ public:
      * return the objects class information.
      *
      * All other input types are returned as-is.
-     *
-     * TODO: support wrapping of initially-registered objects
      */
-    QJsonValue wrapResult(const QVariant &result, QWebChannelAbstractTransport *transport);
+    QJsonValue wrapResult(const QVariant &result, QWebChannelAbstractTransport *transport,
+                          const QString &parentObjectId = QString());
+
+    /**
+     * Convert a list of variant values for consumption by the client.
+     *
+     * This properly handles QML values and also wraps the result if required.
+     */
+    QJsonArray wrapList(const QVariantList &list, QWebChannelAbstractTransport *transport,
+                          const QString &parentObjectId = QString());
 
     /**
      * Invoke delete later on @p object.

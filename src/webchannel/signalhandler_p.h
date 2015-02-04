@@ -84,6 +84,11 @@ public:
      */
     void clear();
 
+    /**
+     * Fully remove and disconnect an object from handler
+     */
+    void remove(const QObject *object);
+
 private:
     /**
      * Exctract the arguments of a signal call and pass them to the receiver.
@@ -252,15 +257,6 @@ int SignalHandler<Receiver>::qt_metacall(QMetaObject::Call call, int methodId, v
 
         dispatch(object, methodId, args);
 
-        if (methodId == s_destroyedSignalIndex) {
-            // disconnect on QObject::destroyed
-            ConnectionHash::iterator it = m_connectionsCounter.find(object);
-            Q_ASSERT(it != m_connectionsCounter.end());
-            foreach (const ConnectionPair &connection, *it) {
-                QObject::disconnect(connection.first);
-            }
-            m_connectionsCounter.erase(it);
-        }
         return -1;
     }
     return methodId;
@@ -278,6 +274,17 @@ void SignalHandler<Receiver>::clear()
     const SignalArgumentHash keep = m_signalArgumentTypes.take(&QObject::staticMetaObject);
     m_signalArgumentTypes.clear();
     m_signalArgumentTypes[&QObject::staticMetaObject] = keep;
+}
+
+template<class Receiver>
+void SignalHandler<Receiver>::remove(const QObject *object)
+{
+    Q_ASSERT(m_connectionsCounter.contains(object));
+    const SignalConnectionHash &connections = m_connectionsCounter.value(object);
+    foreach (const ConnectionPair &connection, connections) {
+        QObject::disconnect(connection.first);
+    }
+    m_connectionsCounter.remove(object);
 }
 
 QT_END_NAMESPACE

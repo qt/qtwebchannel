@@ -83,13 +83,37 @@ void TestWebChannel::testRegisterObjects()
     channel.registerObjects(objects);
 }
 
+void TestWebChannel::testDeregisterObjects()
+{
+    QWebChannel channel;
+    TestObject testObject;
+    testObject.setObjectName("myTestObject");
+
+
+    channel.registerObject(testObject.objectName(), &testObject);
+
+    channel.connectTo(m_dummyTransport);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QJsonObject connectMessage =
+            QJsonDocument::fromJson(("{\"type\": 7,"
+                                    "\"object\": \"myTestObject\","
+                                    "\"signal\": " + QString::number(testObject.metaObject()->indexOfSignal("sig1()"))
+                                    + "}").toLatin1()).object();
+    channel.d_func()->publisher->handleMessage(connectMessage, m_dummyTransport);
+
+    emit testObject.sig1();
+    channel.deregisterObject(&testObject);
+    emit testObject.sig1();
+}
+
 void TestWebChannel::testInfoForObject()
 {
     TestObject obj;
     obj.setObjectName("myTestObject");
 
     QWebChannel channel;
-    const QJsonObject info = channel.d_func()->publisher->classInfoForObject(&obj);
+    const QJsonObject info = channel.d_func()->publisher->classInfoForObject(&obj, m_dummyTransport);
 
     QCOMPARE(info.keys(), QStringList() << "enums" << "methods" << "properties" << "signals");
 
@@ -267,7 +291,7 @@ void TestWebChannel::benchClassInfo()
 
     QBENCHMARK {
         foreach (const QObject *object, objects) {
-            channel.d_func()->publisher->classInfoForObject(object);
+            channel.d_func()->publisher->classInfoForObject(object, m_dummyTransport);
         }
     }
 }
@@ -282,7 +306,7 @@ void TestWebChannel::benchInitializeClients()
 
     QMetaObjectPublisher *publisher = channel.d_func()->publisher;
     QBENCHMARK {
-        publisher->initializeClient();
+        publisher->initializeClient(m_dummyTransport);
 
         publisher->propertyUpdatesInitialized = false;
         publisher->signalToPropertyMap.clear();
@@ -304,7 +328,7 @@ void TestWebChannel::benchPropertyUpdates()
     }
 
     channel.registerObjects(objects);
-    channel.d_func()->publisher->initializeClient();
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
 
     QBENCHMARK {
         foreach (BenchObject *obj, objectList) {
