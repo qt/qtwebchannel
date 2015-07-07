@@ -12,3 +12,8 @@ SOURCES += \
 
 HEADERS += \
     tst_webchannel.h
+
+qtHaveModule(qml) {
+    DEFINES += WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
+    QT += qml
+}

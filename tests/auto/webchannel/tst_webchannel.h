@@ -244,6 +244,8 @@ private slots:
     void benchPropertyUpdates();
     void benchRegisterObjects();
 
+    void qtbug46548_overriddenProperties();
+
 private:
     DummyTransport *m_dummyTransport;
 

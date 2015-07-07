@@ -365,6 +365,7 @@ function QObject(name, data, webChannel)
         }
 
         Object.defineProperty(object, propertyName, {
+            configurable: true,
             get: function () {
                 var propertyValue = object.__propertyCache__[propertyIndex];
                 if (propertyValue === undefined) {
