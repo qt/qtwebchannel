@@ -30,6 +30,8 @@ SOURCES += \
 qtHaveModule(qml) {
     QT += qml
 
+    DEFINES += "QT_HAVE_QML"
+
     SOURCES += \
         qqmlwebchannel.cpp \
         qqmlwebchannelattached.cpp
