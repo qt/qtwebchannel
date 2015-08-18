@@ -67,7 +67,7 @@ WebSocketTransport::WebSocketTransport(QWebSocket *socket)
 */
 WebSocketTransport::~WebSocketTransport()
 {
-
+    m_socket->deleteLater();
 }
 
 /*!
