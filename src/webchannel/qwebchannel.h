@@ -35,8 +35,8 @@
 #ifndef QWEBCHANNEL_H
 #define QWEBCHANNEL_H
 
-#include <QObject>
-#include <QJsonValue>
+#include <QtCore/QObject>
+#include <QtCore/QJsonValue>
 
 #include <QtWebChannel/qwebchannelglobal.h>
 
