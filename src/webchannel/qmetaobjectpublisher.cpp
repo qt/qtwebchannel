@@ -41,7 +41,9 @@
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonArray>
+#ifndef QT_NO_JSVALUE
 #include <QJSValue>
+#endif
 #include <QUuid>
 
 QT_BEGIN_NAMESPACE
@@ -486,12 +488,14 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
         if (!classInfo.isEmpty())
             objectInfo[KEY_DATA] = classInfo;
         return objectInfo;
+#ifndef QT_NO_JSVALUE
     } else if (result.canConvert<QJSValue>()) {
         // Workaround for keeping QJSValues from QVariant.
         // Calling QJSValue::toVariant() converts JS-objects/arrays to QVariantMap/List
         // instead of stashing a QJSValue itself into a variant.
         // TODO: Improve QJSValue-QJsonValue conversion in Qt.
         return wrapResult(result.value<QJSValue>().toVariant(), transport, parentObjectId);
+#endif
     } else if (result.canConvert<QVariantList>()) {
         // recurse and potentially wrap contents of the array
         return wrapList(result.toList(), transport);

@@ -39,6 +39,8 @@ qtHaveModule(qml) {
 
     PRIVATE_HEADERS += \
         qqmlwebchannelattached_p.h
+} else {
+    DEFINES += QT_NO_JSVALUE
 }
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
