@@ -60,6 +60,8 @@ WebSocketTransport::WebSocketTransport(QWebSocket *socket)
 {
     connect(socket, &QWebSocket::textMessageReceived,
             this, &WebSocketTransport::textMessageReceived);
+    connect(socket, &QWebSocket::disconnected,
+            this, &WebSocketTransport::deleteLater);
 }
 
 /*!
@@ -67,7 +69,7 @@ WebSocketTransport::WebSocketTransport(QWebSocket *socket)
 */
 WebSocketTransport::~WebSocketTransport()
 {
-
+    m_socket->deleteLater();
 }
 
 /*!

@@ -41,7 +41,7 @@
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonArray>
-#ifdef QT_HAVE_QML
+#ifndef QT_NO_JSVALUE
 #include <QJSValue>
 #endif
 #include <QUuid>
@@ -491,7 +491,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
             objectInfo[KEY_DATA] = classInfo;
 
         return objectInfo;
-#ifdef QT_HAVE_QML
+#ifndef QT_NO_JSVALUE
     } else if (result.canConvert<QJSValue>()) {
         // Workaround for keeping QJSValues from QVariant.
         // Calling QJSValue::toVariant() converts JS-objects/arrays to QVariantMap/List

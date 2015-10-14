@@ -30,8 +30,6 @@ SOURCES += \
 qtHaveModule(qml) {
     QT += qml
 
-    DEFINES += "QT_HAVE_QML"
-
     SOURCES += \
         qqmlwebchannel.cpp \
         qqmlwebchannelattached.cpp
@@ -41,6 +39,8 @@ qtHaveModule(qml) {
 
     PRIVATE_HEADERS += \
         qqmlwebchannelattached_p.h
+} else {
+    DEFINES += QT_NO_JSVALUE
 }
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
