@@ -132,7 +132,6 @@ int main(int argc, char** argv)
 
     // open a browser window with the client HTML page
     QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
-    url.setQuery(QStringLiteral("webChannelBaseUrl=") + server.serverUrl().toString());
     QDesktopServices::openUrl(url);
 
     dialog.displayMessage(QObject::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
