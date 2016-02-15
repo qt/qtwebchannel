@@ -4,7 +4,7 @@ project                                             = QtWebChannel
 description                                         = Qt WebChannel Reference Documentation
 version                                             = $QT_VERSION
 
-examplesinstallpath                                 = webchannel
+examplesinstallpath                                 = qtwebchannel/webchannel
 
 qhp.projects                                        = QtWebChannel
 

@@ -55,8 +55,8 @@
 #include <QVariantMap>
 #include <QDesktopServices>
 #include <QUrl>
-#include <QDebug>
-
+#include <QDir>
+#include <QFileInfo>
 #include <QtWebSockets/QWebSocketServer>
 
 #include "../shared/websocketclientwrapper.h"
@@ -128,6 +128,11 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
+    QFileInfo jsFileInfo(QDir::currentPath() + "/qwebchannel.js");
+
+    if (!jsFileInfo.exists())
+        QFile::copy(":/qtwebchannel/qwebchannel.js",jsFileInfo.absoluteFilePath());
+
     // setup the QWebSocketServer
     QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
     if (!server.listen(QHostAddress::LocalHost, 12345)) {
@@ -149,7 +154,6 @@ int main(int argc, char** argv)
 
     // open a browser window with the client HTML page
     QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
-    url.setQuery(QStringLiteral("webChannelBaseUrl=") + server.serverUrl().toString());
     QDesktopServices::openUrl(url);
 
     dialog.displayMessage(QObject::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));

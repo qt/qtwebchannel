@@ -11,7 +11,11 @@
                 output.innerHTML = output.innerHTML + message + "\n";
             }
             window.onload = function() {
-                var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
+                if (location.search != "")
+                    var baseUrl = (/[?&]webChannelBaseUrl=([A-Za-z0-9\-:/\.]+)/.exec(location.search)[1]);
+                else
+                    var baseUrl = "ws://localhost:12345";
+
                 output("Connecting to WebSocket server at " + baseUrl + ".");
                 var socket = new WebSocket(baseUrl);
 
