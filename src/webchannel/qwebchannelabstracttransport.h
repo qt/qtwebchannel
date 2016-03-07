@@ -50,7 +50,7 @@ class Q_WEBCHANNEL_EXPORT QWebChannelAbstractTransport : public QObject
 {
     Q_OBJECT
 public:
-    explicit QWebChannelAbstractTransport(QObject *parent = 0);
+    explicit QWebChannelAbstractTransport(QObject *parent = Q_NULLPTR);
     virtual ~QWebChannelAbstractTransport();
 
 public Q_SLOTS:
