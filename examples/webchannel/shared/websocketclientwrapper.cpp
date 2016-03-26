@@ -49,10 +49,9 @@
 ****************************************************************************/
 
 #include "websocketclientwrapper.h"
+#include "websockettransport.h"
 
 #include <QtWebSockets/QWebSocketServer>
-
-#include "websockettransport.h"
 
 /*!
     \brief Wraps connected QWebSockets clients in WebSocketTransport objects.
