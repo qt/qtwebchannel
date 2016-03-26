@@ -78,7 +78,7 @@ int main(int argc, char** argv)
 
     // setup the dialog and publish it to the QWebChannel
     ChatServer* chatserver = new ChatServer(&app);
-    channel.registerObject("chatserver", chatserver);
+    channel.registerObject(QStringLiteral("chatserver"), chatserver);
 
     return app.exec();
 }
