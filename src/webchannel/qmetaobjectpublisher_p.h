@@ -94,7 +94,7 @@ public:
     virtual ~QMetaObjectPublisher();
 
     /**
-     * Register @p object nuder the given @p id.
+     * Register @p object under the given @p id.
      *
      * The properties, signals and public methods of the QObject are
      * published to the remote client, where an object with the given identifier
