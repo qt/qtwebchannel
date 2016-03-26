@@ -55,7 +55,7 @@
 #include "websockettransport.h"
 
 /*!
-    \brief Wrapps connected QWebSockets clients in WebSocketTransport objects.
+    \brief Wraps connected QWebSockets clients in WebSocketTransport objects.
 
     This code is all that is required to connect incoming WebSockets to the WebChannel. Any kind
     of remote JavaScript client that supports WebSockets can thus receive messages and access the
