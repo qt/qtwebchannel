@@ -115,12 +115,14 @@ bool ChatServer::sendMessage(const QString& user, const QString& msg)
     }
 }
 
-void ChatServer::sendKeepAlive() {
+void ChatServer::sendKeepAlive()
+{
     emit keepAlive();
     m_keepAliveCheckTimer->start();
 }
 
-void ChatServer::checkKeepAliveResponses() {
+void ChatServer::checkKeepAliveResponses()
+{
     qDebug() << "Keep Alive Check" << m_stillAliveUsers;
     m_userList = m_stillAliveUsers;
     m_stillAliveUsers.clear();
@@ -128,7 +130,8 @@ void ChatServer::checkKeepAliveResponses() {
     emit userListChanged();
 }
 
-void ChatServer::keepAliveResponse(const QString& user) {
+void ChatServer::keepAliveResponse(const QString& user)
+{
     m_stillAliveUsers.append(user);
 }
 
