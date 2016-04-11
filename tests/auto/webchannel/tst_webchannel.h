@@ -73,11 +73,13 @@ class TestObject : public QObject
     Q_PROPERTY(int asdf READ asdf NOTIFY asdfChanged)
     Q_PROPERTY(QString bar READ bar NOTIFY theBarHasChanged)
     Q_PROPERTY(QObject * objectProperty READ objectProperty WRITE setObjectProperty NOTIFY objectPropertyChanged)
+    Q_PROPERTY(TestObject * returnedObject READ returnedObject WRITE setReturnedObject NOTIFY returnedObjectChanged)
 
 public:
     explicit TestObject(QObject *parent = 0)
         : QObject(parent)
         , mObjectProperty(0)
+        , mReturnedObject(Q_NULLPTR)
     { }
 
     enum Foo {
@@ -94,6 +96,11 @@ public:
         return mObjectProperty;
     }
 
+    TestObject *returnedObject() const
+    {
+        return mReturnedObject;
+    }
+
     Q_INVOKABLE void method1() {}
 
 protected:
@@ -108,10 +115,17 @@ signals:
     void asdfChanged();
     void theBarHasChanged();
     void objectPropertyChanged();
+    void returnedObjectChanged();
 
 public slots:
     void slot1() {}
     void slot2(const QString&) {}
+
+    void setReturnedObject(TestObject *obj)
+    {
+        mReturnedObject = obj;
+        emit returnedObjectChanged();
+    }
 
     void setObjectProperty(QObject *object)
     {
@@ -127,6 +141,7 @@ private slots:
 
 public:
     QObject *mObjectProperty;
+    TestObject *mReturnedObject;
 };
 
 class BenchObject : public QObject
@@ -264,6 +279,7 @@ private slots:
     void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
+    void testPassWrappedObjectBack();
     void testInfiniteRecursion();
 
     void benchClassInfo();

@@ -87,29 +87,6 @@ QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
 
 /// TODO: what is the proper value here?
 const int PROPERTY_UPDATE_INTERVAL = 50;
-
-QVariant toVariant(const QJsonValue &value, int targetType)
-{
-    if (targetType == QMetaType::QJsonValue) {
-        return QVariant::fromValue(value);
-    } else if (targetType == QMetaType::QJsonArray) {
-        if (!value.isArray())
-            qWarning() << "Cannot not convert non-array argument" << value << "to QJsonArray.";
-        return QVariant::fromValue(value.toArray());
-    } else if (targetType == QMetaType::QJsonObject) {
-        if (!value.isObject())
-            qWarning() << "Cannot not convert non-object argument" << value << "to QJsonObject.";
-        return QVariant::fromValue(value.toObject());
-    }
-
-    // this converts QJsonObjects to QVariantMaps, which is not desired when
-    // we want to get a QJsonObject or QJsonValue (see above)
-    QVariant variant = value.toVariant();
-    if (targetType != QMetaType::QVariant && !variant.convert(targetType)) {
-        qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
-    }
-    return variant;
-}
 }
 
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
@@ -470,6 +447,46 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     signalHandler.remove(object);
     signalToPropertyMap.remove(object);
     pendingPropertyUpdates.remove(object);
+}
+
+QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
+{
+    if (!objectId.isEmpty()) {
+        ObjectInfo objectInfo = wrappedObjects.value(objectId);
+        if (objectInfo.object && !objectInfo.classinfo.isEmpty())
+            return objectInfo.object;
+    }
+
+    qWarning() << "No wrapped object" << objectId;
+    return Q_NULLPTR;
+}
+
+QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
+{
+    if (targetType == QMetaType::QJsonValue) {
+        return QVariant::fromValue(value);
+    } else if (targetType == QMetaType::QJsonArray) {
+        if (!value.isArray())
+            qWarning() << "Cannot not convert non-array argument" << value << "to QJsonArray.";
+        return QVariant::fromValue(value.toArray());
+    } else if (targetType == QMetaType::QJsonObject) {
+        if (!value.isObject())
+            qWarning() << "Cannot not convert non-object argument" << value << "to QJsonObject.";
+        return QVariant::fromValue(value.toObject());
+    } else if (QMetaType::typeFlags(targetType) & QMetaType::PointerToQObject) {
+        QObject *unwrappedObject = unwrapObject(value.toObject()[KEY_ID].toString());
+        if (unwrappedObject == Q_NULLPTR)
+            qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
+        return QVariant::fromValue(unwrappedObject);
+    }
+
+    // this converts QJsonObjects to QVariantMaps, which is not desired when
+    // we want to get a QJsonObject or QJsonValue (see above)
+    QVariant variant = value.toVariant();
+    if (targetType != QMetaType::QVariant && !variant.convert(targetType)) {
+        qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
+    }
+    return variant;
 }
 
 // NOTE: transport can be a nullptr

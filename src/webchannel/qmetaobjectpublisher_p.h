@@ -166,6 +166,10 @@ public:
      */
     void objectDestroyed(const QObject *object);
 
+    QObject *unwrapObject(const QString &objectId) const;
+
+    QVariant toVariant(const QJsonValue &value, int targetType) const;
+
     /**
      * Given a QVariant containing a QObject*, wrap the object and register for property updates
      * return the objects class information.

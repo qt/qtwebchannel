@@ -345,6 +345,12 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray method;
+            method.append(QStringLiteral("setReturnedObject"));
+            method.append(obj.metaObject()->indexOfMethod("setReturnedObject(TestObject*)"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
             method.append(QStringLiteral("setObjectProperty"));
             method.append(obj.metaObject()->indexOfMethod("setObjectProperty(QObject*)"));
             expected.append(method);
@@ -444,6 +450,19 @@ void TestWebChannel::testInfoForObject()
                 property.append(signal);
             }
             property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.objectProperty())));
+            expected.append(property);
+        }
+        {
+            QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("returnedObject"));
+            property.append(QStringLiteral("returnedObject"));
+            {
+                QJsonArray signal;
+                signal.append(1);
+                signal.append(obj.metaObject()->indexOfMethod("returnedObjectChanged()"));
+                property.append(signal);
+            }
+            property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.returnedObject())));
             expected.append(property);
         }
         QCOMPARE(info["properties"].toArray(), expected);
@@ -585,6 +604,36 @@ void TestWebChannel::testWrapRegisteredObject()
     QCOMPARE(&obj, channel.d_func()->publisher->registeredObjects.value(obj.objectName()));
     QCOMPARE(obj.objectName(), channel.d_func()->publisher->registeredObjectIds.value(&obj));
     QCOMPARE(obj.objectName(), returnedId);
+}
+
+void TestWebChannel::testPassWrappedObjectBack()
+{
+    QWebChannel channel;
+    TestObject registeredObj;
+    TestObject returnedObjMethod;
+    TestObject returnedObjProperty;
+
+    registeredObj.setObjectName("registeredObject");
+
+    channel.registerObject(registeredObj.objectName(), &registeredObj);
+    channel.connectTo(m_dummyTransport);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QMetaObjectPublisher *pub = channel.d_func()->publisher;
+    QJsonObject returnedObjMethodInfo = pub->wrapResult(QVariant::fromValue(&returnedObjMethod), m_dummyTransport).toObject();
+    QJsonObject returnedObjPropertyInfo = pub->wrapResult(QVariant::fromValue(&returnedObjProperty), m_dummyTransport).toObject();
+
+    QJsonArray argsMethod;
+    QJsonObject argMethod0;
+    argMethod0["id"] = returnedObjMethodInfo["id"];
+    argsMethod << argMethod0;
+    QJsonObject argProperty;
+    argProperty["id"] = returnedObjPropertyInfo["id"];
+
+    pub->invokeMethod(&registeredObj, registeredObj.metaObject()->indexOfSlot("setReturnedObject(TestObject*)"), argsMethod);
+    QCOMPARE(registeredObj.mReturnedObject, &returnedObjMethod);
+    pub->setProperty(&registeredObj, registeredObj.metaObject()->indexOfProperty("returnedObject"), argProperty);
+    QCOMPARE(registeredObj.mReturnedObject, &returnedObjProperty);
 }
 
 void TestWebChannel::testInfiniteRecursion()
@@ -739,6 +788,7 @@ void TestWebChannel::qtbug46548_overriddenProperties()
 
 #endif // WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
 }
+
 QTEST_MAIN(TestWebChannel)
 
 #include "tst_webchannel.moc"
