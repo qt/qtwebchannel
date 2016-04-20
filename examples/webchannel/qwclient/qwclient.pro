@@ -5,5 +5,5 @@ exampleassets.files += \
     package.json \
     README
 
-exampleassets.path = $$[QT_INSTALL_EXAMPLES]/qwebchannel/qwclient
+exampleassets.path = $$[QT_INSTALL_EXAMPLES]/webchannel/qwclient
 include(../exampleassets.pri)

@@ -10,3 +10,6 @@ qtHaveModule(websockets) {
 SUBDIRS += nodejs \
            qwclient \
            chatclient-html
+
+EXAMPLE_FILES += \
+    shared
