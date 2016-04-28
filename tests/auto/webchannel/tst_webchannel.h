@@ -283,6 +283,7 @@ private slots:
     void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
+    void testRemoveUnusedTransports();
     void testPassWrappedObjectBack();
     void testInfiniteRecursion();
 
@@ -290,6 +291,7 @@ private slots:
     void benchInitializeClients();
     void benchPropertyUpdates();
     void benchRegisterObjects();
+    void benchRemoveTransport();
 
     void qtbug46548_overriddenProperties();
 

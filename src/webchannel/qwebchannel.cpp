@@ -75,9 +75,11 @@ QT_BEGIN_NAMESPACE
 */
 void QWebChannelPrivate::_q_transportDestroyed(QObject *object)
 {
-    const int idx = transports.indexOf(static_cast<QWebChannelAbstractTransport*>(object));
+    QWebChannelAbstractTransport *transport = static_cast<QWebChannelAbstractTransport*>(object);
+    const int idx = transports.indexOf(transport);
     if (idx != -1) {
         transports.remove(idx);
+        publisher->transportRemoved(transport);
     }
 }
 
@@ -246,6 +248,7 @@ void QWebChannel::disconnectFrom(QWebChannelAbstractTransport *transport)
         disconnect(transport, 0, this, 0);
         disconnect(transport, 0, d->publisher, 0);
         d->transports.remove(idx);
+        d->publisher->transportRemoved(transport);
     }
 }
 
