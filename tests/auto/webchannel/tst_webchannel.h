@@ -232,12 +232,14 @@ private slots:
     void testInvokeMethodConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
+    void testRemoveUnusedTransports();
     void testInfiniteRecursion();
 
     void benchClassInfo();
     void benchInitializeClients();
     void benchPropertyUpdates();
     void benchRegisterObjects();
+    void benchRemoveTransport();
 
     void qtbug46548_overriddenProperties();
 

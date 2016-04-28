@@ -455,6 +455,28 @@ void TestWebChannel::testWrapRegisteredObject()
     QCOMPARE(obj.objectName(), returnedId);
 }
 
+void TestWebChannel::testRemoveUnusedTransports()
+{
+    QWebChannel channel;
+    DummyTransport *dummyTransport = new DummyTransport(this);
+    TestObject obj;
+
+    channel.connectTo(dummyTransport);
+    channel.d_func()->publisher->initializeClient(dummyTransport);
+
+    QMetaObjectPublisher *pub = channel.d_func()->publisher;
+    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport);
+
+    QCOMPARE(pub->wrappedObjects.size(), 1);
+    QCOMPARE(pub->registeredObjectIds.size(), 1);
+
+    channel.disconnectFrom(dummyTransport);
+    delete dummyTransport;
+
+    QCOMPARE(pub->wrappedObjects.size(), 0);
+    QCOMPARE(pub->registeredObjectIds.size(), 0);
+}
+
 void TestWebChannel::testInfiniteRecursion()
 {
     QWebChannel channel;
@@ -550,6 +572,37 @@ void TestWebChannel::benchRegisterObjects()
         channel.registerObjects(objects);
     }
 }
+
+void TestWebChannel::benchRemoveTransport()
+{
+    QWebChannel channel;
+    QList<DummyTransport*> dummyTransports;
+    for (int i = 500; i > 0; i--)
+        dummyTransports.append(new DummyTransport(this));
+
+    QList<QSharedPointer<TestObject>> objs;
+    QMetaObjectPublisher *pub = channel.d_func()->publisher;
+
+    foreach (DummyTransport *transport, dummyTransports) {
+        channel.connectTo(transport);
+        channel.d_func()->publisher->initializeClient(transport);
+
+        /* 30 objects per transport */
+        for (int i = 30; i > 0; i--) {
+            QSharedPointer<TestObject> obj = QSharedPointer<TestObject>::create();
+            objs.append(obj);
+            pub->wrapResult(QVariant::fromValue(obj.data()), transport);
+        }
+    }
+
+    QBENCHMARK_ONCE {
+        for (auto transport : dummyTransports)
+            pub->transportRemoved(transport);
+    }
+
+    qDeleteAll(dummyTransports);
+}
+
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
 
 class SubclassedTestObject : public TestObject
