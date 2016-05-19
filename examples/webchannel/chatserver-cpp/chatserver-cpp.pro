@@ -16,3 +16,6 @@ HEADERS += \
     chatserver.h \
     ../shared/websocketclientwrapper.h \
     ../shared/websockettransport.h
+
+target.path = $$[QT_INSTALL_EXAMPLES]/webchannel/chatserver-cpp
+INSTALLS += target
