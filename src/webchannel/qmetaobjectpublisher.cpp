@@ -410,6 +410,16 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
     return returnValue;
 }
 
+void QMetaObjectPublisher::setProperty(QObject *object, const int propertyIndex, const QJsonValue &value)
+{
+    QMetaProperty property = object->metaObject()->property(propertyIndex);
+    if (!property.isValid()) {
+        qWarning() << "Cannot set unknown property" << propertyIndex << "of object" << object;
+    } else if (!property.write(object, toVariant(value, property.userType()))) {
+        qWarning() << "Could not write value " << value << "to property" << property.name() << "of object" << object;
+    }
+}
+
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
 {
     if (!webChannel || webChannel->d_func()->transports.isEmpty()) {
@@ -607,14 +617,8 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
         } else if (type == TypeDisconnectFromSignal) {
             signalHandler.disconnectFrom(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeSetProperty) {
-            const int propertyIdx = message.value(KEY_PROPERTY).toInt(-1);
-            QMetaProperty property = object->metaObject()->property(propertyIdx);
-            if (!property.isValid()) {
-                qWarning() << "Cannot set unknown property" << message.value(KEY_PROPERTY) << "of object" << objectName;
-            } else if (!object->metaObject()->property(propertyIdx).write(object, message.value(KEY_VALUE).toVariant())) {
-                qWarning() << "Could not write value " << message.value(KEY_VALUE)
-                           << "to property" << property.name() << "of object" << objectName;
-            }
+            setProperty(object, message.value(KEY_PROPERTY).toInt(-1),
+                        message.value(KEY_VALUE));
         }
     }
 }

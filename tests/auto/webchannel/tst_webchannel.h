@@ -37,6 +37,8 @@
 #include <QObject>
 #include <QVariant>
 #include <QJsonValue>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
@@ -223,22 +225,43 @@ class TestWebChannel : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(int lastInt READ readInt WRITE setInt NOTIFY lastIntChanged);
+    Q_PROPERTY(double lastDouble READ readDouble WRITE setDouble NOTIFY lastDoubleChanged);
+    Q_PROPERTY(QVariant lastVariant READ readVariant WRITE setVariant NOTIFY lastVariantChanged);
+    Q_PROPERTY(QJsonValue lastJsonValue READ readJsonValue WRITE setJsonValue NOTIFY lastJsonValueChanged);
+    Q_PROPERTY(QJsonObject lastJsonObject READ readJsonObject WRITE setJsonObject NOTIFY lastJsonObjectChanged);
+    Q_PROPERTY(QJsonArray lastJsonArray READ readJsonArray WRITE setJsonArray NOTIFY lastJsonArrayChanged);
 public:
     explicit TestWebChannel(QObject *parent = 0);
     virtual ~TestWebChannel();
 
+    int readInt() const;
     Q_INVOKABLE void setInt(int i);
+    double readDouble() const;
     Q_INVOKABLE void setDouble(double d);
+    QVariant readVariant() const;
     Q_INVOKABLE void setVariant(const QVariant &v);
+    QJsonValue readJsonValue() const;
     Q_INVOKABLE void setJsonValue(const QJsonValue &v);
+    QJsonObject readJsonObject() const;
     Q_INVOKABLE void setJsonObject(const QJsonObject &v);
+    QJsonArray readJsonArray() const;
     Q_INVOKABLE void setJsonArray(const QJsonArray &v);
+
+signals:
+    void lastIntChanged();
+    void lastDoubleChanged();
+    void lastVariantChanged();
+    void lastJsonValueChanged();
+    void lastJsonObjectChanged();
+    void lastJsonArrayChanged();
 
 private slots:
     void testRegisterObjects();
     void testDeregisterObjects();
     void testInfoForObject();
     void testInvokeMethodConversion();
+    void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
     void testInfiniteRecursion();
@@ -257,6 +280,8 @@ private:
     double m_lastDouble;
     QVariant m_lastVariant;
     QJsonValue m_lastJsonValue;
+    QJsonObject m_lastJsonObject;
+    QJsonArray m_lastJsonArray;
 };
 
 QT_END_NAMESPACE

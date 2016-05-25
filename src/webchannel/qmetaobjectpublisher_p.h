@@ -150,6 +150,11 @@ public:
     QVariant invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args);
 
     /**
+     * Set the value of property @p propertyIndex on @p object to @p value.
+     */
+    void setProperty(QObject *object, const int propertyIndex, const QJsonValue &value);
+
+    /**
      * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
      */
     void signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments);

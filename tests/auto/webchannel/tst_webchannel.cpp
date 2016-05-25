@@ -200,35 +200,70 @@ TestWebChannel::~TestWebChannel()
 {
 
 }
+int TestWebChannel::readInt() const
+{
+    return m_lastInt;
+}
 
 void TestWebChannel::setInt(int i)
 {
     m_lastInt = i;
+    emit lastIntChanged();
+}
+
+double TestWebChannel::readDouble() const
+{
+    return m_lastDouble;
 }
 
 void TestWebChannel::setDouble(double d)
 {
     m_lastDouble = d;
+    emit lastDoubleChanged();
+}
+
+QVariant TestWebChannel::readVariant() const
+{
+    return m_lastVariant;
 }
 
 void TestWebChannel::setVariant(const QVariant &v)
 {
     m_lastVariant = v;
+    emit lastVariantChanged();
+}
+
+QJsonValue TestWebChannel::readJsonValue() const
+{
+    return m_lastJsonValue;
 }
 
 void TestWebChannel::setJsonValue(const QJsonValue& v)
 {
     m_lastJsonValue = v;
+    emit lastJsonValueChanged();
+}
+
+QJsonObject TestWebChannel::readJsonObject() const
+{
+    return m_lastJsonObject;
 }
 
 void TestWebChannel::setJsonObject(const QJsonObject& v)
 {
-    m_lastJsonValue = v;
+    m_lastJsonObject = v;
+    emit lastJsonObjectChanged();
+}
+
+QJsonArray TestWebChannel::readJsonArray() const
+{
+    return m_lastJsonArray;
 }
 
 void TestWebChannel::setJsonArray(const QJsonArray& v)
 {
-    m_lastJsonValue = v;
+    m_lastJsonArray = v;
+    emit lastJsonArrayChanged();
 }
 
 void TestWebChannel::testRegisterObjects()
@@ -455,7 +490,7 @@ void TestWebChannel::testInvokeMethodConversion()
         object["bar"] = QJsonValue(4.2);
         args[0] = object;
         channel.d_func()->publisher->invokeMethod(this, method, args);
-        QCOMPARE(m_lastJsonValue.toObject(), object);
+        QCOMPARE(m_lastJsonObject, object);
     }
     {
         int method = metaObject()->indexOfMethod("setJsonArray(QJsonArray)");
@@ -465,7 +500,58 @@ void TestWebChannel::testInvokeMethodConversion()
         array <<  QJsonValue(4.2);
         args[0] = array;
         channel.d_func()->publisher->invokeMethod(this, method, args);
-        QCOMPARE(m_lastJsonValue.toArray(), array);
+        QCOMPARE(m_lastJsonArray, array);
+    }
+}
+
+void TestWebChannel::testSetPropertyConversion()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    {
+        int property = metaObject()->indexOfProperty("lastInt");
+        QVERIFY(property != -1);
+        channel.d_func()->publisher->setProperty(this, property, QJsonValue(42));
+        QCOMPARE(m_lastInt, 42);
+    }
+    {
+        int property = metaObject()->indexOfProperty("lastDouble");
+        QVERIFY(property != -1);
+        channel.d_func()->publisher->setProperty(this, property, QJsonValue(-4.2));
+        QCOMPARE(m_lastDouble, -4.2);
+    }
+    {
+        int property = metaObject()->indexOfProperty("lastVariant");
+        QVERIFY(property != -1);
+        QVariant variant("foo bar asdf");
+        channel.d_func()->publisher->setProperty(this, property, QJsonValue::fromVariant(variant));
+        QCOMPARE(m_lastVariant, variant);
+    }
+    {
+        int property = metaObject()->indexOfProperty("lastJsonValue");
+        QVERIFY(property != -1);
+        QJsonValue value("asdf asdf");
+        channel.d_func()->publisher->setProperty(this, property, value);
+        QCOMPARE(m_lastJsonValue, value);
+    }
+    {
+        int property = metaObject()->indexOfProperty("lastJsonArray");
+        QVERIFY(property != -1);
+        QJsonArray array;
+        array << QJsonValue(-123);
+        array <<  QJsonValue(-42);
+        channel.d_func()->publisher->setProperty(this, property, array);
+        QCOMPARE(m_lastJsonArray, array);
+    }
+    {
+        int property = metaObject()->indexOfProperty("lastJsonObject");
+        QVERIFY(property != -1);
+        QJsonObject object;
+        object["foo"] = QJsonValue(-123);
+        object["bar"] = QJsonValue(-4.2);
+        channel.d_func()->publisher->setProperty(this, property, object);
+        QCOMPARE(m_lastJsonObject, object);
     }
 }
 
