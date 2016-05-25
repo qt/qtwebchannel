@@ -36,6 +36,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QJsonValue>
 
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
@@ -229,6 +230,9 @@ public:
     Q_INVOKABLE void setInt(int i);
     Q_INVOKABLE void setDouble(double d);
     Q_INVOKABLE void setVariant(const QVariant &v);
+    Q_INVOKABLE void setJsonValue(const QJsonValue &v);
+    Q_INVOKABLE void setJsonObject(const QJsonObject &v);
+    Q_INVOKABLE void setJsonArray(const QJsonArray &v);
 
 private slots:
     void testRegisterObjects();
@@ -252,6 +256,7 @@ private:
     int m_lastInt;
     double m_lastDouble;
     QVariant m_lastVariant;
+    QJsonValue m_lastJsonValue;
 };
 
 QT_END_NAMESPACE

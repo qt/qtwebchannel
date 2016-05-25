@@ -87,6 +87,29 @@ QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
 
 /// TODO: what is the proper value here?
 const int PROPERTY_UPDATE_INTERVAL = 50;
+
+QVariant toVariant(const QJsonValue &value, int targetType)
+{
+    if (targetType == QMetaType::QJsonValue) {
+        return QVariant::fromValue(value);
+    } else if (targetType == QMetaType::QJsonArray) {
+        if (!value.isArray())
+            qWarning() << "Cannot not convert non-array argument" << value << "to QJsonArray.";
+        return QVariant::fromValue(value.toArray());
+    } else if (targetType == QMetaType::QJsonObject) {
+        if (!value.isObject())
+            qWarning() << "Cannot not convert non-object argument" << value << "to QJsonObject.";
+        return QVariant::fromValue(value.toObject());
+    }
+
+    // this converts QJsonObjects to QVariantMaps, which is not desired when
+    // we want to get a QJsonObject or QJsonValue (see above)
+    QVariant variant = value.toVariant();
+    if (targetType != QMetaType::QVariant && !variant.convert(targetType)) {
+        qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
+    }
+    return variant;
+}
 }
 
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
@@ -366,11 +389,7 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
     // construct converter objects of QVariant to QGenericArgument
     VariantArgument arguments[10];
     for (int i = 0; i < qMin(args.size(), method.parameterCount()); ++i) {
-        QVariant arg = args.at(i).toVariant();
-        if (method.parameterType(i) != QMetaType::QVariant && !arg.convert(method.parameterType(i))) {
-            qWarning() << "Could not convert argument" << args.at(i) << "to target type" << method.parameterTypes().at(i) << '.';
-        }
-        arguments[i].value = arg;
+        arguments[i].value = toVariant(args.at(i), method.parameterType(i));
     }
 
     // construct QGenericReturnArgument

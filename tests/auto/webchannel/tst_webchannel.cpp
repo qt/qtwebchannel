@@ -216,6 +216,21 @@ void TestWebChannel::setVariant(const QVariant &v)
     m_lastVariant = v;
 }
 
+void TestWebChannel::setJsonValue(const QJsonValue& v)
+{
+    m_lastJsonValue = v;
+}
+
+void TestWebChannel::setJsonObject(const QJsonObject& v)
+{
+    m_lastJsonValue = v;
+}
+
+void TestWebChannel::setJsonArray(const QJsonArray& v)
+{
+    m_lastJsonValue = v;
+}
+
 void TestWebChannel::testRegisterObjects()
 {
     QWebChannel channel;
@@ -425,6 +440,32 @@ void TestWebChannel::testInvokeMethodConversion()
         QVERIFY(method != -1);
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastVariant, args.at(0).toVariant());
+    }
+    {
+        int method = metaObject()->indexOfMethod("setJsonValue(QJsonValue)");
+        QVERIFY(method != -1);
+        channel.d_func()->publisher->invokeMethod(this, method, args);
+        QCOMPARE(m_lastJsonValue, args.at(0));
+    }
+    {
+        int method = metaObject()->indexOfMethod("setJsonObject(QJsonObject)");
+        QVERIFY(method != -1);
+        QJsonObject object;
+        object["foo"] = QJsonValue(123);
+        object["bar"] = QJsonValue(4.2);
+        args[0] = object;
+        channel.d_func()->publisher->invokeMethod(this, method, args);
+        QCOMPARE(m_lastJsonValue.toObject(), object);
+    }
+    {
+        int method = metaObject()->indexOfMethod("setJsonArray(QJsonArray)");
+        QVERIFY(method != -1);
+        QJsonArray array;
+        array << QJsonValue(123);
+        array <<  QJsonValue(4.2);
+        args[0] = array;
+        channel.d_func()->publisher->invokeMethod(this, method, args);
+        QCOMPARE(m_lastJsonValue.toArray(), array);
     }
 }
 
