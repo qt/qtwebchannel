@@ -33,31 +33,39 @@
 
 /*!
     \example chatserver-cpp
-    \title Qt WebChannel Chatserver Example
+    \title Qt WebChannel ChatServer Example
     \ingroup qtwebchannel-examples
-    \brief Shows how to use the QWebChannel C++ API to implement a simple chat server
+    \brief A simple chat server implemented using the QWebChannel C++ API.
 
-    The chatserver examples provides a chat service that client examples can connect to.
+    \image chatserver-cpp.png
 
-    \section1 Overview
+    \e{ChatServer} provides a chat service that the
+    \l{Qt WebChannel ChatClient QML Example} and
+    \l{Qt WebChannel ChatClient HTML Example} can connect to.
+
+    \include examples-run.qdocinc
+
+    \section1 Implementing a Chat Server
 
     The C++ application implements a QObject which provides all mechanisms required for
     a chat service.
-    This object is published through a QWebChannel which uses a WebSocket as transport.
+    This object is published through a QWebChannel which uses a \l{Qt WebSockets}
+    {WebSocket} as transport.
 
     The server provides a basic \c login method (username only, no passwords), which must be
     successfully invoked before a client is able to chat.
-    After login a client can invoke the method \c sendMessage and receive the signal \c newMessage
-    to write and receive messages. Furthermore there is a \c userList property which provides
+    After login, a client can invoke the method \c sendMessage and receive the signal \c newMessage
+    to write and receive messages. Furthermore, there is a \c userList property which provides
     the names of all other connected clients.
-    Additionally the server sends a keepAlive signal periodically to all clients. The clients
+    Additionally the server sends a \c keepAlive signal periodically to all clients. The clients
     have to respond to this signal, otherwise the client will be removed from the \c userList property.
 
-    The example shows how basic QObject elements can be used with QWebChannel, i.e. signals
-    (\c newMessage), slots (\c sendMessage) and properties (\c userList).
+    The example shows how basic QObject elements can be used with QWebChannel, that is signals
+    (\c newMessage), slots (\c sendMessage), and properties (\c userList).
 
-    Because this is a plain server application, there are separated clients needed to interact
-    with the server. Both examples chatclient-qml and chatclient-html show a client implementation
+    Because this is a plain server application, separate clients are needed to
+    interact with it. \l{Qt WebChannel ChatClient QML Example} and
+    \l{Qt WebChannel ChatClient HTML Example} are client implementations
     compatible with this server.
 
 */

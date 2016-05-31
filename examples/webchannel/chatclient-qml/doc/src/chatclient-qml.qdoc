@@ -33,32 +33,38 @@
 
 /*!
     \example chatclient-qml
-    \title Qt WebChannel Chatclient QML Example
+    \title Qt WebChannel ChatClient QML Example
     \ingroup qtwebchannel-examples
     \brief A QML client that communicates over a WebSocket with a QWebChannel server.
 
-    The chatclient-html example provides a simple QWebChannel client implemented using JavaScript and QML.
+    \image chatclient-qml.png
 
-    \section1 Overview
+    \e{ChatClient QML} provides a simple QWebChannel client implemented using JavaScript and QML.
 
-    The client initializes a WebSocket connection to the chat server and receives an object
-    containing all neccessarry signals, slots and properties for implementing a chat client.
+    \section1 Running the Example
+
+    To run the example, enter the following command in the client source
+    directory:
+
+    \c {path/to/qmlscene qmlchatclient.qml}
+
+    \section1 Implementing a Web Channel Client
+
+    The client initializes a \l [QML] WebSocket connection to the chat server and receives an object
+    containing all the necessary signals, slots, and properties for implementing a chat client.
 
     After login, the client can invoke the method \c sendMessage and receive the signal \c newMessage
-    to send and receive messages. Furthermore, there is a \c userList property which provides the
+    to send and receive messages. Furthermore, a \c userList property provides the
     names of all other connected clients. It is automatically updated when its contents change.
-    Also, the client responds to the servers keep alive signal which is needed to detect disconnected
+    Also, the client responds to the server's keep alive signal which is needed to detect disconnected
     clients and remove them from the \c userList property.
 
     The example shows how basic elements can be used with the client JavaScript implementation of
-    QWebChannel, like connecting to signals (\c newMessage), calling slots (\c sendMessage) and handle
+    QWebChannel, like connecting to signals (\c newMessage), calling slots (\c sendMessage), and handling
     property changes (\c userList).
 
-    The client is able to work with the chatserver-cpp as server application
+    The client is able to work with the \l{Qt WebChannel ChatServer Example}.
 
-
-    The example can be run by invoking \c {path/to/qmlscene qmlchatclient.qml}.
-
-    \sa {chatserver-cpp}, {chatclient-html}
+    \sa {Qt WebChannel ChatServer Example}, {Qt WebChannel ChatClient HTML Example}
 
 */

@@ -36,6 +36,7 @@
     \group qtwebchannel-examples
     \brief List of Qt WebChannel examples.
 
-    The examples show how to use the QWebChannel C++ and WebChannel QML API.
+    The examples show how to use the QWebChannel C++ and \l [QML] WebChannel QML
+    API.
 
 */
