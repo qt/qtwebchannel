@@ -31,21 +31,20 @@
 
     \brief This page explains how to use the JavaScript QWebChannel API in HTML clients.
 
-    \section1 Setup
+    \section1 Setting up the JavaScript API
 
-    To communicate with a QWebChannel or WebChannel, any HTML client must use and setup the
-    JavaScript API provided by \c qwebchannel.js. For HTML clients run inside Qt WebKit, you
-    can load the file via \c qrc:///qtwebchannel/qwebchannel.js. For external clients you will
-    need to copy the file to your webserver. Then instantiate a QWebChannel object and pass
+    To communicate with a QWebChannel or \l [QML] WebChannel, a client must use and set up the
+    JavaScript API provided by \c qwebchannel.js. For clients run inside \l{Qt WebEngine}, you
+    can load the file via \c qrc:///qtwebchannel/qwebchannel.js. For external clients, you
+    need to copy the file to your web server. Then instantiate a QWebChannel object and pass
     it a transport object and a callback function, which will be invoked once the
-    initialization of the channel finished and published objects become available.
+    initialization of the channel finishes and the published objects become available.
 
     The transport object implements a minimal message passing interface. It should be an object
     with a \c send() function, which takes a stringified JSON message and transmits it to the
     server-side QWebChannelAbstractTransport object. Furthermore, its \c onmessage property should
-    be called when a message from the server was received. This interface is implemented internally
-    by the Qt WebKit navigator.qtWebChannelTransport object. Alternatively, you can also use a
-    WebSocket, which also implements this interface.
+    be called when a message from the server was received. Alternatively, you can use a
+    \l{Qt WebSockets}{WebSocket} to implement the interface.
 
     Note that the JavaScript QWebChannel object should be constructed once the transport object is
     fully operational. In case of a WebSocket, that means you should create the QWebChannel in the

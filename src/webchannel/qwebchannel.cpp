@@ -63,7 +63,7 @@ QT_BEGIN_NAMESPACE
     features used by \c{qwebchannel.js}. As such, one can interact
     with basically any modern HTML browser or standalone JavaScript runtime, such as node.js.
 
-    There also exists a declarative WebChannel API.
+    There also exists a declarative \l{Qt WebChannel QML Types}{WebChannel API}.
 
     \sa {Qt WebChannel Standalone Example}, {Qt WebChannel JavaScript API}{JavaScript API}
 */
