@@ -46,7 +46,7 @@ QT_BEGIN_NAMESPACE
     \class QWebChannel
 
     \inmodule QtWebChannel
-    \brief Expose QObjects to remote HTML clients.
+    \brief Exposes QObjects to remote HTML clients.
     \since 5.4
 
     The QWebChannel fills the gap between C++ applications and HTML/JavaScript
@@ -130,7 +130,7 @@ QWebChannel::~QWebChannel()
 }
 
 /*!
-    Register a group of objects to the QWebChannel.
+    Registers a group of objects to the QWebChannel.
 
     The properties, signals and public invokable methods of the objects are published to the remote clients.
     There, an object with the identifier used as key in the \a objects map is then constructed.
@@ -160,7 +160,7 @@ QHash<QString, QObject *> QWebChannel::registeredObjects() const
 }
 
 /*!
-    Register a single object to the QWebChannel.
+    Registers a single object to the QWebChannel.
 
     The properties, signals and public methods of the \a object are published to the remote clients.
     There, an object with the identifier \a id is then constructed.
@@ -176,7 +176,7 @@ void QWebChannel::registerObject(const QString &id, QObject *object)
 }
 
 /*!
-    Deregister the given \a object from the QWebChannel.
+    Deregisters the given \a object from the QWebChannel.
 
     Remote clients will receive a \c destroyed signal for the given object.
 

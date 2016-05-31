@@ -62,7 +62,7 @@ QT_BEGIN_NAMESPACE
 /*!
     \fn QWebChannelAbstractTransport::sendMessage(const QJsonObject &message)
 
-    Send a JSON \a message to the remote client. An implementation would serialize the message and
+    Sends a JSON \a message to the remote client. An implementation would serialize the message and
     transmit it to the remote JavaScript client.
 */
 
