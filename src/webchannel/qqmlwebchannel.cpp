@@ -128,8 +128,8 @@ QQmlWebChannel::~QQmlWebChannel()
 
 /*!
     \qmlmethod void WebChannel::registerObjects(QVariantMap objects)
-    Register objects to make them accessible to HTML clients. The key of the map is used as an identifier
-    for the object on the client side.
+    Registers objects to make them accessible to HTML clients. The key of the
+    map is used as an identifier for the object on the client side.
 
     Once registered, all signals and property changes are automatically propagated to the clients.
     Public invokable methods, including slots, are also accessible to the clients.
@@ -161,7 +161,8 @@ QQmlWebChannelAttached *QQmlWebChannel::qmlAttachedProperties(QObject *obj)
 /*!
     \qmlmethod void WebChannel::connectTo(QWebChannelAbstractTransport transport)
 
-    \brief Connectect to the \a transport, which represents a communication channel to a single client.
+    \brief Connects to the \a transport, which represents a communication
+    channel to a single client.
 
     The transport object must be an implementation of QWebChannelAbstractTransport.
 
@@ -179,7 +180,7 @@ void QQmlWebChannel::connectTo(QObject *transport)
 /*!
     \qmlmethod void WebChannel::disconnectFrom(QWebChannelAbstractTransport transport)
 
-    \brief Disconnect the \a transport from this WebChannel.
+    \brief Disconnects the \a transport from this WebChannel.
 
     The client will not be able to communicate with the WebChannel anymore, nor will it receive any
     signals or property updates.
