@@ -40,7 +40,7 @@ qhp.QtWebChannel.subprojects.javascript.indexTitle    = Qt WebChannel JavaScript
 
 tagfile                                             = ../../../doc/qtwebchannel/qtwebchannel.tags
 
-depends                                             += qtcore qtquick qtqml qmake qtdoc
+depends                                             += qtcore qtquick qtqml qmake qtdoc qtwebengine qtwebsockets
 
 headerdirs                                          += .. \
                                                        ../../imports
@@ -48,6 +48,7 @@ headerdirs                                          += .. \
 sourcedirs                                          += .. \
                                                        ../../imports
 
+imagedirs                                           += images
 
 exampledirs                                         += ../../../examples/webchannel
 examples.fileextensions                             += "*.html *.json"
