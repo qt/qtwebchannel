@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -31,22 +31,28 @@
 **
 ****************************************************************************/
 
-#include <QtQuickTest/quicktest.h>
-#include <QtQml/qqml.h>
-
-#ifndef QUICK_TEST_SOURCE_DIR
-#define QUICK_TEST_SOURCE_DIR Q_NULLPTR
-#endif
-
-#include "testtransport.h"
-#include "testwebchannel.h"
 #include "testobject.h"
 
-int main(int argc, char **argv)
-{
-    qmlRegisterType<TestTransport>("QtWebChannel.Tests", 1, 0, "TestTransport");
-    qmlRegisterType<TestWebChannel>("QtWebChannel.Tests", 1, 0, "TestWebChannel");
-    qmlRegisterType<TestObject>("QtWebChannel.Tests", 1, 0, "TestObject");
 
-    return quick_test_main(argc, argv, "qml", QUICK_TEST_SOURCE_DIR);
+QT_BEGIN_NAMESPACE
+
+TestObject::TestObject(QObject* parent)
+    : QObject(parent)
+{
 }
+
+TestObject::~TestObject()
+{
+}
+
+void TestObject::triggerSignals()
+{
+    emit testSignalBool(true);
+    emit testSignalBool(false);
+
+    emit testSignalInt(42);
+    emit testSignalInt(1);
+    emit testSignalInt(0);
+}
+
+QT_END_NAMESPACE

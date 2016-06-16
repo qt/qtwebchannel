@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: http://www.qt.io/licensing/
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -31,22 +31,29 @@
 **
 ****************************************************************************/
 
-#include <QtQuickTest/quicktest.h>
-#include <QtQml/qqml.h>
 
-#ifndef QUICK_TEST_SOURCE_DIR
-#define QUICK_TEST_SOURCE_DIR Q_NULLPTR
-#endif
+#ifndef TESTOBJECT_H
+#define TESTOBJECT_H
 
-#include "testtransport.h"
-#include "testwebchannel.h"
-#include "testobject.h"
+#include <QObject>
 
-int main(int argc, char **argv)
+QT_BEGIN_NAMESPACE
+
+class TestObject : public QObject
 {
-    qmlRegisterType<TestTransport>("QtWebChannel.Tests", 1, 0, "TestTransport");
-    qmlRegisterType<TestWebChannel>("QtWebChannel.Tests", 1, 0, "TestWebChannel");
-    qmlRegisterType<TestObject>("QtWebChannel.Tests", 1, 0, "TestObject");
+    Q_OBJECT
+public:
+    explicit TestObject(QObject *parent = Q_NULLPTR);
+    ~TestObject();
 
-    return quick_test_main(argc, argv, "qml", QUICK_TEST_SOURCE_DIR);
-}
+public slots:
+    void triggerSignals();
+
+signals:
+    void testSignalBool(bool testBool);
+    void testSignalInt(int testInt);
+};
+
+QT_END_NAMESPACE
+
+#endif // TESTOBJECT_H

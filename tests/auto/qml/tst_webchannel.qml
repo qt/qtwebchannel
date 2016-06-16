@@ -94,10 +94,15 @@ TestCase {
         }
     }
 
+    TestObject {
+        id: testObject
+        WebChannel.id: "testObject"
+    }
+
     TestWebChannel {
         id: webChannel
         transports: [client.serverTransport]
-        registeredObjects: [myObj, myOtherObj, myFactory]
+        registeredObjects: [myObj, myOtherObj, myFactory, testObject]
     }
 
     function initChannel() {
@@ -411,5 +416,41 @@ TestCase {
 
         myObj.mySignal(0, myObj);
         compare(signalArg, 42);
+    }
+
+    // see also: https://bugreports.qt.io/browse/QTBUG-54074
+    function test_signalArgumentTypeConversion()
+    {
+        var signalArgs = [];
+        function logSignalArgs(arg) {
+            signalArgs.push(arg);
+        }
+        var channel = client.createChannel(function(channel) {
+            var testObject = channel.objects.testObject;
+            testObject.testSignalBool.connect(logSignalArgs);
+            testObject.testSignalInt.connect(logSignalArgs);
+            testObject.triggerSignals();
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "testObject");
+
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "testObject");
+
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        client.awaitIdle();
+
+        compare(signalArgs, [
+            true,
+            false,
+            42,
+            1,
+            0
+        ]);
     }
 }
