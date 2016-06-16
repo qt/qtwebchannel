@@ -192,6 +192,7 @@ TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
     , m_dummyTransport(new DummyTransport(this))
     , m_lastInt(0)
+    , m_lastBool(false)
     , m_lastDouble(0)
 {
 }
@@ -200,6 +201,7 @@ TestWebChannel::~TestWebChannel()
 {
 
 }
+
 int TestWebChannel::readInt() const
 {
     return m_lastInt;
@@ -209,6 +211,17 @@ void TestWebChannel::setInt(int i)
 {
     m_lastInt = i;
     emit lastIntChanged();
+}
+
+bool TestWebChannel::readBool() const
+{
+    return m_lastBool;
+}
+
+void TestWebChannel::setBool(bool b)
+{
+    m_lastBool = b;
+    emit lastBoolChanged();
 }
 
 double TestWebChannel::readDouble() const
@@ -484,6 +497,14 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(m_lastInt, args.at(0).toInt());
     }
     {
+        int method = metaObject()->indexOfMethod("setBool(bool)");
+        QVERIFY(method != -1);
+        QJsonArray args;
+        args.append(QJsonValue(!m_lastBool));
+        channel.d_func()->publisher->invokeMethod(this, method, args);
+        QCOMPARE(m_lastBool, args.at(0).toBool());
+    }
+    {
         int method = metaObject()->indexOfMethod("setDouble(double)");
         QVERIFY(method != -1);
         channel.d_func()->publisher->invokeMethod(this, method, args);
@@ -533,6 +554,13 @@ void TestWebChannel::testSetPropertyConversion()
         QVERIFY(property != -1);
         channel.d_func()->publisher->setProperty(this, property, QJsonValue(42));
         QCOMPARE(m_lastInt, 42);
+    }
+    {
+        int property = metaObject()->indexOfProperty("lastBool");
+        QVERIFY(property != -1);
+        bool newValue = !m_lastBool;
+        channel.d_func()->publisher->setProperty(this, property, QJsonValue(newValue));
+        QCOMPARE(m_lastBool, newValue);
     }
     {
         int property = metaObject()->indexOfProperty("lastDouble");

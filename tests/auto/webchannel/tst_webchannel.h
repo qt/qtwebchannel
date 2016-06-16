@@ -241,6 +241,7 @@ class TestWebChannel : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int lastInt READ readInt WRITE setInt NOTIFY lastIntChanged);
+    Q_PROPERTY(bool lastBool READ readBool WRITE setBool NOTIFY lastBoolChanged);
     Q_PROPERTY(double lastDouble READ readDouble WRITE setDouble NOTIFY lastDoubleChanged);
     Q_PROPERTY(QVariant lastVariant READ readVariant WRITE setVariant NOTIFY lastVariantChanged);
     Q_PROPERTY(QJsonValue lastJsonValue READ readJsonValue WRITE setJsonValue NOTIFY lastJsonValueChanged);
@@ -252,6 +253,8 @@ public:
 
     int readInt() const;
     Q_INVOKABLE void setInt(int i);
+    bool readBool() const;
+    Q_INVOKABLE void setBool(bool b);
     double readDouble() const;
     Q_INVOKABLE void setDouble(double d);
     QVariant readVariant() const;
@@ -265,6 +268,7 @@ public:
 
 signals:
     void lastIntChanged();
+    void lastBoolChanged();
     void lastDoubleChanged();
     void lastVariantChanged();
     void lastJsonValueChanged();
@@ -293,6 +297,7 @@ private:
     DummyTransport *m_dummyTransport;
 
     int m_lastInt;
+    bool m_lastBool;
     double m_lastDouble;
     QVariant m_lastVariant;
     QJsonValue m_lastJsonValue;
