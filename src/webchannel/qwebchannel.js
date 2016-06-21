@@ -313,7 +313,7 @@ function QObject(name, data, webChannel)
 
     this.signalEmitted = function(signalName, signalArgs)
     {
-        invokeSignalCallbacks(signalName, signalArgs);
+        invokeSignalCallbacks(signalName, this.unwrapQObject(signalArgs));
     }
 
     function addMethod(methodData)
