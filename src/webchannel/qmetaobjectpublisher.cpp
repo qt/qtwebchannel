@@ -372,11 +372,7 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
     // construct converter objects of QVariant to QGenericArgument
     VariantArgument arguments[10];
     for (int i = 0; i < qMin(args.size(), method.parameterCount()); ++i) {
-        QVariant arg = args.at(i).toVariant();
-        if (method.parameterType(i) != QMetaType::QVariant && !arg.convert(method.parameterType(i))) {
-            qWarning() << "Could not convert argument" << args.at(i) << "to target type" << method.parameterTypes().at(i) << '.';
-        }
-        arguments[i].value = arg;
+        arguments[i].value = toVariant(args.at(i), method.parameterType(i));
     }
 
     // construct QGenericReturnArgument
@@ -395,6 +391,16 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
                   arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
 
     return returnValue;
+}
+
+void QMetaObjectPublisher::setProperty(QObject *object, const int propertyIndex, const QJsonValue &value)
+{
+    QMetaProperty property = object->metaObject()->property(propertyIndex);
+    if (!property.isValid()) {
+        qWarning() << "Cannot set unknown property" << propertyIndex << "of object" << object;
+    } else if (!property.write(object, toVariant(value, property.userType()))) {
+        qWarning() << "Could not write value " << value << "to property" << property.name() << "of object" << object;
+    }
 }
 
 void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments)
@@ -447,6 +453,46 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     signalHandler.remove(object);
     signalToPropertyMap.remove(object);
     pendingPropertyUpdates.remove(object);
+}
+
+QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
+{
+    if (!objectId.isEmpty()) {
+        ObjectInfo objectInfo = wrappedObjects.value(objectId);
+        if (objectInfo.object && !objectInfo.classinfo.isEmpty())
+            return objectInfo.object;
+    }
+
+    qWarning() << "No wrapped object" << objectId;
+    return Q_NULLPTR;
+}
+
+QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
+{
+    if (targetType == QMetaType::QJsonValue) {
+        return QVariant::fromValue(value);
+    } else if (targetType == QMetaType::QJsonArray) {
+        if (!value.isArray())
+            qWarning() << "Cannot not convert non-array argument" << value << "to QJsonArray.";
+        return QVariant::fromValue(value.toArray());
+    } else if (targetType == QMetaType::QJsonObject) {
+        if (!value.isObject())
+            qWarning() << "Cannot not convert non-object argument" << value << "to QJsonObject.";
+        return QVariant::fromValue(value.toObject());
+    } else if (QMetaType::typeFlags(targetType) & QMetaType::PointerToQObject) {
+        QObject *unwrappedObject = unwrapObject(value.toObject()[KEY_ID].toString());
+        if (unwrappedObject == Q_NULLPTR)
+            qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
+        return QVariant::fromValue(unwrappedObject);
+    }
+
+    // this converts QJsonObjects to QVariantMaps, which is not desired when
+    // we want to get a QJsonObject or QJsonValue (see above)
+    QVariant variant = value.toVariant();
+    if (targetType != QMetaType::QVariant && !variant.convert(targetType)) {
+        qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
+    }
+    return variant;
 }
 
 // NOTE: transport can be a nullptr
@@ -594,14 +640,8 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
         } else if (type == TypeDisconnectFromSignal) {
             signalHandler.disconnectFrom(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeSetProperty) {
-            const int propertyIdx = message.value(KEY_PROPERTY).toInt(-1);
-            QMetaProperty property = object->metaObject()->property(propertyIdx);
-            if (!property.isValid()) {
-                qWarning() << "Cannot set unknown property" << message.value(KEY_PROPERTY) << "of object" << objectName;
-            } else if (!object->metaObject()->property(propertyIdx).write(object, message.value(KEY_VALUE).toVariant())) {
-                qWarning() << "Could not write value " << message.value(KEY_VALUE)
-                           << "to property" << property.name() << "of object" << objectName;
-            }
+            setProperty(object, message.value(KEY_PROPERTY).toInt(-1),
+                        message.value(KEY_VALUE));
         }
     }
 }
