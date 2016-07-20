@@ -31,25 +31,49 @@
     \title Qt WebChannel
     \brief Bridges the gap between Qt applications and HTML/JavaScript.
 
-    Qt WebChannel enables peer-to-peer communication between a host
-    (QML/C++ application) and a client (HTML/JavaScript application).
-    It is supported out of the box by Qt WebKit 2 and Qt WebEngine.
-    In addition it can work on all
-    browsers that support WebSockets, enabling Qt WebChannel clients
-    to run in any JavaScript environment (including QML). This requires
+    Qt WebChannel enables peer-to-peer communication between a server (QML/C++
+    application) and a client (HTML/JavaScript or QML application). It is
+    supported out of the box by \l{Qt WebEngine}. In addition it can work on all
+    browsers that support \l{Qt WebSockets}{WebSockets}, enabling Qt WebChannel
+    clients to run in any JavaScript environment (including QML). This requires
     the implementation of a custom transport based on Qt WebSockets.
 
     The module provides a JavaScript library for seamless integration of C++
-    and QML applications with HTML/JavaScript clients. The client must use the
+    and QML applications with HTML/JavaScript and QML clients. The clients must use the
     JavaScript library to access the serialized QObjects published by the host
     applications.
 
-    \section1 Related Information
+    \section1 Getting Started
+
+    To use these classes in your application, use the following include
+    statement:
+
+    \code
+    #include <QtWebChannel/QtWebChannel>
+    \endcode
+
+    To link against the module, add this line to your \l qmake \c .pro file:
+
+    \code
+    QT += webchannel
+    \endcode
+
+    The QML types are accessed by using:
+    \badcode
+    import QtWebChannel 1.0
+    \endcode
+
+    \section1 API Reference
 
     \list
     \li \l{Qt WebChannel JavaScript API}{JavaScript API}
     \li \l{Qt WebChannel C++ Classes}{C++ API}
     \li \l{Qt WebChannel QML Types}{QML API}
-    \li \l{Qt WebChannel Examples}{Examples} - show how use the API in practice
+    \endlist
+
+    \section1 Examples
+
+    \list
+    \li \l{Qt WebChannel Examples}{Examples}
     \endlist
 */

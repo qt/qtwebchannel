@@ -319,7 +319,7 @@ function QObject(name, data, webChannel)
 
     this.signalEmitted = function(signalName, signalArgs)
     {
-        invokeSignalCallbacks(signalName, signalArgs);
+        invokeSignalCallbacks(signalName, this.unwrapQObject(signalArgs));
     }
 
     function addMethod(methodData)
@@ -330,10 +330,15 @@ function QObject(name, data, webChannel)
             var args = [];
             var callback;
             for (var i = 0; i < arguments.length; ++i) {
-                if (typeof arguments[i] === "function")
-                    callback = arguments[i];
+                var argument = arguments[i];
+                if (typeof argument === "function")
+                    callback = argument;
+                else if (argument instanceof QObject && webChannel.objects[argument.__id__] !== undefined)
+                    args.push({
+                        "id": argument.__id__
+                    });
                 else
-                    args.push(arguments[i]);
+                    args.push(argument);
             }
 
             webChannel.exec({
@@ -387,11 +392,14 @@ function QObject(name, data, webChannel)
                     return;
                 }
                 object.__propertyCache__[propertyIndex] = value;
+                var valueToSend = value;
+                if (valueToSend instanceof QObject && webChannel.objects[valueToSend.__id__] !== undefined)
+                    valueToSend = { "id": valueToSend.__id__ };
                 webChannel.exec({
                     "type": QWebChannelMessageTypes.setProperty,
                     "object": object.__id__,
                     "property": propertyIndex,
-                    "value": value
+                    "value": valueToSend
                 });
             }
         });

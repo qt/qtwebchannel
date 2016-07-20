@@ -156,6 +156,11 @@ public:
     QVariant invokeMethod(QObject *const object, const int methodIndex, const QJsonArray &args);
 
     /**
+     * Set the value of property @p propertyIndex on @p object to @p value.
+     */
+    void setProperty(QObject *object, const int propertyIndex, const QJsonValue &value);
+
+    /**
      * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
      */
     void signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments);
@@ -166,6 +171,10 @@ public:
      * @sa signalEmitted
      */
     void objectDestroyed(const QObject *object);
+
+    QObject *unwrapObject(const QString &objectId) const;
+
+    QVariant toVariant(const QJsonValue &value, int targetType) const;
 
     /**
      * Remove wrapped objects which last transport relation is with the passed transport object.

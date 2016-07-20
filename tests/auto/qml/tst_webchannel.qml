@@ -46,7 +46,7 @@ TestCase {
         id: myObj
         property int myProperty: 1
 
-        signal mySignal(var arg)
+        signal mySignal(var arg, QtObject object)
 
         function myMethod(arg)
         {
@@ -169,9 +169,11 @@ TestCase {
     function test_signal()
     {
         var signalReceivedArg;
+        var signalReceivedObject;
         var channel = client.createChannel(function(channel) {
-            channel.objects.myObj.mySignal.connect(function(arg) {
+            channel.objects.myObj.mySignal.connect(function(arg, object) {
                 signalReceivedArg = arg;
+                signalReceivedObject = object;
             });
         });
         client.awaitInit();
@@ -182,9 +184,16 @@ TestCase {
 
         client.awaitIdle(); // initialization
 
-        myObj.mySignal("test");
+        myObj.mySignal("test", myObj);
 
         compare(signalReceivedArg, "test");
+        compare(signalReceivedObject.__id__, "myObj");
+
+        var newObj = myFactory.create("newObj");
+        myObj.mySignal(newObj, newObj);
+
+        compare(signalReceivedArg.objectName, newObj.objectName);
+        compare(signalReceivedObject.objectName, newObj.objectName);
     }
 
     function test_grouping()
@@ -388,14 +397,14 @@ TestCase {
 
         client.awaitIdle();
 
-        myObj.mySignal(42);
+        myObj.mySignal(42, myObj);
         compare(signalArg, 42);
 
         msg = client.awaitMessage();
         compare(msg.type, JSClient.QWebChannelMessageTypes.disconnectFromSignal);
         compare(msg.object, "myObj");
 
-        myObj.mySignal(0);
+        myObj.mySignal(0, myObj);
         compare(signalArg, 42);
     }
 }

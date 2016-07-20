@@ -31,6 +31,9 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QJsonValue>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
@@ -65,11 +68,13 @@ class TestObject : public QObject
     Q_PROPERTY(int asdf READ asdf NOTIFY asdfChanged)
     Q_PROPERTY(QString bar READ bar NOTIFY theBarHasChanged)
     Q_PROPERTY(QObject * objectProperty READ objectProperty WRITE setObjectProperty NOTIFY objectPropertyChanged)
+    Q_PROPERTY(TestObject * returnedObject READ returnedObject WRITE setReturnedObject NOTIFY returnedObjectChanged)
 
 public:
     explicit TestObject(QObject *parent = 0)
         : QObject(parent)
         , mObjectProperty(0)
+        , mReturnedObject(Q_NULLPTR)
     { }
 
     enum Foo {
@@ -86,6 +91,11 @@ public:
         return mObjectProperty;
     }
 
+    TestObject *returnedObject() const
+    {
+        return mReturnedObject;
+    }
+
     Q_INVOKABLE void method1() {}
 
 protected:
@@ -100,10 +110,17 @@ signals:
     void asdfChanged();
     void theBarHasChanged();
     void objectPropertyChanged();
+    void returnedObjectChanged();
 
 public slots:
     void slot1() {}
     void slot2(const QString&) {}
+
+    void setReturnedObject(TestObject *obj)
+    {
+        mReturnedObject = obj;
+        emit returnedObjectChanged();
+    }
 
     void setObjectProperty(QObject *object)
     {
@@ -119,6 +136,7 @@ private slots:
 
 public:
     QObject *mObjectProperty;
+    TestObject *mReturnedObject;
 };
 
 class BenchObject : public QObject
@@ -217,21 +235,50 @@ class TestWebChannel : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(int lastInt READ readInt WRITE setInt NOTIFY lastIntChanged);
+    Q_PROPERTY(bool lastBool READ readBool WRITE setBool NOTIFY lastBoolChanged);
+    Q_PROPERTY(double lastDouble READ readDouble WRITE setDouble NOTIFY lastDoubleChanged);
+    Q_PROPERTY(QVariant lastVariant READ readVariant WRITE setVariant NOTIFY lastVariantChanged);
+    Q_PROPERTY(QJsonValue lastJsonValue READ readJsonValue WRITE setJsonValue NOTIFY lastJsonValueChanged);
+    Q_PROPERTY(QJsonObject lastJsonObject READ readJsonObject WRITE setJsonObject NOTIFY lastJsonObjectChanged);
+    Q_PROPERTY(QJsonArray lastJsonArray READ readJsonArray WRITE setJsonArray NOTIFY lastJsonArrayChanged);
 public:
     explicit TestWebChannel(QObject *parent = 0);
     virtual ~TestWebChannel();
 
+    int readInt() const;
     Q_INVOKABLE void setInt(int i);
+    bool readBool() const;
+    Q_INVOKABLE void setBool(bool b);
+    double readDouble() const;
     Q_INVOKABLE void setDouble(double d);
+    QVariant readVariant() const;
     Q_INVOKABLE void setVariant(const QVariant &v);
+    QJsonValue readJsonValue() const;
+    Q_INVOKABLE void setJsonValue(const QJsonValue &v);
+    QJsonObject readJsonObject() const;
+    Q_INVOKABLE void setJsonObject(const QJsonObject &v);
+    QJsonArray readJsonArray() const;
+    Q_INVOKABLE void setJsonArray(const QJsonArray &v);
+
+signals:
+    void lastIntChanged();
+    void lastBoolChanged();
+    void lastDoubleChanged();
+    void lastVariantChanged();
+    void lastJsonValueChanged();
+    void lastJsonObjectChanged();
+    void lastJsonArrayChanged();
 
 private slots:
     void testRegisterObjects();
     void testDeregisterObjects();
     void testInfoForObject();
     void testInvokeMethodConversion();
+    void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
+    void testPassWrappedObjectBack();
     void testRemoveUnusedTransports();
     void testInfiniteRecursion();
 
@@ -247,8 +294,12 @@ private:
     DummyTransport *m_dummyTransport;
 
     int m_lastInt;
+    bool m_lastBool;
     double m_lastDouble;
     QVariant m_lastVariant;
+    QJsonValue m_lastJsonValue;
+    QJsonObject m_lastJsonObject;
+    QJsonArray m_lastJsonArray;
 };
 
 QT_END_NAMESPACE
