@@ -35,11 +35,13 @@
 
 #include "testtransport.h"
 #include "testwebchannel.h"
+#include "testobject.h"
 
 int main(int argc, char **argv)
 {
     qmlRegisterType<TestTransport>("QtWebChannel.Tests", 1, 0, "TestTransport");
     qmlRegisterType<TestWebChannel>("QtWebChannel.Tests", 1, 0, "TestWebChannel");
+    qmlRegisterType<TestObject>("QtWebChannel.Tests", 1, 0, "TestObject");
 
     return quick_test_main(argc, argv, "qml", QUICK_TEST_SOURCE_DIR);
 }

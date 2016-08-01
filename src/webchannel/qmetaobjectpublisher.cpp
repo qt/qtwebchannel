@@ -455,6 +455,29 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     pendingPropertyUpdates.remove(object);
 }
 
+void QMetaObjectPublisher::transportRemoved(QWebChannelAbstractTransport *transport)
+{
+    QHash<QWebChannelAbstractTransport*, QString>::iterator it = transportedWrappedObjects.find(transport);
+    // It is not allowed to modify a container while iterating over it. So save
+    // objects which should be removed and call objectDestroyed() on them later.
+    QVector<QObject*> objectsForDeletion;
+    while (it != transportedWrappedObjects.end() && it.key() == transport) {
+        if (wrappedObjects.contains(it.value())) {
+            QVector<QWebChannelAbstractTransport*> &transports = wrappedObjects[it.value()].transports;
+            transports.removeOne(transport);
+            if (transports.isEmpty())
+                objectsForDeletion.append(wrappedObjects[it.value()].object);
+        }
+
+        it++;
+    }
+
+    transportedWrappedObjects.remove(transport);
+
+    foreach (QObject *obj, objectsForDeletion)
+        objectDestroyed(obj);
+}
+
 QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
 {
     if (!objectId.isEmpty()) {
@@ -526,6 +549,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
                     oi.transports = webChannel->d_func()->transports;
             }
             wrappedObjects.insert(id, oi);
+            transportedWrappedObjects.insert(transport, id);
 
             initializePropertyUpdates(object, classInfo);
         } else if (wrappedObjects.contains(id)) {

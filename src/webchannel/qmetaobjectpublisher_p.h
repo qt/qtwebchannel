@@ -177,6 +177,11 @@ public:
     QVariant toVariant(const QJsonValue &value, int targetType) const;
 
     /**
+     * Remove wrapped objects which last transport relation is with the passed transport object.
+     */
+    void transportRemoved(QWebChannelAbstractTransport *transport);
+
+    /**
      * Given a QVariant containing a QObject*, wrap the object and register for property updates
      * return the objects class information.
      *
@@ -257,6 +262,8 @@ private:
 
     // Map of objects wrapped from invocation returns
     QHash<QString, ObjectInfo> wrappedObjects;
+    // Map of transports to wrapped object ids
+    QMultiHash<QWebChannelAbstractTransport*, QString> transportedWrappedObjects;
 
     // Map of objects to maps of signal indices to a set of all their property indices.
     // The last value is a set as a signal can be the notify signal of multiple properties.
