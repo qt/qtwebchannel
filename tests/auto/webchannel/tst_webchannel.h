@@ -278,8 +278,8 @@ private slots:
     void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
-    void testPassWrappedObjectBack();
     void testRemoveUnusedTransports();
+    void testPassWrappedObjectBack();
     void testInfiniteRecursion();
 
     void benchClassInfo();

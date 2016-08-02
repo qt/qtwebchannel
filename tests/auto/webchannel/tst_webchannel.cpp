@@ -629,6 +629,28 @@ void TestWebChannel::testWrapRegisteredObject()
     QCOMPARE(obj.objectName(), returnedId);
 }
 
+void TestWebChannel::testRemoveUnusedTransports()
+{
+    QWebChannel channel;
+    DummyTransport *dummyTransport = new DummyTransport(this);
+    TestObject obj;
+
+    channel.connectTo(dummyTransport);
+    channel.d_func()->publisher->initializeClient(dummyTransport);
+
+    QMetaObjectPublisher *pub = channel.d_func()->publisher;
+    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport);
+
+    QCOMPARE(pub->wrappedObjects.size(), 1);
+    QCOMPARE(pub->registeredObjectIds.size(), 1);
+
+    channel.disconnectFrom(dummyTransport);
+    delete dummyTransport;
+
+    QCOMPARE(pub->wrappedObjects.size(), 0);
+    QCOMPARE(pub->registeredObjectIds.size(), 0);
+}
+
 void TestWebChannel::testPassWrappedObjectBack()
 {
     QWebChannel channel;
@@ -657,28 +679,6 @@ void TestWebChannel::testPassWrappedObjectBack()
     QCOMPARE(registeredObj.mReturnedObject, &returnedObjMethod);
     pub->setProperty(&registeredObj, registeredObj.metaObject()->indexOfProperty("returnedObject"), argProperty);
     QCOMPARE(registeredObj.mReturnedObject, &returnedObjProperty);
-}
-
-void TestWebChannel::testRemoveUnusedTransports()
-{
-    QWebChannel channel;
-    DummyTransport *dummyTransport = new DummyTransport(this);
-    TestObject obj;
-
-    channel.connectTo(dummyTransport);
-    channel.d_func()->publisher->initializeClient(dummyTransport);
-
-    QMetaObjectPublisher *pub = channel.d_func()->publisher;
-    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport);
-
-    QCOMPARE(pub->wrappedObjects.size(), 1);
-    QCOMPARE(pub->registeredObjectIds.size(), 1);
-
-    channel.disconnectFrom(dummyTransport);
-    delete dummyTransport;
-
-    QCOMPARE(pub->wrappedObjects.size(), 0);
-    QCOMPARE(pub->registeredObjectIds.size(), 0);
 }
 
 void TestWebChannel::testInfiniteRecursion()

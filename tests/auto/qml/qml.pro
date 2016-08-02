@@ -10,11 +10,13 @@ IMPORTPATH += $$OUT_PWD/../../../qml $$PWD
 SOURCES += \
     qml.cpp \
     testtransport.cpp \
-    testwebchannel.cpp
+    testwebchannel.cpp \
+    testobject.cpp
 
 HEADERS += \
     testtransport.h \
-    testwebchannel.h
+    testwebchannel.h \
+    testobject.h
 
 OTHER_FILES += \
     Client.qml \
