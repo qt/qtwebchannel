@@ -123,6 +123,7 @@ signals:
     void objectPropertyChanged();
     void returnedObjectChanged();
     void propChanged(const QString&);
+    void replay();
 
 public slots:
     void slot1() {}
@@ -141,6 +142,7 @@ public slots:
     }
 
     void setProp(const QString&prop) {emit propChanged(mProp=prop);}
+    void fire() {emit replay();}
 
 protected slots:
     void slot3() {}

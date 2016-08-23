@@ -178,7 +178,7 @@ void SignalHandler<Receiver>::connectTo(const QObject *object, const int signalI
     } // otherwise not yet connected, do so now
 
     static const int memberOffset = QObject::staticMetaObject.methodCount();
-    QMetaObject::Connection connection = QMetaObject::connect(object, signal.methodIndex(), this, memberOffset + signalIndex, Qt::DirectConnection, 0);
+    QMetaObject::Connection connection = QMetaObject::connect(object, signal.methodIndex(), this, memberOffset + signalIndex, Qt::AutoConnection, 0);
     if (!connection) {
         qWarning() << "SignalHandler: QMetaObject::connect returned false. Unable to connect to" << object << signal.name() << signal.methodSignature();
         return;

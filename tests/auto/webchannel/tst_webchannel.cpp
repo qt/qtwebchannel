@@ -376,6 +376,12 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray method;
+            method.append(QStringLiteral("fire"));
+            method.append(obj.metaObject()->indexOfMethod("fire()"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
             method.append(QStringLiteral("method1"));
             method.append(obj.metaObject()->indexOfMethod("method1()"));
             expected.append(method);
@@ -401,6 +407,12 @@ void TestWebChannel::testInfoForObject()
             QJsonArray signal;
             signal.append(QStringLiteral("sig2"));
             signal.append(obj.metaObject()->indexOfMethod("sig2(QString)"));
+            expected.append(signal);
+        }
+        {
+            QJsonArray signal;
+            signal.append(QStringLiteral("replay"));
+            signal.append(obj.metaObject()->indexOfMethod("replay()"));
             expected.append(signal);
         }
         QCOMPARE(info["signals"].toArray(), expected);
@@ -735,10 +747,30 @@ void TestWebChannel::testAsyncObject()
     int method = obj.metaObject()->indexOfMethod("setProp(QString)");
     QVERIFY(method != -1);
 
-    QSignalSpy spy(&obj, &TestObject::propChanged);
-    channel.d_func()->publisher->invokeMethod(&obj, method, args);
-    QVERIFY(spy.wait());
-    QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
+    {
+        QSignalSpy spy(&obj, &TestObject::propChanged);
+        channel.d_func()->publisher->invokeMethod(&obj, method, args);
+        QVERIFY(spy.wait());
+        QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
+    }
+
+    channel.registerObject("myObj", &obj);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QJsonObject connectMessage;
+    connectMessage["type"] = 7;
+    connectMessage["object"] = "myObj";
+    connectMessage["signal"] = obj.metaObject()->indexOfSignal("replay()");
+    channel.d_func()->publisher->handleMessage(connectMessage, m_dummyTransport);
+
+    {
+        QSignalSpy spy(&obj, &TestObject::replay);
+        QMetaObject::invokeMethod(&obj, "fire");
+        QVERIFY(spy.wait());
+        channel.deregisterObject(&obj);
+        QMetaObject::invokeMethod(&obj, "fire");
+        QVERIFY(spy.wait());
+    }
 
     thread.quit();
     thread.wait();
