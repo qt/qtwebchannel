@@ -368,22 +368,26 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
     for (int i = 0; i < qMin(args.size(), method.parameterCount()); ++i) {
         arguments[i].value = toVariant(args.at(i), method.parameterType(i));
     }
-
     // construct QGenericReturnArgument
     QVariant returnValue;
-    if (method.returnType() != qMetaTypeId<QVariant>() && method.returnType() != qMetaTypeId<void>()) {
-        // Only init variant with return type if its not a variant itself, which would
-        // lead to nested variants which is not what we want.
-        // Also, skip void-return types for obvious reasons (and to prevent a runtime warning inside Qt).
-        returnValue = QVariant(method.returnType(), 0);
-    }
-    QGenericReturnArgument returnArgument(method.typeName(), returnValue.data());
-
-    // now we can call the method
-    method.invoke(object, returnArgument,
+    if (method.returnType() == QMetaType::Void) {
+        // Skip return for void methods (prevents runtime warnings inside Qt), and allows
+        // QMetaMethod to invoke void-returning methods on QObjects in a different thread.
+        method.invoke(object,
                   arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
                   arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
+    } else {
+        QGenericReturnArgument returnArgument(method.typeName(), returnValue.data());
 
+        // Only init variant with return type if its not a variant itself, which would
+        // lead to nested variants which is not what we want.
+        if (method.returnType() != QMetaType::QVariant)
+            returnValue = QVariant(method.returnType(), 0);
+        method.invoke(object, returnArgument,
+                  arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
+                  arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
+    }
+    // now we can call the method
     return returnValue;
 }
 

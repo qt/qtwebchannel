@@ -74,6 +74,7 @@ class TestObject : public QObject
     Q_PROPERTY(QString bar READ bar NOTIFY theBarHasChanged)
     Q_PROPERTY(QObject * objectProperty READ objectProperty WRITE setObjectProperty NOTIFY objectPropertyChanged)
     Q_PROPERTY(TestObject * returnedObject READ returnedObject WRITE setReturnedObject NOTIFY returnedObjectChanged)
+    Q_PROPERTY(QString prop READ prop WRITE setProp NOTIFY propChanged)
 
 public:
     explicit TestObject(QObject *parent = 0)
@@ -101,6 +102,11 @@ public:
         return mReturnedObject;
     }
 
+    QString prop() const
+    {
+        return mProp;
+    }
+
     Q_INVOKABLE void method1() {}
 
 protected:
@@ -116,6 +122,7 @@ signals:
     void theBarHasChanged();
     void objectPropertyChanged();
     void returnedObjectChanged();
+    void propChanged(const QString&);
 
 public slots:
     void slot1() {}
@@ -133,6 +140,8 @@ public slots:
         emit objectPropertyChanged();
     }
 
+    void setProp(const QString&prop) {emit propChanged(mProp=prop);}
+
 protected slots:
     void slot3() {}
 
@@ -142,6 +151,7 @@ private slots:
 public:
     QObject *mObjectProperty;
     TestObject *mReturnedObject;
+    QString mProp;
 };
 
 class BenchObject : public QObject
@@ -286,6 +296,7 @@ private slots:
     void testRemoveUnusedTransports();
     void testPassWrappedObjectBack();
     void testInfiniteRecursion();
+    void testAsyncObject();
 
     void benchClassInfo();
     void benchInitializeClients();
