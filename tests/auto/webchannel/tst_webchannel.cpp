@@ -365,6 +365,18 @@ void TestWebChannel::testInfoForObject()
         }
         {
             QJsonArray method;
+            method.append(QStringLiteral("setProp"));
+            method.append(obj.metaObject()->indexOfMethod("setProp(QString)"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
+            method.append(QStringLiteral("fire"));
+            method.append(obj.metaObject()->indexOfMethod("fire()"));
+            expected.append(method);
+        }
+        {
+            QJsonArray method;
             method.append(QStringLiteral("method1"));
             method.append(obj.metaObject()->indexOfMethod("method1()"));
             expected.append(method);
@@ -390,6 +402,12 @@ void TestWebChannel::testInfoForObject()
             QJsonArray signal;
             signal.append(QStringLiteral("sig2"));
             signal.append(obj.metaObject()->indexOfMethod("sig2(QString)"));
+            expected.append(signal);
+        }
+        {
+            QJsonArray signal;
+            signal.append(QStringLiteral("replay"));
+            signal.append(obj.metaObject()->indexOfMethod("replay()"));
             expected.append(signal);
         }
         QCOMPARE(info["signals"].toArray(), expected);
@@ -471,6 +489,19 @@ void TestWebChannel::testInfoForObject()
                 property.append(signal);
             }
             property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.returnedObject())));
+            expected.append(property);
+        }
+        {
+            QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("prop"));
+            property.append(QStringLiteral("prop"));
+            {
+                QJsonArray signal;
+                signal.append(1);
+                signal.append(obj.metaObject()->indexOfMethod("propChanged(QString)"));
+                property.append(signal);
+            }
+            property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.prop())));
             expected.append(property);
         }
         QCOMPARE(info["properties"].toArray(), expected);
@@ -692,6 +723,52 @@ void TestWebChannel::testInfiniteRecursion()
     channel.d_func()->publisher->initializeClient(m_dummyTransport);
 
     QJsonObject objectInfo = channel.d_func()->publisher->wrapResult(QVariant::fromValue(&obj), m_dummyTransport).toObject();
+}
+
+void TestWebChannel::testAsyncObject()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    QThread thread;
+    thread.start();
+
+    TestObject obj;
+    obj.moveToThread(&thread);
+
+    QJsonArray args;
+    args.append(QJsonValue("message"));
+
+    int method = obj.metaObject()->indexOfMethod("setProp(QString)");
+    QVERIFY(method != -1);
+
+    {
+        QSignalSpy spy(&obj, &TestObject::propChanged);
+        channel.d_func()->publisher->invokeMethod(&obj, method, args);
+        QVERIFY(spy.wait());
+        QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
+    }
+
+    channel.registerObject("myObj", &obj);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QJsonObject connectMessage;
+    connectMessage["type"] = 7;
+    connectMessage["object"] = "myObj";
+    connectMessage["signal"] = obj.metaObject()->indexOfSignal("replay()");
+    channel.d_func()->publisher->handleMessage(connectMessage, m_dummyTransport);
+
+    {
+        QSignalSpy spy(&obj, &TestObject::replay);
+        QMetaObject::invokeMethod(&obj, "fire");
+        QVERIFY(spy.wait());
+        channel.deregisterObject(&obj);
+        QMetaObject::invokeMethod(&obj, "fire");
+        QVERIFY(spy.wait());
+    }
+
+    thread.quit();
+    thread.wait();
 }
 
 static QHash<QString, QObject*> createObjects(QObject *parent)
