@@ -317,6 +317,21 @@ void TestWebChannel::testDeregisterObjects()
     emit testObject.sig1();
 }
 
+void TestWebChannel::testDeregisterObjectAtStart()
+{
+    QWebChannel channel;
+    QVERIFY(channel.registeredObjects().isEmpty());
+
+    TestObject testObject;
+    testObject.setObjectName("myTestObject");
+
+    channel.registerObject(testObject.objectName(), &testObject);
+    QCOMPARE(channel.registeredObjects().size(), 1);
+
+    channel.deregisterObject(&testObject);
+    QVERIFY(channel.registeredObjects().isEmpty());
+}
+
 void TestWebChannel::testInfoForObject()
 {
     TestObject obj;

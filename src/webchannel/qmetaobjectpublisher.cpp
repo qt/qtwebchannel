@@ -448,8 +448,12 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     Q_ASSERT(removed);
     Q_UNUSED(removed);
 
-    signalHandler.remove(object);
-    signalToPropertyMap.remove(object);
+    // only remove from handler when we initialized the property updates
+    // cf: https://bugreports.qt.io/browse/QTBUG-60250
+    if (propertyUpdatesInitialized) {
+        signalHandler.remove(object);
+        signalToPropertyMap.remove(object);
+    }
     pendingPropertyUpdates.remove(object);
 }
 
