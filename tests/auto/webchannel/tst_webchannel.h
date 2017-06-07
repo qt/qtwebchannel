@@ -285,6 +285,7 @@ signals:
 private slots:
     void testRegisterObjects();
     void testDeregisterObjects();
+    void testDeregisterObjectAtStart();
     void testInfoForObject();
     void testInvokeMethodConversion();
     void testSetPropertyConversion();
