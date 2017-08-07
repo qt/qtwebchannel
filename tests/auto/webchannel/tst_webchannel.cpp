@@ -536,6 +536,10 @@ void TestWebChannel::testInvokeMethodConversion()
         QVERIFY(method != -1);
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastInt, args.at(0).toInt());
+        int getterMethod = metaObject()->indexOfMethod("readInt()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
         int method = metaObject()->indexOfMethod("setBool(bool)");
@@ -544,24 +548,40 @@ void TestWebChannel::testInvokeMethodConversion()
         args.append(QJsonValue(!m_lastBool));
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastBool, args.at(0).toBool());
+        int getterMethod = metaObject()->indexOfMethod("readBool()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
         int method = metaObject()->indexOfMethod("setDouble(double)");
         QVERIFY(method != -1);
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastDouble, args.at(0).toDouble());
+        int getterMethod = metaObject()->indexOfMethod("readDouble()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
         int method = metaObject()->indexOfMethod("setVariant(QVariant)");
         QVERIFY(method != -1);
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastVariant, args.at(0).toVariant());
+        int getterMethod = metaObject()->indexOfMethod("readVariant()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
         int method = metaObject()->indexOfMethod("setJsonValue(QJsonValue)");
         QVERIFY(method != -1);
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastJsonValue, args.at(0));
+        int getterMethod = metaObject()->indexOfMethod("readJsonValue()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
         int method = metaObject()->indexOfMethod("setJsonObject(QJsonObject)");
@@ -572,16 +592,24 @@ void TestWebChannel::testInvokeMethodConversion()
         args[0] = object;
         channel.d_func()->publisher->invokeMethod(this, method, args);
         QCOMPARE(m_lastJsonObject, object);
+        int getterMethod = metaObject()->indexOfMethod("readJsonObject()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, QVariant::fromValue(object));
     }
     {
-        int method = metaObject()->indexOfMethod("setJsonArray(QJsonArray)");
-        QVERIFY(method != -1);
+        int setterMethod = metaObject()->indexOfMethod("setJsonArray(QJsonArray)");
+        QVERIFY(setterMethod != -1);
         QJsonArray array;
         array << QJsonValue(123);
         array <<  QJsonValue(4.2);
         args[0] = array;
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, setterMethod, args);
         QCOMPARE(m_lastJsonArray, array);
+        int getterMethod = metaObject()->indexOfMethod("readJsonArray()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, QVariant::fromValue(array));
     }
 }
 
