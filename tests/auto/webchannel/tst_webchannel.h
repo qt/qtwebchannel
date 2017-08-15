@@ -258,20 +258,21 @@ public:
     explicit TestWebChannel(QObject *parent = 0);
     virtual ~TestWebChannel();
 
+public slots:
     int readInt() const;
-    Q_INVOKABLE void setInt(int i);
+    void setInt(int i);
     bool readBool() const;
-    Q_INVOKABLE void setBool(bool b);
+    void setBool(bool b);
     double readDouble() const;
-    Q_INVOKABLE void setDouble(double d);
+    void setDouble(double d);
     QVariant readVariant() const;
-    Q_INVOKABLE void setVariant(const QVariant &v);
+    void setVariant(const QVariant &v);
     QJsonValue readJsonValue() const;
-    Q_INVOKABLE void setJsonValue(const QJsonValue &v);
+    void setJsonValue(const QJsonValue &v);
     QJsonObject readJsonObject() const;
-    Q_INVOKABLE void setJsonObject(const QJsonObject &v);
+    void setJsonObject(const QJsonObject &v);
     QJsonArray readJsonArray() const;
-    Q_INVOKABLE void setJsonArray(const QJsonArray &v);
+    void setJsonArray(const QJsonArray &v);
 
 signals:
     void lastIntChanged();
