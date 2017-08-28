@@ -65,7 +65,7 @@ class ChatServer : public QObject
     Q_PROPERTY(QStringList userList READ userList NOTIFY userListChanged)
 
 public:
-    explicit ChatServer(QObject *parent = 0);
+    explicit ChatServer(QObject *parent = nullptr);
     virtual ~ChatServer();
 
 public:

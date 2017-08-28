@@ -72,7 +72,7 @@ class Dialog : public QObject
     Q_OBJECT
 
 public:
-    explicit Dialog(QObject *parent = 0)
+    explicit Dialog(QObject *parent = nullptr)
         : QObject(parent)
     {
         ui.setupUi(&dialog);
