@@ -70,17 +70,17 @@ public:
 
 public:
     //a user logs in with the given username
-    Q_INVOKABLE bool login(const QString& userName);
+    Q_INVOKABLE bool login(const QString &userName);
 
     //the user logs out, will be removed from userlist immediately
-    Q_INVOKABLE bool logout(const QString& userName);
+    Q_INVOKABLE bool logout(const QString &userName);
 
     //a user sends a message to all other users
-    Q_INVOKABLE bool sendMessage(const QString& user, const QString& msg);
+    Q_INVOKABLE bool sendMessage(const QString &user, const QString &msg);
 
     //response of the keep alive signal from a client.
     // This is used to detect disconnects.
-    Q_INVOKABLE void keepAliveResponse(const QString& user);
+    Q_INVOKABLE void keepAliveResponse(const QString &user);
 
     QStringList userList() const;
 
@@ -97,7 +97,7 @@ signals:
 private:
     QStringList m_userList;
     QStringList m_stillAliveUsers;
-    QTimer* m_keepAliveCheckTimer;
+    QTimer *m_keepAliveCheckTimer;
 };
 
 #endif // CHATSERVER_H

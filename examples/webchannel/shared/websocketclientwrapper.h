@@ -67,7 +67,7 @@ public:
     WebSocketClientWrapper(QWebSocketServer *server, QObject *parent = nullptr);
 
 signals:
-    void clientConnected(WebSocketTransport* client);
+    void clientConnected(WebSocketTransport *client);
 
 private slots:
     void handleNewConnection();
