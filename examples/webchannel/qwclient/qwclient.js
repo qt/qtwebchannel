@@ -49,6 +49,7 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
+
 'use strict';
 var repl = require('repl');
 var WebSocket = require('faye-websocket').Client;
@@ -62,7 +63,7 @@ if (autoConnect === __filename) {
     autoConnect = false;
 }
 
-var openChannel = function (address) {
+var openChannel = function(address) {
     // this should be bound to the repl
     var self = this;
     address = address ? address : serverAddress;
@@ -72,25 +73,27 @@ var openChannel = function (address) {
 
     var ws = new WebSocket(address);
 
-    ws.on('open', function (event) {
+    ws.on('open', function(event) {
         var transport = {
-        onmessage: function (data) {},
-          send: function (data) {
-              ws.send(data, {binary: false});
-          }
+            onmessage: function(data) {},
+            send: function(data) {
+                ws.send(data, {
+                    binary: false
+                });
+            }
         };
-        ws.on('message', function (event) {
-          transport.onmessage(event);
+        ws.on('message', function(event) {
+            transport.onmessage(event);
         }); // onmessage
 
-        var webChannel = new QWebChannel(transport, function (channel) {
+        var webChannel = new QWebChannel(transport, function(channel) {
             channels.push(channel);
             var channelIdx = (channels.length - 1);
             console.log('channel opened', channelIdx);
             // Create a nice alias to access this channels objects
             self.context['c' + channelIdx] = channel.objects;
 
-            ws.on('close', function () {
+            ws.on('close', function() {
                 for (var i = 0; i < channels.length; ++i) {
                     if (channels[i] === channel) {
                         console.log('channel closed', i);
@@ -102,7 +105,7 @@ var openChannel = function (address) {
         }); // new QWebChannel
     }); // onopen
 
-    ws.on('error', function (error) {
+    ws.on('error', function(error) {
         console.log('websocket error', error.message);
     });
 }; // openChannel
@@ -119,7 +122,7 @@ var setupRepl = function() {
     r.context.channels = channels;
 
     r.context.lsObjects = function() {
-        channels.forEach(function(channel){
+        channels.forEach(function(channel) {
             console.log('Channel ' + channel);
             Object.keys(channel.objects);
         });

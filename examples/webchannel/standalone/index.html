@@ -5,8 +5,7 @@
         <script type="text/javascript" src="./qwebchannel.js"></script>
         <script type="text/javascript">
             //BEGIN SETUP
-            function output(message)
-            {
+            function output(message) {
                 var output = document.getElementById("output");
                 output.innerHTML = output.innerHTML + message + "\n";
             }
@@ -19,16 +18,13 @@
                 output("Connecting to WebSocket server at " + baseUrl + ".");
                 var socket = new WebSocket(baseUrl);
 
-                socket.onclose = function()
-                {
+                socket.onclose = function() {
                     console.error("web channel closed");
                 };
-                socket.onerror = function(error)
-                {
+                socket.onerror = function(error) {
                     console.error("web channel error: " + error);
                 };
-                socket.onopen = function()
-                {
+                socket.onopen = function() {
                     output("WebSocket connected, setting up QWebChannel.");
                     new QWebChannel(socket, function(channel) {
                         // make core object accessible globally

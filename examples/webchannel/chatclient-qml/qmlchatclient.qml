@@ -80,34 +80,36 @@ ApplicationWindow {
         }
         property var onmessage;
 
-        onStatusChanged: if (socket.status == WebSocket.Error) {
-                             console.error("Error: " + socket.errorString)
-                         } else if (socket.status == WebSocket.Closed) {
-                             messageBox.text += "\nSocket closed"
-                         } else if (socket.status == WebSocket.Open) {
-                             //open the webchannel with the socket as transport
-                             new WebChannel.QWebChannel(socket, function(ch) {
-                                 root.channel = ch;
+        onStatusChanged: {
+            if (socket.status === WebSocket.Error) {
+                console.error("Error: " + socket.errorString);
+            } else if (socket.status === WebSocket.Closed) {
+                messageBox.text += "\nSocket closed";
+            } else if (socket.status === WebSocket.Open) {
+                //open the webchannel with the socket as transport
+                new WebChannel.QWebChannel(socket, function(ch) {
+                    root.channel = ch;
 
-                                 //connect to the changed signal of the userList property
-                                 ch.objects.chatserver.userListChanged.connect(function(args) {
-                                     userlist.text = '';
-                                     ch.objects.chatserver.userList.forEach(function(user) {
-                                         userlist.text += user + '\n';
-                                     });
-                                 });
-                                 //connect to the newMessage signal
-                                 ch.objects.chatserver.newMessage.connect(function(time, user, message) {
-                                     chat.text = chat.text + "[" + time + "] " + user + ": " +  message + '\n';
-                                 });
-                                 //connect to the keep alive signal
-                                 ch.objects.chatserver.keepAlive.connect(function(args) {
-                                     if (loginName.text !== '')
-                                         //and call the keep alive response method as an answer
-                                         ch.objects.chatserver.keepAliveResponse(loginName.text)
-                                });
-                            });
-                         }
+                    //connect to the changed signal of the userList property
+                    ch.objects.chatserver.userListChanged.connect(function(args) {
+                        userlist.text = '';
+                        ch.objects.chatserver.userList.forEach(function(user) {
+                            userlist.text += user + '\n';
+                        });
+                    });
+                    //connect to the newMessage signal
+                    ch.objects.chatserver.newMessage.connect(function(time, user, message) {
+                        chat.text = chat.text + "[" + time + "] " + user + ": " + message + '\n';
+                    });
+                    //connect to the keep alive signal
+                    ch.objects.chatserver.keepAlive.connect(function(args) {
+                        if (loginName.text !== '')
+                            //and call the keep alive response method as an answer
+                            ch.objects.chatserver.keepAliveResponse(loginName.text);
+                    });
+                });
+            }
+        }
     }
 
     GridLayout {
