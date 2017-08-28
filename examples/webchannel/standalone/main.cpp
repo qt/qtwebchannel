@@ -78,7 +78,7 @@ public:
         ui.setupUi(&dialog);
         dialog.show();
 
-        connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
+        connect(ui.send, &QPushButton::clicked, this, &Dialog::clicked);
     }
 
     void displayMessage(const QString &message)

@@ -58,13 +58,13 @@ ChatServer::ChatServer(QObject *parent)
     : QObject(parent)
 {
     QTimer* t = new QTimer(this);
-    connect(t, SIGNAL(timeout()), this, SLOT(sendKeepAlive()));
+    connect(t, &QTimer::timeout, this, &ChatServer::sendKeepAlive);
     t->start(10000);
 
     m_keepAliveCheckTimer = new QTimer(this);
     m_keepAliveCheckTimer->setSingleShot(true);
     m_keepAliveCheckTimer->setInterval(2000);
-    connect(m_keepAliveCheckTimer, SIGNAL(timeout()), this, SLOT(checkKeepAliveResponses()));
+    connect(m_keepAliveCheckTimer, &QTimer::timeout, this, &ChatServer::checkKeepAliveResponses);
 }
 
 ChatServer::~ChatServer()
