@@ -66,10 +66,10 @@ class WebSocketClientWrapper : public QObject
 public:
     WebSocketClientWrapper(QWebSocketServer *server, QObject *parent = nullptr);
 
-Q_SIGNALS:
+signals:
     void clientConnected(WebSocketTransport* client);
 
-private Q_SLOTS:
+private slots:
     void handleNewConnection();
 
 private:

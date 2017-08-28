@@ -66,7 +66,7 @@ public:
 
     void sendMessage(const QJsonObject &message) Q_DECL_OVERRIDE;
 
-private Q_SLOTS:
+private slots:
     void textMessageReceived(const QString &message);
 
 private:
