@@ -51,7 +51,7 @@
 #ifndef WEBSOCKETTRANSPORT_H
 #define WEBSOCKETTRANSPORT_H
 
-#include <QtWebChannel/QWebChannelAbstractTransport>
+#include <QWebChannelAbstractTransport>
 
 QT_BEGIN_NAMESPACE
 class QWebSocket;

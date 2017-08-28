@@ -48,14 +48,14 @@
 **
 ****************************************************************************/
 
-#include "qwebchannel.h"
 #include "chatserver.h"
 
 #include "../shared/websocketclientwrapper.h"
 #include "../shared/websockettransport.h"
 
-#include <QtWebSockets/QWebSocketServer>
 #include <QCoreApplication>
+#include <QWebChannel>
+#include <QWebSocketServer>
 
 int main(int argc, char** argv)
 {

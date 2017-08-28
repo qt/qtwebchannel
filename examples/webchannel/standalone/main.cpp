@@ -48,21 +48,18 @@
 **
 ****************************************************************************/
 
-#include "qwebchannel.h"
-
-#include <QApplication>
-#include <QDialog>
-#include <QVariantMap>
-#include <QDesktopServices>
-#include <QUrl>
-#include <QDir>
-#include <QFileInfo>
-#include <QtWebSockets/QWebSocketServer>
-
+#include "ui_dialog.h"
 #include "../shared/websocketclientwrapper.h"
 #include "../shared/websockettransport.h"
 
-#include "ui_dialog.h"
+#include <QApplication>
+#include <QDesktopServices>
+#include <QDialog>
+#include <QDir>
+#include <QFileInfo>
+#include <QUrl>
+#include <QWebChannel>
+#include <QWebSocketServer>
 
 /*!
     An instance of this class gets published over the WebChannel and is then accessible to HTML clients.

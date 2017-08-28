@@ -50,9 +50,9 @@
 
 #include "chatserver.h"
 
-#include <QtCore/QDebug>
-#include <QTimer>
+#include <QDebug>
 #include <QTime>
+#include <QTimer>
 
 ChatServer::ChatServer(QObject *parent)
     : QObject(parent)

@@ -50,11 +50,10 @@
 
 #include "websockettransport.h"
 
+#include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QDebug>
-
-#include <QtWebSockets/QWebSocket>
+#include <QWebSocket>
 
 /*!
     \brief QWebChannelAbstractSocket implementation that uses a QWebSocket internally.
