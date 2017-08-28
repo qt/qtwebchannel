@@ -64,7 +64,7 @@ public:
     explicit WebSocketTransport(QWebSocket *socket);
     virtual ~WebSocketTransport();
 
-    void sendMessage(const QJsonObject &message) Q_DECL_OVERRIDE;
+    void sendMessage(const QJsonObject &message) override;
 
 private slots:
     void textMessageReceived(const QString &message);
