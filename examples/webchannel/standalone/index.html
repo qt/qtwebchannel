@@ -31,8 +31,8 @@
                 {
                     output("WebSocket connected, setting up QWebChannel.");
                     new QWebChannel(socket, function(channel) {
-                        // make dialog object accessible globally
-                        window.dialog = channel.objects.dialog;
+                        // make core object accessible globally
+                        window.core = channel.objects.core;
 
                         document.getElementById("send").onclick = function() {
                             var input = document.getElementById("input");
@@ -43,14 +43,14 @@
 
                             output("Sent message: " + text);
                             input.value = "";
-                            dialog.receiveText(text);
+                            core.receiveText(text);
                         }
 
-                        dialog.sendText.connect(function(message) {
+                        core.sendText.connect(function(message) {
                             output("Received message: " + message);
                         });
 
-                        dialog.receiveText("Client connected, ready to send/receive messages!");
+                        core.receiveText("Client connected, ready to send/receive messages!");
                         output("Connected to WebChannel, ready to send/receive messages!");
                     });
                 }

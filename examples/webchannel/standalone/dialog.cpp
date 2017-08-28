@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2017 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -49,56 +49,30 @@
 ****************************************************************************/
 
 #include "dialog.h"
-#include "core.h"
-#include "../shared/websocketclientwrapper.h"
-#include "../shared/websockettransport.h"
+#include "ui_dialog.h"
 
-#include <QApplication>
-#include <QDesktopServices>
-#include <QDialog>
-#include <QDir>
-#include <QFileInfo>
-#include <QUrl>
-#include <QWebChannel>
-#include <QWebSocketServer>
-
-int main(int argc, char** argv)
+Dialog::Dialog(QWidget *parent) :
+    QDialog(parent),
+    ui(new Ui::Dialog)
 {
-    QApplication app(argc, argv);
+    ui->setupUi(this);
+    connect(ui->send, &QPushButton::clicked, this, &Dialog::clicked);
+}
 
-    QFileInfo jsFileInfo(QDir::currentPath() + "/qwebchannel.js");
+void Dialog::displayMessage(const QString &message)
+{
+    ui->output->appendPlainText(message);
+}
 
-    if (!jsFileInfo.exists())
-        QFile::copy(":/qtwebchannel/qwebchannel.js",jsFileInfo.absoluteFilePath());
+void Dialog::clicked()
+{
+    const QString text = ui->input->text();
 
-    // setup the QWebSocketServer
-    QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
-    if (!server.listen(QHostAddress::LocalHost, 12345)) {
-        qFatal("Failed to open web socket server.");
-        return 1;
-    }
+    if (text.isEmpty())
+        return;
 
-    // wrap WebSocket clients in QWebChannelAbstractTransport objects
-    WebSocketClientWrapper clientWrapper(&server);
+    emit sendText(text);
+    displayMessage(tr("Sent message: %1").arg(text));
 
-    // setup the channel
-    QWebChannel channel;
-    QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
-                     &channel, &QWebChannel::connectTo);
-
-    // setup the UI
-    Dialog dialog;
-
-    // setup the core and publish it to the QWebChannel
-    Core core(&dialog);
-    channel.registerObject(QStringLiteral("core"), &core);
-
-    // open a browser window with the client HTML page
-    QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
-    QDesktopServices::openUrl(url);
-
-    dialog.displayMessage(Dialog::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
-    dialog.show();
-
-    return app.exec();
+    ui->input->clear();
 }

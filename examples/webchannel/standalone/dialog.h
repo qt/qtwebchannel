@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2017 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -48,57 +48,34 @@
 **
 ****************************************************************************/
 
-#include "dialog.h"
-#include "core.h"
-#include "../shared/websocketclientwrapper.h"
-#include "../shared/websockettransport.h"
+#ifndef DIALOG_H
+#define DIALOG_H
 
-#include <QApplication>
-#include <QDesktopServices>
 #include <QDialog>
-#include <QDir>
-#include <QFileInfo>
-#include <QUrl>
-#include <QWebChannel>
-#include <QWebSocketServer>
 
-int main(int argc, char** argv)
-{
-    QApplication app(argc, argv);
-
-    QFileInfo jsFileInfo(QDir::currentPath() + "/qwebchannel.js");
-
-    if (!jsFileInfo.exists())
-        QFile::copy(":/qtwebchannel/qwebchannel.js",jsFileInfo.absoluteFilePath());
-
-    // setup the QWebSocketServer
-    QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
-    if (!server.listen(QHostAddress::LocalHost, 12345)) {
-        qFatal("Failed to open web socket server.");
-        return 1;
-    }
-
-    // wrap WebSocket clients in QWebChannelAbstractTransport objects
-    WebSocketClientWrapper clientWrapper(&server);
-
-    // setup the channel
-    QWebChannel channel;
-    QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
-                     &channel, &QWebChannel::connectTo);
-
-    // setup the UI
-    Dialog dialog;
-
-    // setup the core and publish it to the QWebChannel
-    Core core(&dialog);
-    channel.registerObject(QStringLiteral("core"), &core);
-
-    // open a browser window with the client HTML page
-    QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
-    QDesktopServices::openUrl(url);
-
-    dialog.displayMessage(Dialog::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
-    dialog.show();
-
-    return app.exec();
+QT_BEGIN_NAMESPACE
+namespace Ui {
+class Dialog;
 }
+QT_END_NAMESPACE
+
+class Dialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    explicit Dialog(QWidget *parent = nullptr);
+
+    void displayMessage(const QString &message);
+
+signals:
+    void sendText(const QString &text);
+
+private slots:
+    void clicked();
+
+private:
+    Ui::Dialog *ui;
+};
+
+#endif // DIALOG_H

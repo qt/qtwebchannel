@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2017 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -48,57 +48,44 @@
 **
 ****************************************************************************/
 
+#ifndef CORE_H
+#define CORE_H
+
 #include "dialog.h"
-#include "core.h"
-#include "../shared/websocketclientwrapper.h"
-#include "../shared/websockettransport.h"
+#include <QObject>
 
-#include <QApplication>
-#include <QDesktopServices>
-#include <QDialog>
-#include <QDir>
-#include <QFileInfo>
-#include <QUrl>
-#include <QWebChannel>
-#include <QWebSocketServer>
-
-int main(int argc, char** argv)
+/*
+    An instance of this class gets published over the WebChannel and is then accessible to HTML clients.
+*/
+class Core : public QObject
 {
-    QApplication app(argc, argv);
+    Q_OBJECT
 
-    QFileInfo jsFileInfo(QDir::currentPath() + "/qwebchannel.js");
-
-    if (!jsFileInfo.exists())
-        QFile::copy(":/qtwebchannel/qwebchannel.js",jsFileInfo.absoluteFilePath());
-
-    // setup the QWebSocketServer
-    QWebSocketServer server(QStringLiteral("QWebChannel Standalone Example Server"), QWebSocketServer::NonSecureMode);
-    if (!server.listen(QHostAddress::LocalHost, 12345)) {
-        qFatal("Failed to open web socket server.");
-        return 1;
+public:
+    Core(Dialog *dialog, QObject *parent = nullptr)
+        : QObject(parent), m_dialog(dialog)
+    {
+        connect(dialog, &Dialog::sendText, this, &Core::sendText);
     }
 
-    // wrap WebSocket clients in QWebChannelAbstractTransport objects
-    WebSocketClientWrapper clientWrapper(&server);
+signals:
+    /*
+        This signal is emitted from the C++ side and the text displayed on the HTML client side.
+    */
+    void sendText(const QString &text);
 
-    // setup the channel
-    QWebChannel channel;
-    QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
-                     &channel, &QWebChannel::connectTo);
+public slots:
 
-    // setup the UI
-    Dialog dialog;
+    /*
+        This slot is invoked from the HTML client side and the text displayed on the server side.
+    */
+    void receiveText(const QString &text)
+    {
+        m_dialog->displayMessage(Dialog::tr("Received message: %1").arg(text));
+    }
 
-    // setup the core and publish it to the QWebChannel
-    Core core(&dialog);
-    channel.registerObject(QStringLiteral("core"), &core);
+private:
+    Dialog *m_dialog;
+};
 
-    // open a browser window with the client HTML page
-    QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
-    QDesktopServices::openUrl(url);
-
-    dialog.displayMessage(Dialog::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
-    dialog.show();
-
-    return app.exec();
-}
+#endif // CORE_H
