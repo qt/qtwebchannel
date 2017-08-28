@@ -54,8 +54,6 @@
 #include <QTimer>
 #include <QTime>
 
-QT_BEGIN_NAMESPACE
-
 ChatServer::ChatServer(QObject *parent)
     : QObject(parent)
 {
@@ -140,5 +138,3 @@ QStringList ChatServer::userList() const
 {
     return m_userList;
 }
-
-QT_END_NAMESPACE

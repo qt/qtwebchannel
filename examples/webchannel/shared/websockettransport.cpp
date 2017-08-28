@@ -64,8 +64,6 @@
     be send over the QWebSocket to the remote client.
 */
 
-QT_BEGIN_NAMESPACE
-
 /*!
     Construct the transport object and wrap the given socket.
 
@@ -115,5 +113,3 @@ void WebSocketTransport::textMessageReceived(const QString &messageData)
     }
     emit messageReceived(message.object(), this);
 }
-
-QT_END_NAMESPACE

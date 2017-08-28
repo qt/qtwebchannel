@@ -61,8 +61,6 @@
     published objects.
 */
 
-QT_BEGIN_NAMESPACE
-
 /*!
     Construct the client wrapper with the given parent.
 
@@ -84,5 +82,3 @@ void WebSocketClientWrapper::handleNewConnection()
 {
     emit clientConnected(new WebSocketTransport(m_server->nextPendingConnection()));
 }
-
-QT_END_NAMESPACE

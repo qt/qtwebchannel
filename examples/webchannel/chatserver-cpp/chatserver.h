@@ -55,8 +55,8 @@
 #include <QStringList>
 
 QT_BEGIN_NAMESPACE
-
 class QTimer;
+QT_END_NAMESPACE
 
 class ChatServer : public QObject
 {
@@ -99,7 +99,5 @@ private:
     QStringList m_stillAliveUsers;
     QTimer* m_keepAliveCheckTimer;
 };
-
-QT_END_NAMESPACE
 
 #endif // ChatServer_H

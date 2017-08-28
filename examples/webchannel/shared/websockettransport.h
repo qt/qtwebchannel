@@ -54,8 +54,9 @@
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
 QT_BEGIN_NAMESPACE
-
 class QWebSocket;
+QT_END_NAMESPACE
+
 class WebSocketTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
@@ -71,7 +72,5 @@ private Q_SLOTS:
 private:
     QWebSocket *m_socket;
 };
-
-QT_END_NAMESPACE
 
 #endif // WEBSOCKETTRANSPORT_H
