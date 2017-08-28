@@ -48,8 +48,8 @@
 **
 ****************************************************************************/
 
-#ifndef ChatServer_H
-#define ChatServer_H
+#ifndef CHATSERVER_H
+#define CHATSERVER_H
 
 #include <QObject>
 #include <QStringList>
@@ -100,4 +100,4 @@ private:
     QTimer* m_keepAliveCheckTimer;
 };
 
-#endif // ChatServer_H
+#endif // CHATSERVER_H
