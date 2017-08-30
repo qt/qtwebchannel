@@ -61,7 +61,7 @@ ApplicationWindow {
 
     property var channel
 
-    title: qsTr("Hello World")
+    title: "Chat client"
     width: 640
     height: 480
 
