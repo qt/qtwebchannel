@@ -50,6 +50,7 @@
 ****************************************************************************/
 
 import QtQuick 2.2
+import QtQuick.Dialogs 1.2
 import QtQuick.Controls 2.0
 import QtQuick.Window 2.0
 import QtQuick.Layouts 1.1
@@ -80,16 +81,18 @@ ApplicationWindow {
 
         property var onmessage
 
-        active: false
+        active: true
         url: "ws://localhost:12345"
 
         onStatusChanged: {
             switch (socket.status) {
             case WebSocket.Error:
-                console.error("Error: " + socket.errorString);
+                errorDialog.text = "Error: " + socket.errorString;
+                errorDialog.visible = true;
                 break;
             case WebSocket.Closed:
-                messageBox.text += "\nSocket closed";
+                errorDialog.text = "Error: Socket at " + url + " closed.";
+                errorDialog.visible = true;
                 break;
             case WebSocket.Open:
                 //open the webchannel with the socket as transport
@@ -116,6 +119,8 @@ ApplicationWindow {
                             ch.objects.chatserver.keepAliveResponse(loginName.text);
                     });
                 });
+
+                loginWindow.show();
                 break;
             }
         }
@@ -203,8 +208,18 @@ ApplicationWindow {
         }
     }
 
-    Component.onCompleted: {
-        loginWindow.show();
-        socket.active = true; //connect
+    MessageDialog {
+        id: errorDialog
+
+        icon: StandardIcon.Critical
+        standardButtons: StandardButton.Close
+        title: "Chat client"
+
+        onAccepted: {
+            Qt.quit();
+        }
+        onRejected: {
+            Qt.quit();
+        }
     }
 }
