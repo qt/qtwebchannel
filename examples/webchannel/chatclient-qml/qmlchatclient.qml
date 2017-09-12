@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2017 The Qt Company Ltd.
 ** Copyright (C) 2016 basysKom GmbH, author Bernd Lamecker <bernd.lamecker@basyskom.com>
 ** Contact: https://www.qt.io/licensing/
 **
@@ -58,34 +58,40 @@ import "qwebchannel.js" as WebChannel
 
 ApplicationWindow {
     id: root
+
+    property var channel
+
     title: qsTr("Hello World")
     width: 640
     height: 480
 
-    property var channel;
-
     WebSocket {
         id: socket
 
-        url: "ws://localhost:12345";
-        active: false
-
-        // the following three properties/functions are required to align the QML WebSocket API with the HTML5 WebSocket API.
-        property var send: function (arg) {
+        // the following three properties/functions are required to align the QML WebSocket API
+        // with the HTML5 WebSocket API.
+        property var send: function(arg) {
             sendTextMessage(arg);
         }
 
         onTextMessageReceived: {
             onmessage({data: message});
         }
-        property var onmessage;
+
+        property var onmessage
+
+        active: false
+        url: "ws://localhost:12345"
 
         onStatusChanged: {
-            if (socket.status === WebSocket.Error) {
+            switch (socket.status) {
+            case WebSocket.Error:
                 console.error("Error: " + socket.errorString);
-            } else if (socket.status === WebSocket.Closed) {
+                break;
+            case WebSocket.Closed:
                 messageBox.text += "\nSocket closed";
-            } else if (socket.status === WebSocket.Open) {
+                break;
+            case WebSocket.Open:
                 //open the webchannel with the socket as transport
                 new WebChannel.QWebChannel(socket, function(ch) {
                     root.channel = ch;
@@ -97,10 +103,12 @@ ApplicationWindow {
                             userlist.text += user + '\n';
                         });
                     });
+
                     //connect to the newMessage signal
                     ch.objects.chatserver.newMessage.connect(function(time, user, message) {
                         chat.text = chat.text + "[" + time + "] " + user + ": " + message + '\n';
                     });
+
                     //connect to the keep alive signal
                     ch.objects.chatserver.keepAlive.connect(function(args) {
                         if (loginName.text !== '')
@@ -108,6 +116,7 @@ ApplicationWindow {
                             ch.objects.chatserver.keepAliveResponse(loginName.text);
                     });
                 });
+                break;
             }
         }
     }
@@ -116,8 +125,10 @@ ApplicationWindow {
         id: grid
         columns: 2
         anchors.fill: parent
+
         Text {
             id: chat
+
             text: ""
             Layout.fillHeight: true
             Layout.fillWidth: true
@@ -125,20 +136,23 @@ ApplicationWindow {
 
         Text {
             id: userlist
+
             text: ""
             width: 150
             Layout.fillHeight: true
         }
         TextField {
             id: message
+
             height: 50
             Layout.columnSpan: 2
             Layout.fillWidth: true
 
             onEditingFinished: {
-                if (message.text.length)
+                if (message.text.length) {
                     //call the sendMessage method to send the message
                     root.channel.objects.chatserver.sendMessage(loginName.text, message.text);
+                }
                 message.text = '';
             }
         }
@@ -146,43 +160,47 @@ ApplicationWindow {
 
 
     Window {
-       id: loginWindow;
-       title: "Login";
-       modality: Qt.ApplicationModal
+        id: loginWindow
 
-       TextField {
-           id: loginName
+        title: "Login"
+        modality: Qt.ApplicationModal
 
-           anchors.top: parent.top
-           anchors.horizontalCenter: parent.horizontalCenter
-       }
-       Button {
-           anchors.top: loginName.bottom
-           anchors.horizontalCenter: parent.horizontalCenter
-           id: loginButton
-           text: "Login"
+        TextField {
+            id: loginName
 
-           onClicked: {
-               //call the login method
-               root.channel.objects.chatserver.login(loginName.text, function(arg) {
-                   //check the return value for success
-                   if (arg === true) {
-                       loginError.visible = false;
-                       loginWindow.close();
-                   } else {
-                       loginError.visible = true;
-                   }
-               });
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
 
-           }
-       }
-       Text {
-           id: loginError
-           anchors.top: loginButton.bottom
-           anchors.horizontalCenter: parent.horizontalCenter
-           text: "Name already in use"
-           visible: false;
-       }
+        Button {
+            id: loginButton
+
+            anchors.top: loginName.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Login"
+
+            onClicked: {
+                //call the login method
+                root.channel.objects.chatserver.login(loginName.text, function(arg) {
+                    //check the return value for success
+                    if (arg === true) {
+                        loginError.visible = false;
+                        loginWindow.close();
+                    } else {
+                        loginError.visible = true;
+                    }
+                });
+            }
+        }
+
+        Text {
+            id: loginError
+
+            anchors.top: loginButton.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Name already in use"
+            visible: false
+        }
     }
 
     Component.onCompleted: {
