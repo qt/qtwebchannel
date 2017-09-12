@@ -66,6 +66,7 @@ ApplicationWindow {
     title: "Chat client"
     width: 640
     height: 480
+    visible: true
 
     WebSocket {
         id: socket
