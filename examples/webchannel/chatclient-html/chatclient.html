@@ -21,16 +21,13 @@
         window.onload = function() {
             var socket = new WebSocket(wsUri);
 
-            socket.onclose = function()
-            {
+            socket.onclose = function() {
                 console.error("web channel closed");
             };
-            socket.onerror = function(error)
-            {
+            socket.onerror = function(error) {
                 console.error("web channel error: " + error);
             };
-            socket.onopen = function()
-            {
+            socket.onopen = function() {
                 window.channel = new QWebChannel(socket, function(channel) {
                     //connect to the changed signal of a property
                     channel.objects.chatserver.userListChanged.connect(function() {
@@ -42,11 +39,11 @@
                     });
                     //connect to a signal
                     channel.objects.chatserver.newMessage.connect(function(time, user, message) {
-                        $('#chat').append("[" + time + "] " + user + ": " +  message + '<br>');
+                        $('#chat').append("[" + time + "] " + user + ": " + message + '<br>');
                     });
                     //connect to a signal
                     channel.objects.chatserver.keepAlive.connect(function(args) {
-                        if(window.loggedin) {
+                        if (window.loggedin) {
                             //call a method
                             channel.objects.chatserver.keepAliveResponse($('#loginname').val())
                             console.log("sent alive");
@@ -74,11 +71,12 @@
     </div>
     <script>
     $('#loginForm').submit(submitForm);
+
     function submitForm(event) {
         console.log("DEBUG login: " + channel);
         channel.objects.chatserver.login($('#loginname').val(), function(arg) {
             console.log("DEBUG login response: " + arg);
-            if(arg === true) {
+            if (arg === true) {
                 $('#loginError').hide();
                 $('#loginDialog').dialog('close');
                 window.loggedin = true;
@@ -87,10 +85,9 @@
             }
         });
         console.log($('#loginname').val());
-        if(event !== undefined)
+        if (event !== undefined)
             event.preventDefault();
         return false;
-
     }
     </script>
 </div>
@@ -110,10 +107,11 @@
     </div>
     <script>
     $('#messageForm').submit(submitMessage);
+
     function submitMessage(event) {
         channel.objects.chatserver.sendMessage($('#loginname').val(), $('#message').val());
         $('#message').val('');
-        if(event !== undefined)
+        if (event !== undefined)
             event.preventDefault();
         return false;
     }
@@ -122,7 +120,7 @@
 
 
 <script type="text/javascript">
-$(document).ready(function(){
+$(document).ready(function() {
     $('#loginError').hide();
 });
 </script>

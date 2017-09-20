@@ -91,7 +91,10 @@ var createWebChannel = function(transport, rlif) {
             console.log(' <<   ' + message);
             rlif.prompt();
             // Go to end of existing input if any
-            rlif.write(null, {ctrl: true, name: 'e'})
+            rlif.write(null, {
+                ctrl: true,
+                name: 'e'
+            })
         });
 
         rlif.on('line', function(line) {
@@ -118,7 +121,9 @@ socket.on('open', function(event) {
     var transport = {
         // We cant't do 'send: socket.send' here
         // because 'send' wouldn't be bound to 'socket'
-        send: function(data) {socket.send(data)}
+        send: function(data) {
+            socket.send(data)
+        }
     };
 
     createWebChannel(transport, createReadlineInterface());
@@ -131,12 +136,12 @@ socket.on('open', function(event) {
     });
 });
 
-socket.on('error', function (error) {
+socket.on('error', function(error) {
     console.log('Connection error: ' + error.message);
     process.exit(1);
 });
 
-socket.on('close', function () {
+socket.on('close', function() {
     console.log('Connection closed.');
     process.exit(1);
 });

@@ -50,11 +50,10 @@
 
 #include "websockettransport.h"
 
+#include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QDebug>
-
-#include <QtWebSockets/QWebSocket>
+#include <QWebSocket>
 
 /*!
     \brief QWebChannelAbstractSocket implementation that uses a QWebSocket internally.
@@ -63,8 +62,6 @@
     textMessageReceived signal. Analogously, all calls to sendTextMessage will
     be send over the QWebSocket to the remote client.
 */
-
-QT_BEGIN_NAMESPACE
 
 /*!
     Construct the transport object and wrap the given socket.
@@ -115,5 +112,3 @@ void WebSocketTransport::textMessageReceived(const QString &messageData)
     }
     emit messageReceived(message.object(), this);
 }
-
-QT_END_NAMESPACE

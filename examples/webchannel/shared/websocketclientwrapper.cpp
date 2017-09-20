@@ -51,7 +51,7 @@
 #include "websocketclientwrapper.h"
 #include "websockettransport.h"
 
-#include <QtWebSockets/QWebSocketServer>
+#include <QWebSocketServer>
 
 /*!
     \brief Wraps connected QWebSockets clients in WebSocketTransport objects.
@@ -60,8 +60,6 @@
     of remote JavaScript client that supports WebSockets can thus receive messages and access the
     published objects.
 */
-
-QT_BEGIN_NAMESPACE
 
 /*!
     Construct the client wrapper with the given parent.
@@ -84,5 +82,3 @@ void WebSocketClientWrapper::handleNewConnection()
 {
     emit clientConnected(new WebSocketTransport(m_server->nextPendingConnection()));
 }
-
-QT_END_NAMESPACE
