@@ -218,7 +218,7 @@ public Q_SLOTS:
     void handleMessage(const QJsonObject &message, QWebChannelAbstractTransport *transport);
 
 protected:
-    void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
+    void timerEvent(QTimerEvent *) override;
 
 private:
     friend class QQmlWebChannelPrivate;

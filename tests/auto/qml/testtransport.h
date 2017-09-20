@@ -39,7 +39,7 @@ class TestTransport : public QWebChannelAbstractTransport
 public:
     explicit TestTransport(QObject *parent = 0);
 
-    virtual void sendMessage(const QJsonObject &message) Q_DECL_OVERRIDE;
+    virtual void sendMessage(const QJsonObject &message) override;
 
     Q_INVOKABLE void receiveMessage(const QString &message);
 

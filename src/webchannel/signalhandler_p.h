@@ -94,7 +94,7 @@ public:
      *
      * Custom implementation of qt_metacall which calls dispatch() for connected signals.
      */
-    int qt_metacall(QMetaObject::Call call, int methodId, void **args) Q_DECL_OVERRIDE;
+    int qt_metacall(QMetaObject::Call call, int methodId, void **args) override;
 
     /**
      * Reset all connections, useful for benchmarks.

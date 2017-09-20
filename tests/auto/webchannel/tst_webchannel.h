@@ -54,7 +54,7 @@ public:
     }
 
 public slots:
-    void sendMessage(const QJsonObject &/*message*/) Q_DECL_OVERRIDE
+    void sendMessage(const QJsonObject &/*message*/) override
     {
     }
 };

@@ -47,7 +47,7 @@ class TestEngineTransport : public QWebChannelAbstractTransport
     Q_OBJECT
 public:
     TestEngineTransport(TestJSEngine *);
-    void sendMessage(const QJsonObject &message) Q_DECL_OVERRIDE;
+    void sendMessage(const QJsonObject &message) override;
 
     Q_INVOKABLE void channelSetupReady();
     Q_INVOKABLE void send(const QByteArray &message);
