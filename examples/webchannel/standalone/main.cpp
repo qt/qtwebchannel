@@ -48,81 +48,19 @@
 **
 ****************************************************************************/
 
-#include "qwebchannel.h"
-
-#include <QApplication>
-#include <QDialog>
-#include <QVariantMap>
-#include <QDesktopServices>
-#include <QUrl>
-#include <QDir>
-#include <QFileInfo>
-#include <QtWebSockets/QWebSocketServer>
-
+#include "dialog.h"
+#include "core.h"
 #include "../shared/websocketclientwrapper.h"
 #include "../shared/websockettransport.h"
 
-#include "ui_dialog.h"
-
-/*!
-    An instance of this class gets published over the WebChannel and is then accessible to HTML clients.
-*/
-class Dialog : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit Dialog(QObject *parent = 0)
-        : QObject(parent)
-    {
-        ui.setupUi(&dialog);
-        dialog.show();
-
-        connect(ui.send, SIGNAL(clicked()), SLOT(clicked()));
-    }
-
-    void displayMessage(const QString &message)
-    {
-        ui.output->appendPlainText(message);
-    }
-
-signals:
-    /*!
-        This signal is emitted from the C++ side and the text displayed on the HTML client side.
-    */
-    void sendText(const QString &text);
-
-public slots:
-    /*!
-        This slot is invoked from the HTML client side and the text displayed on the server side.
-    */
-    void receiveText(const QString &text)
-    {
-        displayMessage(tr("Received message: %1").arg(text));
-    }
-
-private slots:
-    /*!
-        Note that this slot is private and thus not accessible to HTML clients.
-    */
-    void clicked()
-    {
-        const QString text = ui.input->text();
-
-        if (text.isEmpty()) {
-            return;
-        }
-
-        emit sendText(text);
-        displayMessage(tr("Sent message: %1").arg(text));
-
-        ui.input->clear();
-    }
-
-private:
-    QDialog dialog;
-    Ui::Dialog ui;
-};
+#include <QApplication>
+#include <QDesktopServices>
+#include <QDialog>
+#include <QDir>
+#include <QFileInfo>
+#include <QUrl>
+#include <QWebChannel>
+#include <QWebSocketServer>
 
 int main(int argc, char** argv)
 {
@@ -148,17 +86,19 @@ int main(int argc, char** argv)
     QObject::connect(&clientWrapper, &WebSocketClientWrapper::clientConnected,
                      &channel, &QWebChannel::connectTo);
 
-    // setup the dialog and publish it to the QWebChannel
+    // setup the UI
     Dialog dialog;
-    channel.registerObject(QStringLiteral("dialog"), &dialog);
+
+    // setup the core and publish it to the QWebChannel
+    Core core(&dialog);
+    channel.registerObject(QStringLiteral("core"), &core);
 
     // open a browser window with the client HTML page
     QUrl url = QUrl::fromLocalFile(BUILD_DIR "/index.html");
     QDesktopServices::openUrl(url);
 
-    dialog.displayMessage(QObject::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
+    dialog.displayMessage(Dialog::tr("Initialization complete, opening browser at %1.").arg(url.toDisplayString()));
+    dialog.show();
 
     return app.exec();
 }
-
-#include "main.moc"

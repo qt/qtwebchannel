@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2016 The Qt Company Ltd.
+** Copyright (C) 2017 The Qt Company Ltd.
 ** Copyright (C) 2016 basysKom GmbH, author Bernd Lamecker <bernd.lamecker@basyskom.com>
 ** Contact: https://www.qt.io/licensing/
 **
@@ -50,7 +50,8 @@
 ****************************************************************************/
 
 import QtQuick 2.2
-import QtQuick.Controls 1.1
+import QtQuick.Dialogs 1.2
+import QtQuick.Controls 2.0
 import QtQuick.Window 2.0
 import QtQuick.Layouts 1.1
 import Qt.WebSockets 1.0
@@ -58,133 +59,138 @@ import "qwebchannel.js" as WebChannel
 
 ApplicationWindow {
     id: root
-    title: qsTr("Hello World")
+
+    property var channel
+    property string loginName: loginUi.userName.text
+
+    title: "Chat client"
     width: 640
     height: 480
-
-    property var channel;
+    visible: true
 
     WebSocket {
         id: socket
 
-        url: "ws://localhost:12345";
-        active: false
-
-        // the following three properties/functions are required to align the QML WebSocket API with the HTML5 WebSocket API.
-        property var send: function (arg) {
+        // the following three properties/functions are required to align the QML WebSocket API
+        // with the HTML5 WebSocket API.
+        property var send: function(arg) {
             sendTextMessage(arg);
         }
 
         onTextMessageReceived: {
             onmessage({data: message});
         }
-        property var onmessage;
 
-        onStatusChanged: if (socket.status == WebSocket.Error) {
-                             console.error("Error: " + socket.errorString)
-                         } else if (socket.status == WebSocket.Closed) {
-                             messageBox.text += "\nSocket closed"
-                         } else if (socket.status == WebSocket.Open) {
-                             //open the webchannel with the socket as transport
-                             new WebChannel.QWebChannel(socket, function(ch) {
-                                 root.channel = ch;
+        property var onmessage
 
-                                 //connect to the changed signal of the userList property
-                                 ch.objects.chatserver.userListChanged.connect(function(args) {
-                                     userlist.text = '';
-                                     ch.objects.chatserver.userList.forEach(function(user) {
-                                         userlist.text += user + '\n';
-                                     });
-                                 });
-                                 //connect to the newMessage signal
-                                 ch.objects.chatserver.newMessage.connect(function(time, user, message) {
-                                     chat.text = chat.text + "[" + time + "] " + user + ": " +  message + '\n';
-                                 });
-                                 //connect to the keep alive signal
-                                 ch.objects.chatserver.keepAlive.connect(function(args) {
-                                     if (loginName.text !== '')
-                                         //and call the keep alive response method as an answer
-                                         ch.objects.chatserver.keepAliveResponse(loginName.text)
-                                });
-                            });
-                         }
-    }
+        active: true
+        url: "ws://localhost:12345"
 
-    GridLayout {
-        id: grid
-        columns: 2
-        anchors.fill: parent
-        Text {
-            id: chat
-            text: ""
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-        }
+        onStatusChanged: {
+            switch (socket.status) {
+            case WebSocket.Error:
+                errorDialog.text = "Error: " + socket.errorString;
+                errorDialog.visible = true;
+                break;
+            case WebSocket.Closed:
+                errorDialog.text = "Error: Socket at " + url + " closed.";
+                errorDialog.visible = true;
+                break;
+            case WebSocket.Open:
+                //open the webchannel with the socket as transport
+                new WebChannel.QWebChannel(socket, function(ch) {
+                    root.channel = ch;
 
-        Text {
-            id: userlist
-            text: ""
-            width: 150
-            Layout.fillHeight: true
-        }
-        TextField {
-            id: message
-            height: 50
-            Layout.columnSpan: 2
-            Layout.fillWidth: true
+                    //connect to the changed signal of the userList property
+                    ch.objects.chatserver.userListChanged.connect(function(args) {
+                        mainUi.userlist.text = '';
+                        ch.objects.chatserver.userList.forEach(function(user) {
+                            mainUi.userlist.text += user + '\n';
+                        });
+                    });
 
-            onEditingFinished: {
-                if (message.text.length)
-                    //call the sendMessage method to send the message
-                    root.channel.objects.chatserver.sendMessage(loginName.text, message.text);
-                message.text = '';
+                    //connect to the newMessage signal
+                    ch.objects.chatserver.newMessage.connect(function(time, user, message) {
+                        var line = "[" + time + "] " + user + ": " + message + '\n';
+                        mainUi.chat.text = mainUi.chat.text + line;
+                    });
+
+                    //connect to the keep alive signal
+                    ch.objects.chatserver.keepAlive.connect(function(args) {
+                        if (loginName !== '')
+                            //and call the keep alive response method as an answer
+                            ch.objects.chatserver.keepAliveResponse(loginName);
+                    });
+                });
+
+                loginWindow.show();
+                break;
             }
         }
     }
 
+    MainForm {
+        id: mainUi
+        anchors.fill: parent
 
-    Window {
-       id: loginWindow;
-       title: "Login";
-       modality: Qt.ApplicationModal
-
-       TextField {
-           id: loginName
-
-           anchors.top: parent.top
-           anchors.horizontalCenter: parent.horizontalCenter
-       }
-       Button {
-           anchors.top: loginName.bottom
-           anchors.horizontalCenter: parent.horizontalCenter
-           id: loginButton
-           text: "Login"
-
-           onClicked: {
-               //call the login method
-               root.channel.objects.chatserver.login(loginName.text, function(arg) {
-                   //check the return value for success
-                   if (arg === true) {
-                       loginError.visible = false;
-                       loginWindow.close();
-                   } else {
-                       loginError.visible = true;
-                   }
-               });
-
-           }
-       }
-       Text {
-           id: loginError
-           anchors.top: loginButton.bottom
-           anchors.horizontalCenter: parent.horizontalCenter
-           text: "Name already in use"
-           visible: false;
-       }
+        Connections {
+            target: mainUi.message
+            onEditingFinished: {
+                if (mainUi.message.text.length) {
+                    //call the sendMessage method to send the message
+                    root.channel.objects.chatserver.sendMessage(loginName,
+                                                                mainUi.message.text);
+                }
+                mainUi.message.text = '';
+            }
+        }
     }
 
-    Component.onCompleted: {
-        loginWindow.show();
-        socket.active = true; //connect
+    Window {
+        id: loginWindow
+
+        title: "Login"
+        modality: Qt.ApplicationModal
+        width: 300
+        height: 200
+
+        LoginForm {
+            id: loginUi
+            anchors.fill: parent
+
+            nameInUseError.visible: false
+
+            Connections {
+                target: loginUi.loginButton
+
+                onClicked: {
+                    //call the login method
+                    root.channel.objects.chatserver.login(loginName, function(arg) {
+                        //check the return value for success
+                        if (arg === true) {
+                            loginUi.nameInUseError.visible = false;
+                            loginWindow.close();
+                        } else {
+                            loginUi.nameInUseError.visible = true;
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    MessageDialog {
+        id: errorDialog
+
+        icon: StandardIcon.Critical
+        standardButtons: StandardButton.Close
+        title: "Chat client"
+
+        onAccepted: {
+            Qt.quit();
+        }
+        onRejected: {
+            Qt.quit();
+        }
     }
 }

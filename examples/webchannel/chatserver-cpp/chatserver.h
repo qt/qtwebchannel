@@ -48,15 +48,15 @@
 **
 ****************************************************************************/
 
-#ifndef ChatServer_H
-#define ChatServer_H
+#ifndef CHATSERVER_H
+#define CHATSERVER_H
 
 #include <QObject>
 #include <QStringList>
 
 QT_BEGIN_NAMESPACE
-
 class QTimer;
+QT_END_NAMESPACE
 
 class ChatServer : public QObject
 {
@@ -65,22 +65,22 @@ class ChatServer : public QObject
     Q_PROPERTY(QStringList userList READ userList NOTIFY userListChanged)
 
 public:
-    explicit ChatServer(QObject *parent = 0);
+    explicit ChatServer(QObject *parent = nullptr);
     virtual ~ChatServer();
 
 public:
     //a user logs in with the given username
-    Q_INVOKABLE bool login(const QString& userName);
+    Q_INVOKABLE bool login(const QString &userName);
 
     //the user logs out, will be removed from userlist immediately
-    Q_INVOKABLE bool logout(const QString& userName);
+    Q_INVOKABLE bool logout(const QString &userName);
 
     //a user sends a message to all other users
-    Q_INVOKABLE bool sendMessage(const QString& user, const QString& msg);
+    Q_INVOKABLE bool sendMessage(const QString &user, const QString &msg);
 
     //response of the keep alive signal from a client.
     // This is used to detect disconnects.
-    Q_INVOKABLE void keepAliveResponse(const QString& user);
+    Q_INVOKABLE void keepAliveResponse(const QString &user);
 
     QStringList userList() const;
 
@@ -97,9 +97,7 @@ signals:
 private:
     QStringList m_userList;
     QStringList m_stillAliveUsers;
-    QTimer* m_keepAliveCheckTimer;
+    QTimer *m_keepAliveCheckTimer;
 };
 
-QT_END_NAMESPACE
-
-#endif // ChatServer_H
+#endif // CHATSERVER_H

@@ -48,33 +48,32 @@
 **
 ****************************************************************************/
 
-#ifndef WEBSOCKETTRANSPORTSERVER_H
-#define WEBSOCKETTRANSPORTSERVER_H
+#ifndef WEBSOCKETCLIENTWRAPPER_H
+#define WEBSOCKETCLIENTWRAPPER_H
 
 #include <QObject>
 
-QT_BEGIN_NAMESPACE
-
-class QWebSocketServer;
 class WebSocketTransport;
+
+QT_BEGIN_NAMESPACE
+class QWebSocketServer;
+QT_END_NAMESPACE
 
 class WebSocketClientWrapper : public QObject
 {
     Q_OBJECT
 
 public:
-    WebSocketClientWrapper(QWebSocketServer *server, QObject *parent = 0);
+    WebSocketClientWrapper(QWebSocketServer *server, QObject *parent = nullptr);
 
-Q_SIGNALS:
-    void clientConnected(WebSocketTransport* client);
+signals:
+    void clientConnected(WebSocketTransport *client);
 
-private Q_SLOTS:
+private slots:
     void handleNewConnection();
 
 private:
     QWebSocketServer *m_server;
 };
 
-QT_END_NAMESPACE
-
-#endif // WEBSOCKETTRANSPORTSERVER_H
+#endif // WEBSOCKETCLIENTWRAPPER_H

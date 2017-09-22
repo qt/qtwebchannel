@@ -51,11 +51,12 @@
 #ifndef WEBSOCKETTRANSPORT_H
 #define WEBSOCKETTRANSPORT_H
 
-#include <QtWebChannel/QWebChannelAbstractTransport>
+#include <QWebChannelAbstractTransport>
 
 QT_BEGIN_NAMESPACE
-
 class QWebSocket;
+QT_END_NAMESPACE
+
 class WebSocketTransport : public QWebChannelAbstractTransport
 {
     Q_OBJECT
@@ -65,13 +66,11 @@ public:
 
     void sendMessage(const QJsonObject &message) override;
 
-private Q_SLOTS:
+private slots:
     void textMessageReceived(const QString &message);
 
 private:
     QWebSocket *m_socket;
 };
-
-QT_END_NAMESPACE
 
 #endif // WEBSOCKETTRANSPORT_H
