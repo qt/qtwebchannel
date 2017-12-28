@@ -770,6 +770,11 @@ void TestWebChannel::testInfiniteRecursion()
 
 void TestWebChannel::testAsyncObject()
 {
+    auto waitForSignal = [] (QSignalSpy& spy) {
+        for (int i=0; (i<5) && (spy.count() == 0); i++)
+            spy.wait(1000);
+    };
+
     QWebChannel channel;
     channel.connectTo(m_dummyTransport);
 
@@ -788,7 +793,8 @@ void TestWebChannel::testAsyncObject()
     {
         QSignalSpy spy(&obj, &TestObject::propChanged);
         channel.d_func()->publisher->invokeMethod(&obj, method, args);
-        QVERIFY(spy.wait());
+        waitForSignal(spy);
+        QCOMPARE(spy.count(), 1);
         QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
     }
 
@@ -804,10 +810,13 @@ void TestWebChannel::testAsyncObject()
     {
         QSignalSpy spy(&obj, &TestObject::replay);
         QMetaObject::invokeMethod(&obj, "fire");
-        QVERIFY(spy.wait());
+        waitForSignal(spy);
+        QCOMPARE(spy.count(), 1);
         channel.deregisterObject(&obj);
         QMetaObject::invokeMethod(&obj, "fire");
-        QVERIFY(spy.wait());
+        spy.takeFirst();
+        waitForSignal(spy);
+        QCOMPARE(spy.count(), 1);
     }
 
     thread.quit();
