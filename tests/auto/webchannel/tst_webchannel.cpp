@@ -788,7 +788,7 @@ void TestWebChannel::testAsyncObject()
     {
         QSignalSpy spy(&obj, &TestObject::propChanged);
         channel.d_func()->publisher->invokeMethod(&obj, method, args);
-        QVERIFY(spy.wait());
+        QTRY_COMPARE(spy.count(), 1);
         QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
     }
 
@@ -804,10 +804,10 @@ void TestWebChannel::testAsyncObject()
     {
         QSignalSpy spy(&obj, &TestObject::replay);
         QMetaObject::invokeMethod(&obj, "fire");
-        QVERIFY(spy.wait());
+        QTRY_COMPARE(spy.count(), 1);
         channel.deregisterObject(&obj);
         QMetaObject::invokeMethod(&obj, "fire");
-        QVERIFY(spy.wait());
+        QTRY_COMPARE(spy.count(), 2);
     }
 
     thread.quit();
