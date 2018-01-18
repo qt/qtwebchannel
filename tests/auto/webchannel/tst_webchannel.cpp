@@ -814,6 +814,58 @@ void TestWebChannel::testAsyncObject()
     thread.wait();
 }
 
+class FunctionWrapper : public QObject
+{
+    Q_OBJECT
+    std::function<void()> m_fun;
+public:
+    FunctionWrapper(std::function<void()> fun) : m_fun(std::move(fun)) {}
+public slots:
+    void invoke()
+    {
+        m_fun();
+    }
+};
+
+void TestWebChannel::testDeletionDuringMethodInvocation_data()
+{
+    QTest::addColumn<bool>("deleteChannel");
+    QTest::addColumn<bool>("deleteTransport");
+    QTest::newRow("delete neither")   << false << false;
+    QTest::newRow("delete channel")   << true  << false;
+    QTest::newRow("delete transport") << false << true;
+    QTest::newRow("delete both")      << true  << true;
+}
+
+void TestWebChannel::testDeletionDuringMethodInvocation()
+{
+    QFETCH(bool, deleteChannel);
+    QFETCH(bool, deleteTransport);
+
+    QScopedPointer<QWebChannel> channel(new QWebChannel);
+    QScopedPointer<DummyTransport> transport(new DummyTransport(nullptr));
+    FunctionWrapper deleter([&](){
+        if (deleteChannel)
+            channel.reset();
+        if (deleteTransport)
+            transport.reset();
+    });
+    channel->registerObject("deleter", &deleter);
+    channel->connectTo(transport.data());
+
+    transport->emitMessageReceived({
+        {"type", TypeInvokeMethod},
+        {"object", "deleter"},
+        {"method", deleter.metaObject()->indexOfMethod("invoke()")},
+        {"id", 42}
+    });
+
+    QCOMPARE(deleteChannel, !channel);
+    QCOMPARE(deleteTransport, !transport);
+    if (!deleteTransport)
+        QCOMPARE(transport->messagesSent().size(), deleteChannel ? 0 : 1);
+}
+
 static QHash<QString, QObject*> createObjects(QObject *parent)
 {
     const int num = 100;
