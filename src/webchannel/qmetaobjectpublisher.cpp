@@ -664,9 +664,15 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
                 return;
             }
 
-            transport->sendMessage(createResponse(message.value(KEY_ID),
-                wrapResult(invokeMethod(object, message.value(KEY_METHOD).toInt(-1),
-                             message.value(KEY_ARGS).toArray()), transport)));
+            QPointer<QMetaObjectPublisher> publisherExists(this);
+            QPointer<QWebChannelAbstractTransport> transportExists(transport);
+            QVariant result =
+                invokeMethod(object,
+                             message.value(KEY_METHOD).toInt(-1),
+                             message.value(KEY_ARGS).toArray());
+            if (!publisherExists || !transportExists)
+                return;
+            transport->sendMessage(createResponse(message.value(KEY_ID), wrapResult(result, transport)));
         } else if (type == TypeConnectToSignal) {
             signalHandler.connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeDisconnectFromSignal) {

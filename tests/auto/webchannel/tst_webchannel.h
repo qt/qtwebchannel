@@ -31,6 +31,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QVector>
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -53,10 +54,18 @@ public:
         emit messageReceived(message, this);
     }
 
-public slots:
-    void sendMessage(const QJsonObject &/*message*/) override
+    QVector<QJsonObject> messagesSent() const
     {
+        return mMessagesSent;
     }
+
+public slots:
+    void sendMessage(const QJsonObject &message) override
+    {
+        mMessagesSent.push_back(message);
+    }
+private:
+    QVector<QJsonObject> mMessagesSent;
 };
 
 class TestObject : public QObject
@@ -296,6 +305,8 @@ private slots:
     void testPassWrappedObjectBack();
     void testInfiniteRecursion();
     void testAsyncObject();
+    void testDeletionDuringMethodInvocation_data();
+    void testDeletionDuringMethodInvocation();
 
     void benchClassInfo();
     void benchInitializeClients();
