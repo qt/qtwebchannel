@@ -46,6 +46,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <algorithm>
+
 QT_BEGIN_NAMESPACE
 
 /*!
@@ -81,10 +83,10 @@ QT_BEGIN_NAMESPACE
 */
 void QWebChannelPrivate::_q_transportDestroyed(QObject *object)
 {
-    QWebChannelAbstractTransport *transport = static_cast<QWebChannelAbstractTransport*>(object);
-    const int idx = transports.indexOf(transport);
-    if (idx != -1) {
-        transports.remove(idx);
+    auto it = std::find(transports.begin(), transports.end(), object);
+    if (it != transports.end()) {
+        auto *transport = *it;
+        transports.erase(it);
         publisher->transportRemoved(transport);
     }
 }
