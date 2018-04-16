@@ -1127,13 +1127,22 @@ void TestWebChannel::qtbug62388_wrapObjectMultipleTransports()
     auto queryObjectInfo = [&channel](QObject *obj, QWebChannelAbstractTransport *transport) {
         return channel.d_func()->publisher->wrapResult(QVariant::fromValue(obj), transport).toObject();
     };
-    const auto objectInfo = queryObjectInfo(&obj, m_dummyTransport);
 
-    QCOMPARE(objectInfo.length(), 3);
-    QVERIFY(objectInfo.contains("id"));
-    QVERIFY(objectInfo.contains("__QObject*__"));
-    QVERIFY(objectInfo.contains("data"));
-    QVERIFY(objectInfo.value("__QObject*__").isBool() && objectInfo.value("__QObject*__").toBool());
+    auto verifyObjectInfo = [&obj](const QJsonObject &objectInfo) {
+
+        QCOMPARE(objectInfo.length(), 3);
+        QVERIFY(objectInfo.contains("id"));
+        QVERIFY(objectInfo.contains("__QObject*__"));
+        QVERIFY(objectInfo.contains("data"));
+        QVERIFY(objectInfo.value("__QObject*__").isBool() && objectInfo.value("__QObject*__").toBool());
+
+        const auto propIndex = obj.metaObject()->indexOfProperty("prop");
+        const auto prop = objectInfo["data"].toObject()["properties"].toArray()[propIndex].toArray()[3].toString();
+        QCOMPARE(prop, obj.prop());
+    };
+
+    const auto objectInfo = queryObjectInfo(&obj, m_dummyTransport);
+    verifyObjectInfo(objectInfo);
 
     const auto id = objectInfo.value("id").toString();
 
@@ -1143,7 +1152,17 @@ void TestWebChannel::qtbug62388_wrapObjectMultipleTransports()
     initTransport(&transport);
     QCOMPARE(queryObjectInfo(&obj, &transport), objectInfo);
 
-    // don't crash when the transport is destroyed
+    obj.setProp("asdf");
+
+    const auto objectInfo2 = queryObjectInfo(&obj, m_dummyTransport);
+    QVERIFY(objectInfo2 != objectInfo);
+    verifyObjectInfo(objectInfo2);
+
+    DummyTransport transport2;
+    initTransport(&transport2);
+    QCOMPARE(queryObjectInfo(&obj, &transport2), objectInfo2);
+
+    // don't crash when the transports are destroyed
 }
 
 QTEST_MAIN(TestWebChannel)

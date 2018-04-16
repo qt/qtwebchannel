@@ -492,7 +492,7 @@ QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
 {
     if (!objectId.isEmpty()) {
         ObjectInfo objectInfo = wrappedObjects.value(objectId);
-        if (objectInfo.object && !objectInfo.classinfo.isEmpty())
+        if (objectInfo.object)
             return objectInfo.object;
         QObject *object = registeredObjects.value(objectId);
         if (object)
@@ -577,7 +577,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
 
             classInfo = classInfoForObject(object, transport);
 
-            ObjectInfo oi(object, classInfo);
+            ObjectInfo oi(object);
             if (transport) {
                 oi.transports.append(transport);
             } else {
@@ -598,7 +598,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
                 wrappedObjects[id].transports.append(transport);
                 transportedWrappedObjects.insert(transport, id);
             }
-            classInfo = wrappedObjects.value(id).classinfo;
+            classInfo = classInfoForObject(object, transport);
         }
 
         QJsonObject objectInfo;

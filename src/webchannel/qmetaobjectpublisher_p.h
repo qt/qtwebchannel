@@ -256,15 +256,10 @@ private:
     // Groups individually wrapped objects with their class information and the transports that have access to it.
     struct ObjectInfo
     {
-        ObjectInfo()
-            : object(Q_NULLPTR)
-        {}
-        ObjectInfo(QObject *o, const QJsonObject &i)
+        ObjectInfo(QObject *o = nullptr)
             : object(o)
-            , classinfo(i)
         {}
         QObject *object;
-        QJsonObject classinfo;
         QVector<QWebChannelAbstractTransport*> transports;
     };
 
