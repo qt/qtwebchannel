@@ -1037,6 +1037,39 @@ void TestWebChannel::qtbug46548_overriddenProperties()
 #endif // WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
 }
 
+void TestWebChannel::qtbug62388_wrapObjectMultipleTransports()
+{
+    QWebChannel channel;
+    TestObject obj;
+
+    auto initTransport = [&channel](QWebChannelAbstractTransport *transport) {
+        channel.connectTo(transport);
+        channel.d_func()->publisher->initializeClient(transport);
+    };
+    initTransport(m_dummyTransport);
+
+    auto queryObjectInfo = [&channel](QObject *obj, QWebChannelAbstractTransport *transport) {
+        return channel.d_func()->publisher->wrapResult(QVariant::fromValue(obj), transport).toObject();
+    };
+    const auto objectInfo = queryObjectInfo(&obj, m_dummyTransport);
+
+    QCOMPARE(objectInfo.length(), 3);
+    QVERIFY(objectInfo.contains("id"));
+    QVERIFY(objectInfo.contains("__QObject*__"));
+    QVERIFY(objectInfo.contains("data"));
+    QVERIFY(objectInfo.value("__QObject*__").isBool() && objectInfo.value("__QObject*__").toBool());
+
+    const auto id = objectInfo.value("id").toString();
+
+    QCOMPARE(channel.d_func()->publisher->unwrapObject(id), &obj);
+
+    DummyTransport transport;
+    initTransport(&transport);
+    QCOMPARE(queryObjectInfo(&obj, &transport), objectInfo);
+
+    // don't crash when the transport is destroyed
+}
+
 QTEST_MAIN(TestWebChannel)
 
 #include "tst_webchannel.moc"
