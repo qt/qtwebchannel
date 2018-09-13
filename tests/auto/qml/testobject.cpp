@@ -33,11 +33,20 @@ QT_BEGIN_NAMESPACE
 
 TestObject::TestObject(QObject* parent)
     : QObject(parent)
+    , embeddedObject(new QObject(this))
 {
+    embeddedObject->setObjectName("embedded");
 }
 
 TestObject::~TestObject()
 {
+}
+
+QVariantMap TestObject::objectMap() const
+{
+    QVariantMap map;
+    map.insert("subObject", QVariant::fromValue(embeddedObject));
+    return map;
 }
 
 void TestObject::triggerSignals()

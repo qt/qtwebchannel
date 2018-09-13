@@ -199,6 +199,14 @@ public:
                           const QString &parentObjectId = QString());
 
     /**
+     * Convert a variant map for consumption by the client.
+     *
+     * This properly handles QML values and also wraps the result if required.
+     */
+    QJsonObject wrapMap(const QVariantMap &map, QWebChannelAbstractTransport *transport,
+                          const QString &parentObjectId = QString());
+
+    /**
      * Invoke delete later on @p object.
      */
     void deleteWrappedObject(QObject *object) const;

@@ -297,6 +297,9 @@ TestCase {
         compare(channel.objects.myFactory.objects.length, 2);
         compare(channel.objects.myFactory.objects[0].objectName, "bar");
         compare(channel.objects.myFactory.objects[1].objectName, "baz");
+        // map property as well
+        compare(channel.objects.testObject.objectMap.subObject.objectName,
+            "embedded");
         // also works with properties that reference other registered objects
         compare(channel.objects.myFactory.otherObject, channel.objects.myObj);
 

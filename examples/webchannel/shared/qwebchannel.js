@@ -197,10 +197,16 @@ function QObject(name, data, webChannel)
             }
             return ret;
         }
-        if (!response
-            || !response["__QObject*__"]
-            || response.id === undefined) {
+        if (!(response instanceof Object))
             return response;
+
+        if (!response["__QObject*__"]
+            || response.id === undefined) {
+            var jObj = {};
+            for (var propName in response) {
+                jObj[propName] = object.unwrapQObject(response[propName]);
+            }
+            return jObj;
         }
 
         var objectId = response.id;

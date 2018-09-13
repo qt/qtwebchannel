@@ -31,15 +31,19 @@
 #define TESTOBJECT_H
 
 #include <QObject>
+#include <QVariantMap>
 
 QT_BEGIN_NAMESPACE
 
 class TestObject : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QVariantMap objectMap READ objectMap CONSTANT)
 public:
     explicit TestObject(QObject *parent = Q_NULLPTR);
     ~TestObject();
+
+    QVariantMap objectMap() const;
 
 public slots:
     void triggerSignals();
@@ -47,6 +51,9 @@ public slots:
 signals:
     void testSignalBool(bool testBool);
     void testSignalInt(int testInt);
+
+private:
+    QObject *embeddedObject;
 };
 
 QT_END_NAMESPACE

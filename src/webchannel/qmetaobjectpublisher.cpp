@@ -617,6 +617,9 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
     } else if (result.canConvert<QVariantList>()) {
         // recurse and potentially wrap contents of the array
         return wrapList(result.toList(), transport);
+    } else if (result.canConvert<QVariantMap>()) {
+        // recurse and potentially wrap contents of the map
+        return wrapMap(result.toMap(), transport);
     }
 
     return QJsonValue::fromVariant(result);
@@ -629,6 +632,15 @@ QJsonArray QMetaObjectPublisher::wrapList(const QVariantList &list, QWebChannelA
         array.append(wrapResult(arg, transport, parentObjectId));
     }
     return array;
+}
+
+QJsonObject QMetaObjectPublisher::wrapMap(const QVariantMap &map, QWebChannelAbstractTransport *transport, const QString &parentObjectId)
+{
+    QJsonObject obj;
+    for (QVariantMap::const_iterator i = map.begin(); i != map.end(); i++) {
+        obj.insert(i.key(), wrapResult(i.value(), transport, parentObjectId));
+    }
+    return obj;
 }
 
 void QMetaObjectPublisher::deleteWrappedObject(QObject *object) const
