@@ -346,6 +346,7 @@ function QObject(name, data, webChannel)
         object[methodName] = function() {
             var args = [];
             var callback;
+            var errCallback;
             for (var i = 0; i < arguments.length; ++i) {
                 var argument = arguments[i];
                 if (typeof argument === "function")
@@ -356,6 +357,17 @@ function QObject(name, data, webChannel)
                     });
                 else
                     args.push(argument);
+            }
+
+            var result;
+            // during test, webChannel.exec synchronously calls the callback
+            // therefore, the promise must be constucted before calling
+            // webChannel.exec to ensure the callback is set up
+            if (!callback && (typeof(Promise) === 'function')) {
+              result = new Promise(function(resolve, reject) {
+                callback = resolve;
+                errCallback = reject;
+              });
             }
 
             webChannel.exec({
@@ -369,8 +381,12 @@ function QObject(name, data, webChannel)
                     if (callback) {
                         (callback)(result);
                     }
+                } else if (errCallback) {
+                  (errCallback)();
                 }
             });
+
+            return result;
         };
     }
 

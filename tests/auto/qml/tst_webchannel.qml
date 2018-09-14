@@ -87,6 +87,7 @@ TestCase {
             property var myProperty : 0
             function myMethod(arg) {
                 lastMethodArg = arg;
+                return myProperty;
             }
             signal mySignal(var arg1, var arg2)
         }
@@ -238,6 +239,7 @@ TestCase {
         var testObjBeforeDeletion;
         var testObjAfterDeletion;
         var testObjId;
+        var testReturn;
         var channel = client.createChannel(function(channel) {
             channel.objects.myFactory.create("testObj", function(obj) {
                 testObjId = obj.__id__;
@@ -249,7 +251,9 @@ TestCase {
                     testObjAfterDeletion = obj;
                 });
                 obj.myProperty = 42;
-                obj.myMethod("foobar");
+                obj.myMethod("foobar").then(function(result) {
+                    testReturn = result;
+                });
             });
         });
         client.awaitInit();
@@ -287,6 +291,11 @@ TestCase {
 
         // the server should eventually notify the client about the property update
         client.awaitPropertyUpdate();
+
+        // check that the Promise from myMethod was resolved
+        // must happen after waiting for something so the Promise callback
+        // can execute
+        compare(testReturn, 42);
 
         client.awaitIdle();
 
