@@ -320,7 +320,7 @@ function QObject(name, data, webChannel)
         // update property cache
         for (var propertyIndex in propertyMap) {
             var propertyValue = propertyMap[propertyIndex];
-            object.__propertyCache__[propertyIndex] = propertyValue;
+            object.__propertyCache__[propertyIndex] = this.unwrapQObject(propertyValue);
         }
 
         for (var signalName in signals) {

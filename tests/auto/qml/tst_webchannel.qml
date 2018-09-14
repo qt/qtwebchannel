@@ -71,6 +71,9 @@ TestCase {
             lastFactoryObj = component.createObject(myFactory, {objectName: id});
             return lastFactoryObj;
         }
+        function switchObject() {
+            otherObject = myOtherObj;
+        }
         property var objectInProperty: QtObject {
             objectName: "foo"
         }
@@ -287,10 +290,6 @@ TestCase {
 
         client.awaitIdle();
 
-        // trigger a signal and ensure it gets transmitted
-        lastFactoryObj.mySignal("foobar", 42);
-        client.awaitSignal();
-
         // property should be wrapped
         compare(channel.objects.myFactory.objectInProperty.objectName, "foo");
         // list property as well
@@ -302,6 +301,18 @@ TestCase {
             "embedded");
         // also works with properties that reference other registered objects
         compare(channel.objects.myFactory.otherObject, channel.objects.myObj);
+
+        // change object property
+        channel.objects.myFactory.switchObject();
+        client.awaitMessage();
+        client.awaitResponse();
+        client.awaitIdle();
+        client.awaitPropertyUpdate();
+        compare(channel.objects.myFactory.otherObject, channel.objects.myOtherObj);
+
+        // trigger a signal and ensure it gets transmitted
+        lastFactoryObj.mySignal("foobar", 42);
+        client.awaitSignal();
 
         // deleteLater call
         msg = client.awaitMessage();
