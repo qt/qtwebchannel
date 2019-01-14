@@ -1,6 +1,7 @@
 /****************************************************************************
 **
 ** Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+** Copyright (C) 2019 Menlo Systems GmbH, author Arno Rehn <a.rehn@menlosystems.com>
 ** Contact: https://www.qt.io/licensing/
 **
 ** This file is part of the QtWebChannel module of the Qt Toolkit.
@@ -55,6 +56,32 @@
 QT_BEGIN_NAMESPACE
 
 namespace {
+
+// FIXME: QFlags don't have the QMetaType::IsEnumeration flag set, although they have a QMetaEnum entry in the QMetaObject.
+// They only way to detect registered QFlags types is to find the named entry in the QMetaObject's enumerator list.
+// Ideally, this would be fixed in QMetaType.
+bool isQFlagsType(uint id)
+{
+    QMetaType type(id);
+
+    // Short-circuit to avoid more expensive operations
+    QMetaType::TypeFlags flags = type.flags();
+    if (flags.testFlag(QMetaType::PointerToQObject) || flags.testFlag(QMetaType::IsEnumeration)
+            || flags.testFlag(QMetaType::SharedPointerToQObject) || flags.testFlag(QMetaType::WeakPointerToQObject)
+            || flags.testFlag(QMetaType::TrackingPointerToQObject) || flags.testFlag(QMetaType::IsGadget))
+    {
+        return false;
+    }
+
+    const QMetaObject *mo = type.metaObject();
+    if (!mo) {
+        return false;
+    }
+
+    QByteArray name = QMetaType::typeName(id);
+    name = name.mid(name.lastIndexOf(":") + 1);
+    return mo->indexOfEnumerator(name.constData()) > -1;
+}
 
 MessageType toType(const QJsonValue &value)
 {
@@ -487,6 +514,9 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         if (unwrappedObject == Q_NULLPTR)
             qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
         return QVariant::fromValue(unwrappedObject);
+    } else if (isQFlagsType(targetType)) {
+        int flagsValue = value.toInt();
+        return QVariant(targetType, reinterpret_cast<const void*>(&flagsValue));
     }
 
     // this converts QJsonObjects to QVariantMaps, which is not desired when
@@ -570,6 +600,10 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
             objectInfo[KEY_DATA] = classInfo;
 
         return objectInfo;
+    } else if (QMetaType::typeFlags(result.userType()).testFlag(QMetaType::IsEnumeration)) {
+        return result.toInt();
+    } else if (isQFlagsType(result.userType())) {
+        return *reinterpret_cast<const int*>(result.constData());
 #ifndef QT_NO_JSVALUE
     } else if (result.canConvert<QJSValue>()) {
         // Workaround for keeping QJSValues from QVariant.
