@@ -100,9 +100,15 @@ new QWebChannel(yourTransport, function(channel) {
 
     \section2 Overloaded methods and signals
 
-    When you publish a \c QObject that has overloaded methods or signals, then
-    only the first one is accessible directly via the pretty JavaScript notation.
-    All others are accessible through their complete \c QMetaMethod signature.
+    When you publish a \c QObject that has overloaded methods, QWebChannel will resolve
+    method invocations to the best match. Note that due to JavaScript's type system, there is only
+    a single 'number' type which maps best to a C++ 'double'. When overloads differ only in the type
+    of a number-like parameter, QWebChannel will always choose that overload which best matches the
+    JavaScript 'number' type.
+    When you connect to an overloaded signal, the QWebChannel client will by default only connect to
+    the first signal overload of that name.
+    Additionally, overloads of methods and signals can explicitly be requested by their complete
+    \c QMetaMethod signature.
     Assume we have the following \c QObject subclass on the C++ side:
 
     \code
@@ -111,6 +117,7 @@ new QWebChannel(yourTransport, function(channel) {
         Q_OBJECT
     slots:
         void foo(int i);
+        void foo(double d);
         void foo(const QString &str);
         void foo(const QString &str, int i);
 
@@ -125,9 +132,10 @@ new QWebChannel(yourTransport, function(channel) {
 
     \code
     // methods
-    foo.foo(42); // will call first method named foo, i.e. foo(int i)
-    foo.foo("asdf"); // will also call foo(int i), probably not what you want
-    foo["foo(int)"](42); // explicitly call foo(int i)
+    foo.foo(42); // will call the method named foo which best matches the JavaScript number parameter, i.e. foo(double d)
+    foo.foo("asdf"); // will call foo(const QString &str)
+    foo.foo("asdf", 42); // will call foo(const QString &str, int i)
+    foo["foo(int)"](42); // explicitly call foo(int i), *not* foo(double d)
     foo["foo(QString)"]("asdf"); // explicitly call foo(const QString &str)
     foo["foo(QString,int)"]("asdf", 42); // explicitly call foo(const QString &str, int i)
 

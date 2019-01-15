@@ -158,9 +158,12 @@ public slots:
     void setProp(const QString&prop) {emit propChanged(mProp=prop);}
     void fire() {emit replay();}
 
-    int overload(int i) { return i + 1; }
+    double overload(double d) { return d + 1; }
+    int overload(int i) { return i * 2; }
+    QObject *overload(QObject *object) { return object; }
     QString overload(const QString &str) { return str.toUpper(); }
     QString overload(const QString &str, int i) { return str.toUpper() + QString::number(i + 1); }
+    QString overload(const QJsonArray &v) { return QString::number(v[1].toInt()) + v[0].toString(); }
 
 protected slots:
     void slot3() {}
@@ -320,6 +323,7 @@ private slots:
     void testInvokeMethodConversion();
     void testFunctionOverloading();
     void testSetPropertyConversion();
+    void testInvokeMethodOverloadResolution();
     void testDisconnect();
     void testWrapRegisteredObject();
     void testUnwrapObject();

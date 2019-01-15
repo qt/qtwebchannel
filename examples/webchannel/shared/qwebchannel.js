@@ -339,6 +339,10 @@ function QObject(name, data, webChannel)
     {
         var methodName = methodData[0];
         var methodIdx = methodData[1];
+
+        // Fully specified methods are invoked by id, others by name for host-side overload resolution
+        var invokedMethod = methodName[methodName.length - 1] === ')' ? methodIdx : methodName
+
         object[methodName] = function() {
             var args = [];
             var callback;
@@ -357,7 +361,7 @@ function QObject(name, data, webChannel)
             webChannel.exec({
                 "type": QWebChannelMessageTypes.invokeMethod,
                 "object": object.__id__,
-                "method": methodIdx,
+                "method": invokedMethod,
                 "args": args
             }, function(response) {
                 if (response !== undefined) {

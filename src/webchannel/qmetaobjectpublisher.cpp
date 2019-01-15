@@ -83,6 +83,65 @@ bool isQFlagsType(uint id)
     return mo->indexOfEnumerator(name.constData()) > -1;
 }
 
+// Common scores for overload resolution
+enum OverloadScore {
+    PerfectMatchScore = 0,
+    VariantScore = 1,
+    NumberBaseScore = 2,
+    GenericConversionScore = 100,
+    IncompatibleScore = 10000,
+};
+
+// Scores the conversion of a double to a number-like user type. Better matches
+// for a JS 'number' get a lower score.
+int doubleToNumberConversionScore(int userType)
+{
+    switch (userType) {
+    case QMetaType::Bool:
+        return NumberBaseScore + 7;
+    case QMetaType::Char:
+    case QMetaType::SChar:
+    case QMetaType::UChar:
+        return NumberBaseScore + 6;
+    case QMetaType::Short:
+    case QMetaType::UShort:
+        return NumberBaseScore + 5;
+    case QMetaType::Int:
+    case QMetaType::UInt:
+        return NumberBaseScore + 4;
+    case QMetaType::Long:
+    case QMetaType::ULong:
+        return NumberBaseScore + 3;
+    case QMetaType::LongLong:
+    case QMetaType::ULongLong:
+        return NumberBaseScore + 2;
+    case QMetaType::Float:
+        return NumberBaseScore + 1;
+    case QMetaType::Double:
+        return NumberBaseScore;
+    default:
+        break;
+    }
+
+    if (QMetaType::typeFlags(userType) & QMetaType::IsEnumeration)
+        return doubleToNumberConversionScore(QMetaType::Int);
+
+    return IncompatibleScore;
+}
+
+// Keeps track of the badness of a QMetaMethod candidate for overload resolution
+struct OverloadResolutionCandidate
+{
+    OverloadResolutionCandidate(const QMetaMethod &method = QMetaMethod(), int badness = PerfectMatchScore)
+        : method(method), badness(badness)
+    {}
+
+    QMetaMethod method;
+    int badness;
+
+    bool operator<(const OverloadResolutionCandidate &other) const { return badness < other.badness; }
+};
+
 MessageType toType(const QJsonValue &value)
 {
     int i = value.toInt(-1);
@@ -121,6 +180,8 @@ QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
 /// TODO: what is the proper value here?
 const int PROPERTY_UPDATE_INTERVAL = 50;
 }
+
+Q_DECLARE_TYPEINFO(OverloadResolutionCandidate, Q_MOVABLE_TYPE);
 
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
     : QObject(webChannel)
@@ -368,17 +429,15 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
     }
 }
 
-QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
+QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMethod &method,
                                               const QJsonArray &args)
 {
-    const QMetaMethod &method = object->metaObject()->method(methodIndex);
-
     if (method.name() == QByteArrayLiteral("deleteLater")) {
         // invoke `deleteLater` on wrapped QObject indirectly
         deleteWrappedObject(object);
         return QJsonValue();
     } else if (!method.isValid()) {
-        qWarning() << "Cannot invoke unknown method of index" << methodIndex << "on object" << object << '.';
+        qWarning() << "Cannot invoke invalid method on object" << object << '.';
         return QJsonValue();
     } else if (method.access() != QMetaMethod::Public) {
         qWarning() << "Cannot invoke non-public method" << method.name() << "on object" << object << '.';
@@ -420,6 +479,55 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
     }
     // now we can call the method
     return returnValue;
+}
+
+QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
+                                            const QJsonArray &args)
+{
+    const QMetaMethod &method = object->metaObject()->method(methodIndex);
+    if (!method.isValid()) {
+        qWarning() << "Cannot invoke method of unknown index" << methodIndex << "on object"
+                   << object << '.';
+        return QJsonValue();
+    }
+    return invokeMethod(object, method, args);
+}
+
+QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QByteArray &methodName,
+                                            const QJsonArray &args)
+{
+    QVector<OverloadResolutionCandidate> candidates;
+
+    const QMetaObject *mo = object->metaObject();
+    for (int i = 0; i < mo->methodCount(); ++i) {
+        QMetaMethod method = mo->method(i);
+        if (method.name() != methodName || method.parameterCount() != args.count()
+                || method.access() != QMetaMethod::Public
+                || (method.methodType() != QMetaMethod::Method
+                        && method.methodType() != QMetaMethod::Slot)
+                || method.parameterCount() > 10)
+        {
+            // Not a candidate
+            continue;
+        }
+
+        candidates.append({method, methodOverloadBadness(method, args)});
+    }
+
+    if (candidates.isEmpty()) {
+        qWarning() << "No candidates found for" << methodName << "with" << args.size()
+                   << "arguments on object" << object << '.';
+        return QJsonValue();
+    }
+
+    std::sort(candidates.begin(), candidates.end());
+
+    if (candidates.size() > 1 && candidates[0].badness == candidates[1].badness) {
+        qWarning().nospace() << "Ambiguous overloads for method " << methodName << ". Choosing "
+                             << candidates.first().method.methodSignature();
+    }
+
+    return invokeMethod(object, candidates.first().method, args);
 }
 
 void QMetaObjectPublisher::setProperty(QObject *object, const int propertyIndex, const QJsonValue &value)
@@ -532,6 +640,57 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
     }
     return variant;
+}
+
+int QMetaObjectPublisher::conversionScore(const QJsonValue &value, int targetType) const
+{
+    if (targetType == QMetaType::QJsonValue) {
+        return PerfectMatchScore;
+    } else if (targetType == QMetaType::QJsonArray) {
+        return value.isArray() ? PerfectMatchScore : IncompatibleScore;
+    } else if (targetType == QMetaType::QJsonObject) {
+        return value.isObject() ? PerfectMatchScore : IncompatibleScore;
+    } else if (QMetaType::typeFlags(targetType) & QMetaType::PointerToQObject) {
+        if (value.isNull())
+            return PerfectMatchScore;
+        if (!value.isObject())
+            return IncompatibleScore;
+
+        QJsonObject object = value.toObject();
+        if (object[KEY_ID].isUndefined())
+            return IncompatibleScore;
+
+        QObject *unwrappedObject = unwrapObject(object[KEY_ID].toString());
+        return unwrappedObject != Q_NULLPTR ? PerfectMatchScore : IncompatibleScore;
+    } else if (targetType == QMetaType::QVariant) {
+        return VariantScore;
+    }
+
+    // Check if this is a number conversion
+    if (value.isDouble()) {
+        int score = doubleToNumberConversionScore(targetType);
+        if (score != IncompatibleScore) {
+            return score;
+        }
+    }
+
+    QVariant variant = value.toVariant();
+    if (variant.userType() == targetType) {
+        return PerfectMatchScore;
+    } else if (variant.canConvert(targetType)) {
+        return GenericConversionScore;
+    }
+
+    return IncompatibleScore;
+}
+
+int QMetaObjectPublisher::methodOverloadBadness(const QMetaMethod &method, const QJsonArray &args) const
+{
+    int badness = PerfectMatchScore;
+    for (int i = 0; i < args.size(); ++i) {
+        badness += conversionScore(args[i], method.parameterType(i));
+    }
+    return badness;
 }
 
 void QMetaObjectPublisher::transportRemoved(QWebChannelAbstractTransport *transport)
@@ -715,10 +874,18 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
 
             QPointer<QMetaObjectPublisher> publisherExists(this);
             QPointer<QWebChannelAbstractTransport> transportExists(transport);
-            QVariant result =
-                invokeMethod(object,
-                             message.value(KEY_METHOD).toInt(-1),
-                             message.value(KEY_ARGS).toArray());
+            QJsonValue method = message.value(KEY_METHOD);
+            QVariant result;
+
+            if (method.isString()) {
+                result = invokeMethod(object,
+                                      method.toString().toUtf8(),
+                                      message.value(KEY_ARGS).toArray());
+            } else {
+                result = invokeMethod(object,
+                                      method.toInt(-1),
+                                      message.value(KEY_ARGS).toArray());
+            }
             if (!publisherExists || !transportExists)
                 return;
             transport->sendMessage(createResponse(message.value(KEY_ID), wrapResult(result, transport)));

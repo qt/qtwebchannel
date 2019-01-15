@@ -383,9 +383,12 @@ void TestWebChannel::testInfoForObject()
         addMethod(QStringLiteral("setObjectProperty"), "setObjectProperty(QObject*)");
         addMethod(QStringLiteral("setProp"), "setProp(QString)");
         addMethod(QStringLiteral("fire"), "fire()");
-        addMethod(QStringLiteral("overload"), "overload(int)");
+        addMethod(QStringLiteral("overload"), "overload(double)");
+        addMethod(QStringLiteral("overload"), "overload(int)", false);
+        addMethod(QStringLiteral("overload"), "overload(QObject*)", false);
         addMethod(QStringLiteral("overload"), "overload(QString)", false);
         addMethod(QStringLiteral("overload"), "overload(QString,int)", false);
+        addMethod(QStringLiteral("overload"), "overload(QJsonArray)", false);
         addMethod(QStringLiteral("method1"), "method1()");
         QCOMPARE(info["methods"].toArray(), expected);
     }
@@ -506,9 +509,7 @@ void TestWebChannel::testInvokeMethodConversion()
     args.append(QJsonValue(1000));
 
     {
-        int method = metaObject()->indexOfMethod("setInt(int)");
-        QVERIFY(method != -1);
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, "setInt", args);
         QCOMPARE(m_lastInt, args.at(0).toInt());
         int getterMethod = metaObject()->indexOfMethod("readInt()");
         QVERIFY(getterMethod != -1);
@@ -516,11 +517,9 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
-        int method = metaObject()->indexOfMethod("setBool(bool)");
-        QVERIFY(method != -1);
         QJsonArray args;
         args.append(QJsonValue(!m_lastBool));
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, "setBool", args);
         QCOMPARE(m_lastBool, args.at(0).toBool());
         int getterMethod = metaObject()->indexOfMethod("readBool()");
         QVERIFY(getterMethod != -1);
@@ -528,9 +527,7 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
-        int method = metaObject()->indexOfMethod("setDouble(double)");
-        QVERIFY(method != -1);
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, "setDouble", args);
         QCOMPARE(m_lastDouble, args.at(0).toDouble());
         int getterMethod = metaObject()->indexOfMethod("readDouble()");
         QVERIFY(getterMethod != -1);
@@ -538,9 +535,7 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
-        int method = metaObject()->indexOfMethod("setVariant(QVariant)");
-        QVERIFY(method != -1);
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, "setVariant", args);
         QCOMPARE(m_lastVariant, args.at(0).toVariant());
         int getterMethod = metaObject()->indexOfMethod("readVariant()");
         QVERIFY(getterMethod != -1);
@@ -548,9 +543,7 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
-        int method = metaObject()->indexOfMethod("setJsonValue(QJsonValue)");
-        QVERIFY(method != -1);
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, "setJsonValue", args);
         QCOMPARE(m_lastJsonValue, args.at(0));
         int getterMethod = metaObject()->indexOfMethod("readJsonValue()");
         QVERIFY(getterMethod != -1);
@@ -558,13 +551,11 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(retVal, args.at(0).toVariant());
     }
     {
-        int method = metaObject()->indexOfMethod("setJsonObject(QJsonObject)");
-        QVERIFY(method != -1);
         QJsonObject object;
         object["foo"] = QJsonValue(123);
         object["bar"] = QJsonValue(4.2);
         args[0] = object;
-        channel.d_func()->publisher->invokeMethod(this, method, args);
+        channel.d_func()->publisher->invokeMethod(this, "setJsonObject", args);
         QCOMPARE(m_lastJsonObject, object);
         int getterMethod = metaObject()->indexOfMethod("readJsonObject()");
         QVERIFY(getterMethod != -1);
@@ -572,13 +563,11 @@ void TestWebChannel::testInvokeMethodConversion()
         QCOMPARE(retVal, QVariant::fromValue(object));
     }
     {
-        int setterMethod = metaObject()->indexOfMethod("setJsonArray(QJsonArray)");
-        QVERIFY(setterMethod != -1);
         QJsonArray array;
         array << QJsonValue(123);
         array <<  QJsonValue(4.2);
         args[0] = array;
-        channel.d_func()->publisher->invokeMethod(this, setterMethod, args);
+        channel.d_func()->publisher->invokeMethod(this, "setJsonArray", args);
         QCOMPARE(m_lastJsonArray, array);
         int getterMethod = metaObject()->indexOfMethod("readJsonArray()");
         QVERIFY(getterMethod != -1);
@@ -671,6 +660,49 @@ void TestWebChannel::testSetPropertyConversion()
         object["bar"] = QJsonValue(-4.2);
         channel.d_func()->publisher->setProperty(this, property, object);
         QCOMPARE(m_lastJsonObject, object);
+    }
+}
+
+void TestWebChannel::testInvokeMethodOverloadResolution()
+{
+    QWebChannel channel;
+    TestObject testObject;
+    TestObject exportedObject;
+    channel.registerObject("test", &exportedObject);
+    channel.connectTo(m_dummyTransport);
+
+    QVariant result;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+
+    {
+        result = publisher->invokeMethod(&testObject, "overload", { 41.0 });
+        QVERIFY(result.userType() == QMetaType::Double);
+        QCOMPARE(result.toDouble(), 42.0);
+    }
+    {
+        // In JavaScript, there's only 'double', so this should always invoke the 'double' overload
+        result = publisher->invokeMethod(&testObject, "overload", { 41 });
+        QVERIFY(result.userType() == QMetaType::Double);
+        QCOMPARE(result.toDouble(), 42);
+    }
+    {
+        QJsonObject wrappedObject { {"id", "test"} };
+        result = publisher->invokeMethod(&testObject, "overload", { wrappedObject });
+        QCOMPARE(result.value<TestObject*>(), &exportedObject);
+    }
+    {
+        result = publisher->invokeMethod(&testObject, "overload", { "hello world" });
+        QCOMPARE(result.toString(), QStringLiteral("HELLO WORLD"));
+    }
+    {
+        result = publisher->invokeMethod(&testObject, "overload", { "the answer is ", 41 });
+        QCOMPARE(result.toString(), QStringLiteral("THE ANSWER IS 42"));
+    }
+    {
+        QJsonArray args;
+        args.append(QJsonArray { "foobar", 42 });
+        result = publisher->invokeMethod(&testObject, "overload", args);
+        QCOMPARE(result.toString(), QStringLiteral("42foobar"));
     }
 }
 
@@ -771,7 +803,7 @@ void TestWebChannel::testPassWrappedObjectBack()
     QJsonObject argProperty;
     argProperty["id"] = returnedObjPropertyInfo["id"];
 
-    pub->invokeMethod(&registeredObj, registeredObj.metaObject()->indexOfSlot("setReturnedObject(TestObject*)"), argsMethod);
+    pub->invokeMethod(&registeredObj, "setReturnedObject", argsMethod);
     QCOMPARE(registeredObj.mReturnedObject, &returnedObjMethod);
     pub->setProperty(&registeredObj, registeredObj.metaObject()->indexOfProperty("returnedObject"), argProperty);
     QCOMPARE(registeredObj.mReturnedObject, &returnedObjProperty);
@@ -858,12 +890,9 @@ void TestWebChannel::testAsyncObject()
     QJsonArray args;
     args.append(QJsonValue("message"));
 
-    int method = obj.metaObject()->indexOfMethod("setProp(QString)");
-    QVERIFY(method != -1);
-
     {
         QSignalSpy spy(&obj, &TestObject::propChanged);
-        channel.d_func()->publisher->invokeMethod(&obj, method, args);
+        channel.d_func()->publisher->invokeMethod(&obj, "setProp", args);
         QTRY_COMPARE(spy.count(), 1);
         QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
     }
