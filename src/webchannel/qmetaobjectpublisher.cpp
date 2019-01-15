@@ -149,11 +149,6 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWeb
         QJsonArray signalInfo;
         if (prop.hasNotifySignal()) {
             notifySignals << prop.notifySignalIndex();
-            const int numParams = prop.notifySignal().parameterCount();
-            if (numParams > 1) {
-                qWarning("Notify signal for property '%s' has %d parameters, expected zero or one.",
-                         prop.name(), numParams);
-            }
             // optimize: compress the common propertyChanged notification names, just send a 1
             const QByteArray &notifySignal = prop.notifySignal().name();
             static const QByteArray changedSuffix = QByteArrayLiteral("Changed");
