@@ -311,6 +311,7 @@ private slots:
     void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
+    void testUnwrapObject();
     void testRemoveUnusedTransports();
     void testPassWrappedObjectBack();
     void testWrapValues();

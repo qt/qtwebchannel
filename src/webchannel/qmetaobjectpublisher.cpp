@@ -491,6 +491,9 @@ QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
         ObjectInfo objectInfo = wrappedObjects.value(objectId);
         if (objectInfo.object && !objectInfo.classinfo.isEmpty())
             return objectInfo.object;
+        QObject *object = registeredObjects.value(objectId);
+        if (object)
+            return object;
     }
 
     qWarning() << "No wrapped object" << objectId;
