@@ -799,6 +799,22 @@ void TestWebChannel::testWrapValues()
     }
 }
 
+void TestWebChannel::testWrapObjectWithMultipleTransports()
+{
+    QWebChannel channel;
+    QMetaObjectPublisher *pub = channel.d_func()->publisher;
+
+    DummyTransport *dummyTransport = new DummyTransport(this);
+    DummyTransport *dummyTransport2 = new DummyTransport(this);
+
+    TestObject obj;
+
+    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport);
+    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport2);
+
+    QCOMPARE(pub->transportedWrappedObjects.count(), 2);
+}
+
 void TestWebChannel::testJsonToVariant()
 {
     QWebChannel channel;

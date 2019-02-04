@@ -315,6 +315,7 @@ private slots:
     void testRemoveUnusedTransports();
     void testPassWrappedObjectBack();
     void testWrapValues();
+    void testWrapObjectWithMultipleTransports();
     void testJsonToVariant();
     void testInfiniteRecursion();
     void testAsyncObject();
