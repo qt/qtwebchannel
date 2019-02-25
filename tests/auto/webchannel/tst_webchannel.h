@@ -311,9 +311,11 @@ private slots:
     void testSetPropertyConversion();
     void testDisconnect();
     void testWrapRegisteredObject();
+    void testUnwrapObject();
     void testRemoveUnusedTransports();
     void testPassWrappedObjectBack();
     void testWrapValues();
+    void testWrapObjectWithMultipleTransports();
     void testJsonToVariant();
     void testInfiniteRecursion();
     void testAsyncObject();
