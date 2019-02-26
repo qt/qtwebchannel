@@ -708,6 +708,25 @@ void TestWebChannel::testWrapRegisteredObject()
     QCOMPARE(obj.objectName(), returnedId);
 }
 
+void TestWebChannel::testUnwrapObject()
+{
+    QWebChannel channel;
+
+    {
+        TestObject obj;
+        obj.setObjectName("testObject");
+        channel.registerObject(obj.objectName(), &obj);
+        QObject *unwrapped = channel.d_func()->publisher->unwrapObject(obj.objectName());
+        QCOMPARE(unwrapped, &obj);
+    }
+    {
+        TestObject obj;
+        QJsonObject objectInfo = channel.d_func()->publisher->wrapResult(QVariant::fromValue(&obj), m_dummyTransport).toObject();
+        QObject *unwrapped = channel.d_func()->publisher->unwrapObject(objectInfo["id"].toString());
+        QCOMPARE(unwrapped, &obj);
+    }
+}
+
 void TestWebChannel::testRemoveUnusedTransports()
 {
     QWebChannel channel;
@@ -778,6 +797,22 @@ void TestWebChannel::testWrapValues()
         QVERIFY(value.isDouble());
         QCOMPARE(value.toInt(), (int) flags);
     }
+}
+
+void TestWebChannel::testWrapObjectWithMultipleTransports()
+{
+    QWebChannel channel;
+    QMetaObjectPublisher *pub = channel.d_func()->publisher;
+
+    DummyTransport *dummyTransport = new DummyTransport(this);
+    DummyTransport *dummyTransport2 = new DummyTransport(this);
+
+    TestObject obj;
+
+    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport);
+    pub->wrapResult(QVariant::fromValue(&obj), dummyTransport2);
+
+    QCOMPARE(pub->transportedWrappedObjects.count(), 2);
 }
 
 void TestWebChannel::testJsonToVariant()
