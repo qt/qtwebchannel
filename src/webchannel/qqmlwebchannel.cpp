@@ -134,8 +134,8 @@ QQmlWebChannel::~QQmlWebChannel()
 
 /*!
     \qmlmethod void WebChannel::registerObjects(QVariantMap objects)
-    Registers objects to make them accessible to HTML clients. The key of the
-    map is used as an identifier for the object on the client side.
+    Registers the specified \a objects to make them accessible to HTML clients.
+    The key of the map is used as an identifier for the object on the client side.
 
     Once registered, all signals and property changes are automatically propagated to the clients.
     Public invokable methods, including slots, are also accessible to the clients.
