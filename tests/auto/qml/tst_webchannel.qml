@@ -451,4 +451,29 @@ TestCase {
             0
         ]);
     }
+
+    function test_multiConnect()
+    {
+        var signalArgs = [];
+        function logSignalArgs(arg) {
+            signalArgs.push(arg);
+        }
+        var channel = client.createChannel(function(channel) {
+            var testObject = channel.objects.testObject;
+            testObject.testSignalInt.connect(logSignalArgs);
+            testObject.testSignalInt.connect(logSignalArgs);
+            testObject.triggerSignals();
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "testObject");
+
+        msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.invokeMethod);
+        client.awaitIdle();
+
+        compare(signalArgs, [42, 42, 1, 1, 0, 0]);
+    }
 }
