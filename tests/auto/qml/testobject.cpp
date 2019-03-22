@@ -59,4 +59,22 @@ void TestObject::triggerSignals()
     emit testSignalInt(0);
 }
 
+int TestObject::testOverload(int i)
+{
+    emit testOverloadSignal(i);
+    return i + 1;
+}
+
+QString TestObject::testOverload(const QString &str)
+{
+    emit testOverloadSignal(str);
+    return str.toUpper();
+}
+
+QString TestObject::testOverload(const QString &str, int i)
+{
+    emit testOverloadSignal(str, i);
+    return str.toUpper() + QString::number(i + 1);
+}
+
 QT_END_NAMESPACE

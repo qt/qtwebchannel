@@ -196,19 +196,13 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWeb
         propertyInfo.append(wrapResult(prop.read(object), transport));
         qtProperties.append(propertyInfo);
     }
-    for (int i = 0; i < metaObject->methodCount(); ++i) {
-        if (notifySignals.contains(i)) {
-            continue;
-        }
-        const QMetaMethod &method = metaObject->method(i);
-        //NOTE: this must be a string, otherwise it will be converted to '{}' in QML
-        const QString &name = QString::fromLatin1(method.name());
-        // optimize: skip overloaded methods/signals or property getters, on the JS side we can only
-        // call one of them anyways
-        // TODO: basic support for overloaded signals, methods
-        if (identifiers.contains(name)) {
-            continue;
-        }
+    auto addMethod = [&qtSignals, &qtMethods, &identifiers](int i, const QMetaMethod &method, const QByteArray &rawName) {
+        //NOTE: the name must be a string, otherwise it will be converted to '{}' in QML
+        const auto name = QString::fromLatin1(rawName);
+        // only the first method gets called with its name directly
+        // others must be called by explicitly passing the method signature
+        if (identifiers.contains(name))
+            return;
         identifiers << name;
         // send data as array to client with format: [name, index]
         QJsonArray data;
@@ -219,6 +213,15 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWeb
         } else if (method.access() == QMetaMethod::Public) {
             qtMethods.append(data);
         }
+    };
+    for (int i = 0; i < metaObject->methodCount(); ++i) {
+        if (notifySignals.contains(i)) {
+            continue;
+        }
+        const QMetaMethod &method = metaObject->method(i);
+        addMethod(i, method, method.name());
+        // for overload resolution also pass full method signature
+        addMethod(i, method, method.methodSignature());
     }
     for (int i = 0; i < metaObject->enumeratorCount(); ++i) {
         QMetaEnum enumerator = metaObject->enumerator(i);

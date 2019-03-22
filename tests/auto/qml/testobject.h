@@ -48,9 +48,17 @@ public:
 public slots:
     void triggerSignals();
 
+    int testOverload(int i);
+    QString testOverload(const QString &str);
+    QString testOverload(const QString &str, int i);
+
 signals:
     void testSignalBool(bool testBool);
     void testSignalInt(int testInt);
+
+    void testOverloadSignal(int i);
+    void testOverloadSignal(const QString &str);
+    void testOverloadSignal(const QString &str, int i);
 
 private:
     QObject *embeddedObject;

@@ -476,4 +476,64 @@ TestCase {
 
         compare(signalArgs, [42, 42, 1, 1, 0, 0]);
     }
+
+    function test_overloading()
+    {
+        var signalArgs_implicit = [];
+        var signalArgs_explicit1 = [];
+        var signalArgs_explicit2 = [];
+        var signalArgs_explicit3 = [];
+        function logSignalArgs(container) {
+            return function(...args) {
+                container.push(args);
+            };
+        }
+        var returnValues = [];
+        function logReturnValue(value) {
+            returnValues.push(value);
+        }
+        var channel = client.createChannel(function(channel) {
+            var testObject = channel.objects.testObject;
+            testObject.testOverloadSignal.connect(logSignalArgs(signalArgs_implicit));
+            testObject["testOverloadSignal(int)"].connect(logSignalArgs(signalArgs_explicit1));
+            testObject["testOverloadSignal(QString)"].connect(logSignalArgs(signalArgs_explicit2));
+            testObject["testOverloadSignal(QString,int)"].connect(logSignalArgs(signalArgs_explicit3));
+            testObject.testOverload(99, logReturnValue);
+            testObject["testOverload(int)"](41, logReturnValue);
+            testObject["testOverload(QString)"]("hello world", logReturnValue);
+            testObject["testOverload(QString,int)"]("the answer is ", 41, logReturnValue);
+        });
+        client.awaitInit();
+
+        function awaitMessage(type)
+        {
+            var msg = client.awaitMessage();
+            compare(msg.type, type);
+            compare(msg.object, "testObject");
+        }
+
+        console.log("sig1");
+        awaitMessage(JSClient.QWebChannelMessageTypes.connectToSignal);
+        console.log("sig2");
+        awaitMessage(JSClient.QWebChannelMessageTypes.connectToSignal);
+        console.log("sig3");
+        awaitMessage(JSClient.QWebChannelMessageTypes.connectToSignal);
+
+        console.log("method1");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+        console.log("method2");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+        console.log("method3");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+        console.log("method4");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+
+        client.awaitIdle();
+
+        compare(signalArgs_implicit, [[99], [41]]);
+        compare(signalArgs_explicit1, signalArgs_implicit);
+        compare(signalArgs_explicit2, [["hello world"]]);
+        compare(signalArgs_explicit3, [["the answer is ", 41]]);
+        compare(returnValues, [100, 42, "HELLO WORLD", "THE ANSWER IS 42"]);
+    }
 }

@@ -97,4 +97,44 @@ new QWebChannel(yourTransport, function(channel) {
     console.log(foo.MyEnum.MyEnumerator);
 });
     \endcode
+
+    \section2 Overloaded methods and signals
+
+    When you publish a \c QObject that has overloaded methods or signals, then
+    only the first one is accessible directly via the pretty JavaScript notation.
+    All others are accessible through their complete \c QMetaMethod signature.
+    Assume we have the following \c QObject subclass on the C++ side:
+
+    \code
+    class Foo : public QObject
+    {
+        Q_OBJECT
+    slots:
+        void foo(int i);
+        void foo(const QString &str);
+        void foo(const QString &str, int i);
+
+    signals:
+        void bar(int i);
+        void bar(const QString &str);
+        void bar(const QString &str, int i);
+    };
+    \endcode
+
+    Then you can interact with this class on the JavaScript side like this:
+
+    \code
+    // methods
+    foo.foo(42); // will call first method named foo, i.e. foo(int i)
+    foo.foo("asdf"); // will also call foo(int i), probably not what you want
+    foo["foo(int)"](42); // explicitly call foo(int i)
+    foo["foo(QString)"]("asdf"); // explicitly call foo(const QString &str)
+    foo["foo(QString,int)"]("asdf", 42); // explicitly call foo(const QString &str, int i)
+
+    // signals
+    foo.bar.connect(...); // connect to first signal named bar, i.e. bar(int i)
+    foo["bar(int)"].connect(...); // connect explicitly to bar(int i)
+    foo["bar(QString)"].connect(...); // connect explicitly to bar(const QString &str)
+    foo["bar(QString,int)"].connect(...); // connect explicitly to bar(const QString &str, int i)
+    \endcode
 */

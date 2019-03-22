@@ -266,7 +266,7 @@ function QObject(name, data, webChannel)
                     return;
 
                 // also note that we always get notified about the destroyed signal
-                if (signalName === "destroyed")
+                if (signalName === "destroyed" || signalName === "destroyed()" || signalName === "destroyed(QObject*)")
                     return;
 
                 // and otherwise we only need to be connected only once

@@ -275,6 +275,21 @@ void TestWebChannel::setJsonArray(const QJsonArray& v)
     emit lastJsonArrayChanged();
 }
 
+int TestWebChannel::readOverload(int i)
+{
+    return i + 1;
+}
+
+QString TestWebChannel::readOverload(const QString &arg)
+{
+    return arg.toUpper();
+}
+
+QString TestWebChannel::readOverload(const QString &arg, int i)
+{
+    return arg.toUpper() + QString::number(i + 1);
+}
+
 void TestWebChannel::testRegisterObjects()
 {
     QWebChannel channel;
@@ -351,85 +366,39 @@ void TestWebChannel::testInfoForObject()
         QCOMPARE(info["enums"].toObject(), expected);
     }
 
+    QJsonArray expected;
+    auto addMethod = [&expected, &obj](const QString &name, const char *signature, bool addName = true) {
+        const auto index = obj.metaObject()->indexOfMethod(signature);
+        QVERIFY2(index != -1, signature);
+        if (addName)
+            expected.append(QJsonArray{name, index});
+        expected.append(QJsonArray{QString::fromUtf8(signature), index});
+    };
     { // methods & slots
-        QJsonArray expected;
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("deleteLater"));
-            method.append(obj.metaObject()->indexOfMethod("deleteLater()"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("slot1"));
-            method.append(obj.metaObject()->indexOfMethod("slot1()"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("slot2"));
-            method.append(obj.metaObject()->indexOfMethod("slot2(QString)"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("setReturnedObject"));
-            method.append(obj.metaObject()->indexOfMethod("setReturnedObject(TestObject*)"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("setObjectProperty"));
-            method.append(obj.metaObject()->indexOfMethod("setObjectProperty(QObject*)"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("setProp"));
-            method.append(obj.metaObject()->indexOfMethod("setProp(QString)"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("fire"));
-            method.append(obj.metaObject()->indexOfMethod("fire()"));
-            expected.append(method);
-        }
-        {
-            QJsonArray method;
-            method.append(QStringLiteral("method1"));
-            method.append(obj.metaObject()->indexOfMethod("method1()"));
-            expected.append(method);
-        }
+        expected = {};
+        addMethod(QStringLiteral("deleteLater"), "deleteLater()");
+        addMethod(QStringLiteral("slot1"), "slot1()");
+        addMethod(QStringLiteral("slot2"), "slot2(QString)");
+        addMethod(QStringLiteral("setReturnedObject"), "setReturnedObject(TestObject*)");
+        addMethod(QStringLiteral("setObjectProperty"), "setObjectProperty(QObject*)");
+        addMethod(QStringLiteral("setProp"), "setProp(QString)");
+        addMethod(QStringLiteral("fire"), "fire()");
+        addMethod(QStringLiteral("overload"), "overload(int)");
+        addMethod(QStringLiteral("overload"), "overload(QString)", false);
+        addMethod(QStringLiteral("overload"), "overload(QString,int)", false);
+        addMethod(QStringLiteral("method1"), "method1()");
         QCOMPARE(info["methods"].toArray(), expected);
     }
 
     { // signals
-        QJsonArray expected;
-        {
-            QJsonArray signal;
-            signal.append(QStringLiteral("destroyed"));
-            signal.append(obj.metaObject()->indexOfMethod("destroyed(QObject*)"));
-            expected.append(signal);
-        }
-        {
-            QJsonArray signal;
-            signal.append(QStringLiteral("sig1"));
-            signal.append(obj.metaObject()->indexOfMethod("sig1()"));
-            expected.append(signal);
-        }
-        {
-            QJsonArray signal;
-            signal.append(QStringLiteral("sig2"));
-            signal.append(obj.metaObject()->indexOfMethod("sig2(QString)"));
-            expected.append(signal);
-        }
-        {
-            QJsonArray signal;
-            signal.append(QStringLiteral("replay"));
-            signal.append(obj.metaObject()->indexOfMethod("replay()"));
-            expected.append(signal);
-        }
+        expected = {};
+        addMethod(QStringLiteral("destroyed"), "destroyed(QObject*)");
+        addMethod(QStringLiteral("destroyed"), "destroyed()", false);
+        addMethod(QStringLiteral("sig1"), "sig1()");
+        addMethod(QStringLiteral("sig2"), "sig2(QString)");
+        addMethod(QStringLiteral("replay"), "replay()");
+        addMethod(QStringLiteral("overloadSignal"), "overloadSignal(int)");
+        addMethod(QStringLiteral("overloadSignal"), "overloadSignal(float)", false);
         QCOMPARE(info["signals"].toArray(), expected);
     }
 
@@ -615,6 +584,35 @@ void TestWebChannel::testInvokeMethodConversion()
         QVERIFY(getterMethod != -1);
         auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
         QCOMPARE(retVal, QVariant::fromValue(array));
+    }
+}
+
+void TestWebChannel::testFunctionOverloading()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    // all method calls will use the first method's index
+    const auto method1 = metaObject()->indexOfMethod("readOverload(int)");
+    QVERIFY(method1 != -1);
+    const auto method2 = metaObject()->indexOfMethod("readOverload(QString)");
+    QVERIFY(method2 != -1);
+    QVERIFY(method1 < method2);
+    const auto method3 = metaObject()->indexOfMethod("readOverload(QString,int)");
+    QVERIFY(method3 != -1);
+    QVERIFY(method2 < method3);
+
+    { // int
+        const auto retVal = channel.d_func()->publisher->invokeMethod(this, method1, QJsonArray{1000});
+        QCOMPARE(retVal.toInt(), 1001);
+    }
+    { // QString
+        const auto retVal = channel.d_func()->publisher->invokeMethod(this, method2, QJsonArray{QStringLiteral("hello world")});
+        QCOMPARE(retVal.toString(), QStringLiteral("HELLO WORLD"));
+    }
+    { // QString, int
+        const auto retVal = channel.d_func()->publisher->invokeMethod(this, method3, QJsonArray{QStringLiteral("the answer is "), 41});
+        QCOMPARE(retVal.toString(), QStringLiteral("THE ANSWER IS 42"));
     }
 }
 
