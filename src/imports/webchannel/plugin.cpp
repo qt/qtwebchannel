@@ -60,6 +60,9 @@ void QWebChannelPlugin::registerTypes(const char *uri)
     int major = 1;
     int minor = 0;
     qmlRegisterType<QQmlWebChannel>(uri, major, minor, "WebChannel");
+
+    // Auto-increment the import to stay in sync with ALL future QtQuick minor versions
+    qmlRegisterModule(uri, major, QT_VERSION_MINOR);
 }
 
 QT_END_NAMESPACE
