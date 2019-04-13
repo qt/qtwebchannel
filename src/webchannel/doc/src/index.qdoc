@@ -59,9 +59,9 @@
     \endcode
 
     The QML types are accessed by using:
-    \badcode
-    import QtWebChannel 1.0
-    \endcode
+    \qml \QtMinorVersion
+    import QtWebChannel 1.\1
+    \endqml
 
     \section1 Licenses
 
