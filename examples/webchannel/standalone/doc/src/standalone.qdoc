@@ -64,18 +64,20 @@
 
     \section1 Communicating with a Remote Client
 
-    The C++ application sets up a QWebChannel instance and publishes a \c Core object over it.
-    For the remote client side, \l {standalone/index.html}{index.html} is opened. Both show a
-    dialog with the list of received messages and an input box to send messages to the other end.
+    The C++ application sets up a QWebChannel instance and publishes a \c Core
+    object over it. For the remote client side, \l {standalone/index.html}{index.html}
+    is opened. Both show a dialog with the list of received messages and an input
+    box to send messages to the other end.
 
-    The \c Core emits the \c Core::sendText() signal when the user sends a message. The signal
-    automatically gets propagated to the HTML client. When the user enters a message on the HTML
-    side, \c Core::receiveText() is called.
+    The \c Core emits the \c Core::sendText() signal when the user sends
+    a message. The signal automatically gets propagated to the HTML client.
+    When the user enters a message on the HTML side, \c Core::receiveText()
+    is called.
 
-    All communication between the HTML client and the C++ server is done over a WebSocket.
-    The C++ side instantiates a QWebSocketServer and wraps incoming QWebSocket connections
-    in QWebChannelAbstractTransport objects. These objects are
-    then connected to the QWebChannel instance.
+    All communication between the HTML client and the C++ server is done
+    over a WebSocket. The C++ side instantiates a QWebSocketServer and
+    wraps incoming QWebSocket connections in QWebChannelAbstractTransport
+    objects. These objects are then connected to the QWebChannel instance.
 
     \sa {Qt WebChannel JavaScript API}
 */
