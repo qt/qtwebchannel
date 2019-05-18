@@ -619,7 +619,10 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
 #endif
     } else if (result.canConvert<QVariantList>()) {
         // recurse and potentially wrap contents of the array
-        return wrapList(result.toList(), transport);
+        // *don't* use result.toList() as that *only* works for QVariantList and QStringList!
+        // Also, don't use QSequentialIterable (yet), since that seems to trigger QTBUG-42016
+        // in certain cases.
+        return wrapList(result.value<QVariantList>(), transport);
     }
 
     return QJsonValue::fromVariant(result);
