@@ -827,6 +827,13 @@ void TestWebChannel::testWrapValues()
         QVERIFY(value.isDouble());
         QCOMPARE(value.toInt(), (int) flags);
     }
+    {
+        QVector<int> vec{1, 2, 3};
+        QVariant variant = QVariant::fromValue(vec);
+        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
+        QVERIFY(value.isArray());
+        QCOMPARE(value.toArray(), QJsonArray({1, 2, 3}));
+    }
 }
 
 void TestWebChannel::testWrapObjectWithMultipleTransports()
