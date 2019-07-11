@@ -856,7 +856,7 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
         transport->sendMessage(createResponse(message.value(KEY_ID), initializeClient(transport)));
     } else if (type == TypeDebug) {
         static QTextStream out(stdout);
-        out << "DEBUG: " << message.value(KEY_DATA).toString() << endl;
+        out << "DEBUG: " << message.value(KEY_DATA).toString() << Qt::endl;
     } else if (message.contains(KEY_OBJECT)) {
         const QString &objectName = message.value(KEY_OBJECT).toString();
         QObject *object = registeredObjects.value(objectName);
