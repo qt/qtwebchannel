@@ -739,15 +739,19 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
             ObjectInfo oi(object);
             if (transport) {
                 oi.transports.append(transport);
+                transportedWrappedObjects.insert(transport, id);
             } else {
                 // use the transports from the parent object
                 oi.transports = wrappedObjects.value(parentObjectId).transports;
                 // or fallback to all transports if the parent is not wrapped
                 if (oi.transports.isEmpty())
                     oi.transports = webChannel->d_func()->transports;
+
+                for (auto transport : qAsConst(oi.transports)) {
+                    transportedWrappedObjects.insert(transport, id);
+                }
             }
             wrappedObjects.insert(id, oi);
-            transportedWrappedObjects.insert(transport, id);
 
             initializePropertyUpdates(object, classInfo);
         } else if (wrappedObjects.contains(id)) {

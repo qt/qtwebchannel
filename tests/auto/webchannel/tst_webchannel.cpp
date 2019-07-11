@@ -757,6 +757,36 @@ void TestWebChannel::testUnwrapObject()
     }
 }
 
+void TestWebChannel::testTransportWrapObjectProperties()
+{
+    QWebChannel channel;
+
+    TestObject obj;
+    obj.setObjectName("testObject");
+    channel.registerObject(obj.objectName(), &obj);
+
+    DummyTransport *dummyTransport = new DummyTransport(this);
+    channel.connectTo(dummyTransport);
+    channel.d_func()->publisher->initializeClient(dummyTransport);
+    channel.d_func()->publisher->setClientIsIdle(true);
+
+    QCOMPARE(channel.d_func()->publisher->transportedWrappedObjects.size(), 0);
+
+    QObject objPropObject;
+    objPropObject.setObjectName("foobar");
+
+    obj.setObjectProperty(&objPropObject);
+
+    channel.d_func()->publisher->sendPendingPropertyUpdates();
+
+    QCOMPARE(channel.d_func()->publisher->wrappedObjects.size(), 1);
+    const QString wrappedObjId = channel.d_func()->publisher->wrappedObjects.keys()[0];
+
+    QCOMPARE(channel.d_func()->publisher->transportedWrappedObjects.size(), 1);
+    QCOMPARE(channel.d_func()->publisher->transportedWrappedObjects.keys()[0], dummyTransport);
+    QCOMPARE(channel.d_func()->publisher->transportedWrappedObjects.values()[0], wrappedObjId);
+}
+
 void TestWebChannel::testRemoveUnusedTransports()
 {
     QWebChannel channel;

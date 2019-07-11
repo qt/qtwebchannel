@@ -327,6 +327,7 @@ private slots:
     void testDisconnect();
     void testWrapRegisteredObject();
     void testUnwrapObject();
+    void testTransportWrapObjectProperties();
     void testRemoveUnusedTransports();
     void testPassWrappedObjectBack();
     void testWrapValues();
