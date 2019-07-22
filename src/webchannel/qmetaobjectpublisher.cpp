@@ -457,6 +457,7 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMe
     VariantArgument arguments[10];
     for (int i = 0; i < qMin(args.size(), method.parameterCount()); ++i) {
         arguments[i].value = toVariant(args.at(i), method.parameterType(i));
+        arguments[i].type = method.parameterType(i);
     }
     // construct QGenericReturnArgument
     QVariant returnValue;

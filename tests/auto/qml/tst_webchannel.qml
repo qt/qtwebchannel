@@ -556,4 +556,38 @@ TestCase {
         compare(signalArgs_explicit3, [["the answer is ", 41]]);
         compare(returnValues, [100, 42, "HELLO WORLD", "THE ANSWER IS 42"]);
     }
+
+    function test_variantType()
+    {
+        var returnValues = [];
+        function logReturnValue(value) {
+            returnValues.push(value);
+        }
+        var channel = client.createChannel(function(channel) {
+            var testObject = channel.objects.testObject;
+            testObject.testVariantType(0, logReturnValue);
+            testObject.testVariantType("0", logReturnValue);
+            testObject.testVariantType(null, logReturnValue);
+        });
+        client.awaitInit();
+
+        function awaitMessage(type)
+        {
+            var msg = client.awaitMessage();
+            compare(msg.type, type);
+            compare(msg.object, "testObject");
+        }
+
+        console.log("double arg");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+        console.log("string arg");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+        console.log("null arg");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+
+        client.awaitIdle();
+
+        // QMetaType::Double: 6, QMetaType::QString: 10, QMetaType::Nullptr: 51
+        compare(returnValues, [6, 10, 51]);
+    }
 }

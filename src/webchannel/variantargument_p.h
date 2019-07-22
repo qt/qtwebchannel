@@ -62,6 +62,9 @@ struct VariantArgument
 {
     operator QGenericArgument() const
     {
+        if (type == QMetaType::QVariant) {
+            return Q_ARG(QVariant, value);
+        }
         if (!value.isValid()) {
             return QGenericArgument();
         }
@@ -69,6 +72,7 @@ struct VariantArgument
     }
 
     QVariant value;
+    int type;
 };
 
 QT_END_NAMESPACE

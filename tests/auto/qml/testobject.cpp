@@ -77,4 +77,9 @@ QString TestObject::testOverload(const QString &str, int i)
     return str.toUpper() + QString::number(i + 1);
 }
 
+int TestObject::testVariantType(const QVariant &val)
+{
+    return val.type();
+}
+
 QT_END_NAMESPACE
