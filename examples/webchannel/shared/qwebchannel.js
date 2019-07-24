@@ -351,10 +351,6 @@ function QObject(name, data, webChannel)
                 var argument = arguments[i];
                 if (typeof argument === "function")
                     callback = argument;
-                else if (argument instanceof QObject && webChannel.objects[argument.__id__] !== undefined)
-                    args.push({
-                        "id": argument.__id__
-                    });
                 else
                     args.push(argument);
             }
@@ -426,8 +422,6 @@ function QObject(name, data, webChannel)
                 }
                 object.__propertyCache__[propertyIndex] = value;
                 var valueToSend = value;
-                if (valueToSend instanceof QObject && webChannel.objects[valueToSend.__id__] !== undefined)
-                    valueToSend = { "id": valueToSend.__id__ };
                 webChannel.exec({
                     "type": QWebChannelMessageTypes.setProperty,
                     "object": object.__id__,
@@ -451,6 +445,14 @@ function QObject(name, data, webChannel)
         object[name] = data.enums[name];
     }
 }
+
+QObject.prototype.toJSON = function() {
+    if (this.__id__ === undefined) return {};
+    return {
+        id: this.__id__,
+        "__QObject*__": true
+    };
+};
 
 //required for use with nodejs
 if (typeof module === 'object') {

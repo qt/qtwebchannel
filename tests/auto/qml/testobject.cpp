@@ -82,4 +82,12 @@ int TestObject::testVariantType(const QVariant &val)
     return val.type();
 }
 
+bool TestObject::testEmbeddedObjects(const QVariantList &list)
+{
+    return list.size() == 2 &&
+      QMetaType::Type(list[0].type()) == QMetaType::QObjectStar &&
+      QMetaType::Type(list[1].type()) == QMetaType::QVariantMap &&
+      QMetaType::Type(list[1].toMap()["obj"].type()) == QMetaType::QObjectStar;
+}
+
 QT_END_NAMESPACE

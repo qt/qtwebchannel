@@ -612,6 +612,44 @@ QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
     return Q_NULLPTR;
 }
 
+QVariant QMetaObjectPublisher::unwrapMap(QVariantMap map) const
+{
+    const auto qobj = map.value(KEY_QOBJECT).toBool();
+    const auto id = qobj ? map.value(KEY_ID).toString() : QString();
+
+    if (!id.isEmpty()) // it's probably a QObject
+        return QVariant::fromValue(unwrapObject(id));
+
+    // it's probably just a normal JS object, continue searching for objects
+    // that look like QObject*
+    for (auto &value : map)
+        value = unwrapVariant(value);
+
+    return map;
+}
+
+QVariant QMetaObjectPublisher::unwrapList(QVariantList list) const
+{
+    for (auto &value : list)
+        value = unwrapVariant(value);
+
+    return list;
+}
+
+QVariant QMetaObjectPublisher::unwrapVariant(const QVariant &value) const
+{
+    switch (value.type())
+    {
+        case QMetaType::QVariantList:
+            return unwrapList(value.toList());
+        case QMetaType::QVariantMap:
+            return unwrapMap(value.toMap());
+        default:
+            break;
+    }
+    return value;
+}
+
 QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
 {
     if (targetType == QMetaType::QJsonValue) {
@@ -636,7 +674,7 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
 
     // this converts QJsonObjects to QVariantMaps, which is not desired when
     // we want to get a QJsonObject or QJsonValue (see above)
-    QVariant variant = value.toVariant();
+    QVariant variant = unwrapVariant(value.toVariant());
     if (targetType != QMetaType::QVariant && !variant.convert(targetType)) {
         qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
     }

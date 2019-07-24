@@ -191,6 +191,9 @@ public:
     void objectDestroyed(const QObject *object);
 
     QObject *unwrapObject(const QString &objectId) const;
+    QVariant unwrapMap(QVariantMap map) const;
+    QVariant unwrapList(QVariantList list) const;
+    QVariant unwrapVariant(const QVariant &value) const;
 
     QVariant toVariant(const QJsonValue &value, int targetType) const;
 

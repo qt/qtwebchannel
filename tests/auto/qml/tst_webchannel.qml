@@ -568,6 +568,7 @@ TestCase {
             testObject.testVariantType(0, logReturnValue);
             testObject.testVariantType("0", logReturnValue);
             testObject.testVariantType(null, logReturnValue);
+            testObject.testVariantType(testObject, logReturnValue);
         });
         client.awaitInit();
 
@@ -584,10 +585,39 @@ TestCase {
         awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
         console.log("null arg");
         awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+        console.log("QObject arg");
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
 
         client.awaitIdle();
 
-        // QMetaType::Double: 6, QMetaType::QString: 10, QMetaType::Nullptr: 51
-        compare(returnValues, [6, 10, 51]);
+        // QMetaType::Double: 6, QMetaType::QString: 10, QMetaType::Nullptr: 51,
+        // QMetaType::QObjectStar: 39
+        compare(returnValues, [6, 10, 51, 39]);
+    }
+
+    function test_embeddedQObject()
+    {
+        var success = false;
+        function logReturnValue(value) {
+            success = value;
+        }
+        var channel = client.createChannel(function(channel) {
+            var testObject = channel.objects.testObject;
+            testObject.testEmbeddedObjects([testObject, { obj: testObject }], logReturnValue);
+        });
+        client.awaitInit();
+
+        function awaitMessage(type)
+        {
+            var msg = client.awaitMessage();
+            compare(msg.type, type);
+            compare(msg.object, "testObject");
+        }
+
+        awaitMessage(JSClient.QWebChannelMessageTypes.invokeMethod);
+
+        client.awaitIdle();
+
+        compare(success, true);
     }
 }

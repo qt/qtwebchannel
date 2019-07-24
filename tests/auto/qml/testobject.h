@@ -52,6 +52,7 @@ public slots:
     QString testOverload(const QString &str);
     QString testOverload(const QString &str, int i);
     int testVariantType(const QVariant &val);
+    bool testEmbeddedObjects(const QVariantList &list);
 
 signals:
     void testSignalBool(bool testBool);
