@@ -140,15 +140,14 @@ var QWebChannel = function(transport, initCallback)
 
     this.handlePropertyUpdate = function(message)
     {
-        for (var i in message.data) {
-            var data = message.data[i];
+        message.data.forEach(data => {
             var object = channel.objects[data.object];
             if (object) {
                 object.propertyUpdate(data.signals, data.properties);
             } else {
                 console.warn("Unhandled property update: " + data.object + "::" + data.signal);
             }
-        }
+        });
         channel.exec({type: QWebChannelMessageTypes.idle});
     }
 
@@ -158,13 +157,15 @@ var QWebChannel = function(transport, initCallback)
     };
 
     channel.exec({type: QWebChannelMessageTypes.init}, function(data) {
-        for (var objectName in data) {
-            var object = new QObject(objectName, data[objectName], channel);
+        for (const objectName of Object.keys(data)) {
+            new QObject(objectName, data[objectName], channel);
         }
+
         // now unwrap properties, which might reference other registered objects
-        for (var objectName in channel.objects) {
+        for (const objectName of Object.keys(channel.objects)) {
             channel.objects[objectName].unwrapProperties();
         }
+
         if (initCallback) {
             initCallback(channel);
         }
@@ -191,19 +192,14 @@ function QObject(name, data, webChannel)
     {
         if (response instanceof Array) {
             // support list of objects
-            var ret = new Array(response.length);
-            for (var i = 0; i < response.length; ++i) {
-                ret[i] = object.unwrapQObject(response[i]);
-            }
-            return ret;
+            return response.map(qobj => object.unwrapQObject(qobj))
         }
         if (!(response instanceof Object))
             return response;
 
-        if (!response["__QObject*__"]
-            || response.id === undefined) {
+        if (!response["__QObject*__"] || response.id === undefined) {
             var jObj = {};
-            for (var propName in response) {
+            for (const propName of Object.keys(response)) {
                 jObj[propName] = object.unwrapQObject(response[propName]);
             }
             return jObj;
@@ -226,13 +222,7 @@ function QObject(name, data, webChannel)
                 // just assigning {} though would not have the desired effect, but the
                 // below also ensures all external references will see the empty map
                 // NOTE: this detour is necessary to workaround QTBUG-40021
-                var propertyNames = [];
-                for (var propertyName in qObject) {
-                    propertyNames.push(propertyName);
-                }
-                for (var idx in propertyNames) {
-                    delete qObject[propertyNames[idx]];
-                }
+                Object.keys(qObject).forEach(name => delete qObject[name]);
             }
         });
         // here we are already initialized, and thus must directly unwrap the properties
@@ -242,7 +232,7 @@ function QObject(name, data, webChannel)
 
     this.unwrapProperties = function()
     {
-        for (var propertyIdx in object.__propertyCache__) {
+        for (const propertyIdx of Object.keys(object.__propertyCache__)) {
             object.__propertyCache__[propertyIdx] = object.unwrapQObject(object.__propertyCache__[propertyIdx]);
         }
     }
@@ -318,12 +308,12 @@ function QObject(name, data, webChannel)
     this.propertyUpdate = function(signals, propertyMap)
     {
         // update property cache
-        for (var propertyIndex in propertyMap) {
+        for (const propertyIndex of Object.keys(propertyMap)) {
             var propertyValue = propertyMap[propertyIndex];
             object.__propertyCache__[propertyIndex] = this.unwrapQObject(propertyValue);
         }
 
-        for (var signalName in signals) {
+        for (const signalName of Object.keys(signals)) {
             // Invoke all callbacks, as signalEmitted() does not. This ensures the
             // property cache is updated before the callbacks are invoked.
             invokeSignalCallbacks(signalName, signals[signalName]);
@@ -447,9 +437,7 @@ function QObject(name, data, webChannel)
 
     data.signals.forEach(function(signal) { addSignal(signal, false); });
 
-    for (var name in data.enums) {
-        object[name] = data.enums[name];
-    }
+    Object.assign(object, data.enums);
 }
 
 //required for use with nodejs
