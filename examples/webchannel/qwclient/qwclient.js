@@ -141,7 +141,7 @@ var welcome = function() {
     console.log('Use openChannel(url) to connect to a service.');
     console.log('For the standalone example, just openChannel() should suffice.');
     console.log('Opened channels have their objects aliased to c<channel number>, i.e. c0');
-    console.log('So for the standalone example try: c0.dialog.receiveText(\'hello world\')');
+    console.log('So for the standalone example try: c0.core.receiveText(\'hello world\')');
 }
 
 welcome();
