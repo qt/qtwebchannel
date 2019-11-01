@@ -114,7 +114,8 @@ var setupRepl = function() {
     var r = repl.start({
         prompt: "webchannel> ",
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
+        ignoreUndefined: true
     });
 
     r.context.serverAddress = serverAddress;
@@ -122,10 +123,15 @@ var setupRepl = function() {
     r.context.channels = channels;
 
     r.context.lsObjects = function() {
-        channels.forEach(function(channel) {
-            console.log('Channel ' + channel);
-            Object.keys(channel.objects);
-        });
+        for (let i = 0; i < channels.length; ++i) {
+            const channel = channels[i];
+            if (!channel) // closed and removed channel in repl
+                continue;
+
+            console.log('-- Channel "c' + i + '" objects:');
+            for (const obj of Object.keys(channel.objects))
+                console.log(obj, ':', channel.objects[obj]);
+        }
     }
     return r;
 }
