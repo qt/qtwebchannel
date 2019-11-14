@@ -65,7 +65,7 @@
     \section1 Communicating with a Remote Client
 
     The C++ application sets up a QWebChannel instance and publishes a \c Core
-    object over it. For the remote client side, \l {standalone/index.html}{index.html}
+    object over it. For the remote client side, the \c {index.html} file
     is opened. Both show a dialog with the list of received messages and an input
     box to send messages to the other end.
 
