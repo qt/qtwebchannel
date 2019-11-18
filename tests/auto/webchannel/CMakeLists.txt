@@ -4,8 +4,7 @@
 ## tst_webchannel Test:
 #####################################################################
 
-add_qt_test(tst_webchannel
-    GUI
+qt_add_test(tst_webchannel
     SOURCES
         tst_webchannel.cpp tst_webchannel.h
     INCLUDE_DIRECTORIES
@@ -20,7 +19,7 @@ add_qt_test(tst_webchannel
 ## Scopes:
 #####################################################################
 
-extend_target(tst_webchannel CONDITION TARGET Qt::Qml
+qt_extend_target(tst_webchannel CONDITION TARGET Qt::Qml
     DEFINES
         WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
     PUBLIC_LIBRARIES

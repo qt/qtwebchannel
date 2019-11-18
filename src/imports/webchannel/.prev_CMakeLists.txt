@@ -4,7 +4,7 @@
 ## webchannel Plugin:
 #####################################################################
 
-qt_add_qml_module(declarative_webchannel # special case
+qt_add_qml_module(webchannel
     URI "QtWebChannel"
     VERSION "1.${CMAKE_PROJECT_VERSION_MINOR}"
     CLASSNAME QWebChannelPlugin

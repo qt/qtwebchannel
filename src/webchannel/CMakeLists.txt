@@ -4,7 +4,7 @@
 ## WebChannel Module:
 #####################################################################
 
-add_qt_module(WebChannel
+qt_add_module(WebChannel
     SOURCES
         qmetaobjectpublisher.cpp qmetaobjectpublisher_p.h
         qwebchannel.cpp qwebchannel.h qwebchannel_p.h
@@ -27,7 +27,7 @@ set(resources_resource_files
 
 set_source_files_properties(${resources_resource_files} PROPERTIES QT_SKIP_QUICKCOMPILER 1)
 
-add_qt_resource(WebChannel "resources"
+qt_add_resource(WebChannel "resources"
     PREFIX
         "/qtwebchannel/"
     FILES
@@ -37,12 +37,11 @@ add_qt_resource(WebChannel "resources"
 
 #### Keys ignored in scope 1:.:.:webchannel.pro:<TRUE>:
 # OTHER_FILES = "qwebchannel.js"
-# _LOADED = "qt_module"
 
 ## Scopes:
 #####################################################################
 
-extend_target(WebChannel CONDITION TARGET Qt::Qml
+qt_extend_target(WebChannel CONDITION TARGET Qt::Qml
     SOURCES
         qqmlwebchannel.cpp
         qqmlwebchannelattached.cpp
@@ -54,11 +53,11 @@ extend_target(WebChannel CONDITION TARGET Qt::Qml
 # PRIVATE_HEADERS = "qqmlwebchannelattached_p.h"
 # PUBLIC_HEADERS = "qqmlwebchannel.h"
 
-extend_target(WebChannel CONDITION NOT TARGET Qt::Qml
+qt_extend_target(WebChannel CONDITION NOT TARGET Qt::Qml
     DEFINES
         QT_NO_JSVALUE
 )
-add_qt_docs(
+qt_add_docs(WebChannel
     doc/qtwebchannel.qdocconf
 )
 

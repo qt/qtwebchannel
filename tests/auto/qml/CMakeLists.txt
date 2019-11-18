@@ -5,14 +5,12 @@
 #####################################################################
 
 # Collect test data
-
 file(GLOB_RECURSE test_data_glob
     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    "data/*")
+    data/*)
 list(APPEND test_data ${test_data_glob})
 
-add_qt_test(qml
-    GUI
+qt_add_test(qml
     QMLTEST
     QML_IMPORTPATH
         "${CMAKE_CURRENT_BINARY_DIR}/../../../qml"
