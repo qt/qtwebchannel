@@ -114,7 +114,8 @@ var setupRepl = function() {
     var r = repl.start({
         prompt: "webchannel> ",
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
+        ignoreUndefined: true
     });
 
     r.context.serverAddress = serverAddress;
@@ -122,10 +123,15 @@ var setupRepl = function() {
     r.context.channels = channels;
 
     r.context.lsObjects = function() {
-        channels.forEach(function(channel) {
-            console.log('Channel ' + channel);
-            Object.keys(channel.objects);
-        });
+        for (let i = 0; i < channels.length; ++i) {
+            const channel = channels[i];
+            if (!channel) // closed and removed channel in repl
+                continue;
+
+            console.log('-- Channel "c' + i + '" objects:');
+            for (const obj of Object.keys(channel.objects))
+                console.log(obj, ':', channel.objects[obj]);
+        }
     }
     return r;
 }
@@ -135,7 +141,7 @@ var welcome = function() {
     console.log('Use openChannel(url) to connect to a service.');
     console.log('For the standalone example, just openChannel() should suffice.');
     console.log('Opened channels have their objects aliased to c<channel number>, i.e. c0');
-    console.log('So for the standalone example try: c0.dialog.receiveText(\'hello world\')');
+    console.log('So for the standalone example try: c0.core.receiveText(\'hello world\')');
 }
 
 welcome();
