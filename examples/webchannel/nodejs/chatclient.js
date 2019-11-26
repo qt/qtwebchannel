@@ -85,7 +85,7 @@ var createWebChannel = function(transport, rlif) {
         // i.e. the server wants to 'send text'.
         // This can be confusing, as we connect to the signal
         // to receive incoming messages on our side
-        channel.objects.dialog.sendText.connect(function(message) {
+        channel.objects.core.sendText.connect(function(message) {
             process.stdout.cursorTo(0);
             process.stdout.clearLine(0);
             console.log(' <<   ' + message);
@@ -107,7 +107,7 @@ var createWebChannel = function(transport, rlif) {
                 // is called with our message.
                 // Again the naming is for the server side,
                 // i.e. the slot is used _by the server_ to receive text.
-                channel.objects.dialog.receiveText(l);
+                channel.objects.core.receiveText(l);
                 console.log('   >> ' + l);
             }
             rlif.prompt();
