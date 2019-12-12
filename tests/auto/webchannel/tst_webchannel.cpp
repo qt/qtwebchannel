@@ -855,6 +855,8 @@ void TestWebChannel::testInfiniteRecursion()
 
 void TestWebChannel::testAsyncObject()
 {
+    QSKIP("This test is broken. See QTBUG-80729");
+
     QWebChannel channel;
     channel.connectTo(m_dummyTransport);
 
