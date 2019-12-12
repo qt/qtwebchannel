@@ -955,10 +955,13 @@ void TestWebChannel::testAsyncObject()
     args.append(QJsonValue("message"));
 
     {
-        QSignalSpy spy(&obj, &TestObject::propChanged);
+        int received = 0;
+        connect(&obj, &TestObject::propChanged, this, [&](const QString &arg) {
+            QCOMPARE(arg, args.at(0).toString());
+            ++received;
+        });
         channel.d_func()->publisher->invokeMethod(&obj, "setProp", args);
-        QTRY_COMPARE(spy.count(), 1);
-        QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
+        QTRY_COMPARE(received, 1);
     }
 
     channel.registerObject("myObj", &obj);
@@ -971,12 +974,13 @@ void TestWebChannel::testAsyncObject()
     channel.d_func()->publisher->handleMessage(connectMessage, m_dummyTransport);
 
     {
-        QSignalSpy spy(&obj, &TestObject::replay);
+        int received = 0;
+        connect(&obj, &TestObject::replay, this, [&]() { ++received; });
         QMetaObject::invokeMethod(&obj, "fire");
-        QTRY_COMPARE(spy.count(), 1);
+        QTRY_COMPARE(received, 1);
         channel.deregisterObject(&obj);
         QMetaObject::invokeMethod(&obj, "fire");
-        QTRY_COMPARE(spy.count(), 2);
+        QTRY_COMPARE(received, 2);
     }
 
     thread.quit();
