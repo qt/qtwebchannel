@@ -788,10 +788,19 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
         // *don't* use result.toList() as that *only* works for QVariantList and QStringList!
         // Also, don't use QSequentialIterable (yet), since that seems to trigger QTBUG-42016
         // in certain cases.
-        return wrapList(result.value<QVariantList>(), transport);
+        // additionally, when there's a direct converter to QVariantList, use that one via convert
+        // but recover when conversion fails and fall back to the .value<QVariantList> conversion
+        // see also: https://bugreports.qt.io/browse/QTBUG-80751
+        auto list = result;
+        if (!list.convert(qMetaTypeId<QVariantList>()))
+            list = result;
+        return wrapList(list.value<QVariantList>(), transport);
     } else if (result.canConvert<QVariantMap>()) {
         // recurse and potentially wrap contents of the map
-        return wrapMap(result.toMap(), transport);
+        auto map = result;
+        if (!map.convert(qMetaTypeId<QVariantMap>()))
+            map = result;
+        return wrapMap(map.value<QVariantMap>(), transport);
     }
 
     return QJsonValue::fromVariant(result);
