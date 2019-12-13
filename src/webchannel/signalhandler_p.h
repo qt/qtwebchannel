@@ -56,6 +56,7 @@
 #include <QList>
 #include <QMetaMethod>
 #include <QDebug>
+#include <QThread>
 
 QT_BEGIN_NAMESPACE
 
@@ -71,6 +72,7 @@ static const int s_destroyedSignalIndex = QObject::staticMetaObject.indexOfMetho
 template<class Receiver>
 class SignalHandler : public QObject
 {
+    Q_DISABLE_COPY(SignalHandler)
 public:
     SignalHandler(Receiver *receiver, QObject *parent = 0);
 
@@ -268,6 +270,7 @@ int SignalHandler<Receiver>::qt_metacall(QMetaObject::Call call, int methodId, v
     if (call == QMetaObject::InvokeMetaMethod) {
         const QObject *object = sender();
         Q_ASSERT(object);
+        Q_ASSERT(QThread::currentThread() == object->thread());
         Q_ASSERT(senderSignalIndex() == methodId);
         Q_ASSERT(m_connectionsCounter.contains(object));
         Q_ASSERT(m_connectionsCounter.value(object).contains(methodId));

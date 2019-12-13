@@ -186,7 +186,6 @@ Q_DECLARE_TYPEINFO(OverloadResolutionCandidate, Q_MOVABLE_TYPE);
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
     : QObject(webChannel)
     , webChannel(webChannel)
-    , signalHandler(this)
     , clientIsIdle(false)
     , blockUpdates(false)
     , propertyUpdatesInitialized(false)
@@ -333,6 +332,7 @@ QJsonObject QMetaObjectPublisher::initializeClient(QWebChannelAbstractTransport 
 
 void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo)
 {
+    auto *signalHandler = signalHandlerFor(object);
     for (const auto propertyInfoVar : objectInfo[KEY_PROPERTIES].toArray()) {
         const QJsonArray &propertyInfo = propertyInfoVar.toArray();
         if (propertyInfo.size() < 2) {
@@ -353,14 +353,14 @@ void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object
 
         // Only connect for a property update once
         if (connectedProperties.isEmpty()) {
-            signalHandler.connectTo(object, signalIndex);
+            signalHandler->connectTo(object, signalIndex);
         }
 
         connectedProperties.insert(propertyIndex);
     }
 
     // also always connect to destroyed signal
-    signalHandler.connectTo(object, s_destroyedSignalIndex);
+    signalHandler->connectTo(object, s_destroyedSignalIndex);
 }
 
 void QMetaObjectPublisher::sendPendingPropertyUpdates()
@@ -591,7 +591,7 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
     // only remove from handler when we initialized the property updates
     // cf: https://bugreports.qt.io/browse/QTBUG-60250
     if (propertyUpdatesInitialized) {
-        signalHandler.remove(object);
+        signalHandlerFor(object)->remove(object);
         signalToPropertyMap.remove(object);
     }
     pendingPropertyUpdates.remove(object);
@@ -957,9 +957,9 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
                 return;
             transport->sendMessage(createResponse(message.value(KEY_ID), wrapResult(result, transport)));
         } else if (type == TypeConnectToSignal) {
-            signalHandler.connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
+            signalHandlerFor(object)->connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeDisconnectFromSignal) {
-            signalHandler.disconnectFrom(object, message.value(KEY_SIGNAL).toInt(-1));
+            signalHandlerFor(object)->disconnectFrom(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeSetProperty) {
             setProperty(object, message.value(KEY_PROPERTY).toInt(-1),
                         message.value(KEY_VALUE));
@@ -990,6 +990,17 @@ void QMetaObjectPublisher::timerEvent(QTimerEvent *event)
     } else {
         QObject::timerEvent(event);
     }
+}
+
+SignalHandler<QMetaObjectPublisher> *QMetaObjectPublisher::signalHandlerFor(const QObject *object)
+{
+    auto thread = object->thread();
+    auto it = signalHandlers.find(thread);
+    if (it == signalHandlers.end()) {
+        it = signalHandlers.emplace(thread, this).first;
+        it->second.moveToThread(thread);
+    }
+    return &it->second;
 }
 
 QT_END_NAMESPACE

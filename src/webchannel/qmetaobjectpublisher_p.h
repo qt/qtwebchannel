@@ -60,6 +60,8 @@
 #include <QPointer>
 #include <QJsonObject>
 
+#include <unordered_map>
+
 #include "qwebchannelglobal.h"
 
 QT_BEGIN_NAMESPACE
@@ -275,7 +277,8 @@ private:
     friend class TestWebChannel;
 
     QWebChannel *webChannel;
-    SignalHandler<QMetaObjectPublisher> signalHandler;
+    std::unordered_map<const QThread*, SignalHandler<QMetaObjectPublisher>> signalHandlers;
+    SignalHandler<QMetaObjectPublisher> *signalHandlerFor(const QObject *object);
 
     // true when the client is idle, false otherwise
     bool clientIsIdle;
