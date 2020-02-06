@@ -497,6 +497,67 @@ TestCase {
         compare(signalArgs, [42, 42, 1, 1, 0, 0]);
     }
 
+    function test_connectDuringEmit()
+    {
+        var cb1 = 0;
+        var cb2 = 0;
+        var channel = client.createChannel(function(channel) {
+            var myObj = channel.objects.myObj;
+            myObj.mySignal.connect(function() {
+                cb1++;
+                myObj.mySignal.connect(function() {
+                    cb2++;
+                });
+            });
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "myObj");
+
+        client.awaitIdle();
+
+        myObj.mySignal(42, myObj);
+
+        compare(cb1, 1);
+        compare(cb2, 0);
+    }
+
+    function test_disconnectDuringEmit()
+    {
+        var cb1 = 0;
+        var cb2 = 0;
+        var cb3 = 0;
+        var channel = client.createChannel(function(channel) {
+            var myObj = channel.objects.myObj;
+            var cb1impl = function() {
+                cb1++;
+            };
+            myObj.mySignal.connect(cb1impl);
+            myObj.mySignal.connect(function() {
+                cb2++;
+                myObj.mySignal.disconnect(cb1impl);
+            });
+            myObj.mySignal.connect(function() {
+                cb3++;
+            });
+        });
+        client.awaitInit();
+
+        var msg = client.awaitMessage();
+        compare(msg.type, JSClient.QWebChannelMessageTypes.connectToSignal);
+        compare(msg.object, "myObj");
+
+        client.awaitIdle();
+
+        myObj.mySignal(42, myObj);
+
+        compare(cb1, 1);
+        compare(cb2, 1);
+        compare(cb3, 1);
+    }
+
     function test_overloading()
     {
         var signalArgs_implicit = [];
