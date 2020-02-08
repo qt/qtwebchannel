@@ -89,8 +89,8 @@ new QWebChannel(yourTransport, function(channel) {
 
     // To get notified about remote property changes,
     // simply connect to the corresponding notify signal:
-    foo.onMyPropertyChanged.connect(function(newValue) {
-        console.log(newValue);
+    foo.myPropertyChanged.connect(function() {
+        console.log(foo.myProperty);
     });
 
     // One can also access enums that are marked with Q_ENUM:
