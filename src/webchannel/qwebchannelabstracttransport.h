@@ -50,8 +50,8 @@ class Q_WEBCHANNEL_EXPORT QWebChannelAbstractTransport : public QObject
 {
     Q_OBJECT
 public:
-    explicit QWebChannelAbstractTransport(QObject *parent = Q_NULLPTR);
-    virtual ~QWebChannelAbstractTransport();
+    explicit QWebChannelAbstractTransport(QObject *parent = nullptr);
+    ~QWebChannelAbstractTransport() override;
 
 public Q_SLOTS:
     virtual void sendMessage(const QJsonObject &message) = 0;
