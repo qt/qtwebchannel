@@ -626,7 +626,7 @@ TestCase {
         }
         var channel = client.createChannel(function(channel) {
             var testObject = channel.objects.testObject;
-            testObject.testVariantType(0, logReturnValue);
+            testObject.testVariantType(0.25, logReturnValue);
             testObject.testVariantType("0", logReturnValue);
             testObject.testVariantType(null, logReturnValue);
             testObject.testVariantType(testObject, logReturnValue);
