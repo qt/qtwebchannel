@@ -183,6 +183,20 @@ void TestJSEngine::initWebChannelJS()
 
 #endif // WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
 
+namespace {
+QVariantList convert_to_js(const TestStructVector &list)
+{
+    QVariantList ret;
+    ret.reserve(list.size());
+    std::transform(list.begin(), list.end(), std::back_inserter(ret), [](const TestStruct &value) -> QVariant {
+        QVariantMap map;
+        map["foo"] = value.foo;
+        map["bar"] = value.bar;
+        return map;
+    });
+    return ret;
+}
+}
 
 TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
@@ -191,6 +205,9 @@ TestWebChannel::TestWebChannel(QObject *parent)
     , m_lastBool(false)
     , m_lastDouble(0)
 {
+    qRegisterMetaType<TestStruct>();
+    qRegisterMetaType<TestStructVector>();
+    QMetaType::registerConverter<TestStructVector, QVariantList>(convert_to_js);
 }
 
 TestWebChannel::~TestWebChannel()
@@ -864,6 +881,14 @@ void TestWebChannel::testWrapValues()
         QVERIFY(value.isArray());
         QCOMPARE(value.toArray(), QJsonArray({1, 2, 3}));
     }
+    {
+        TestStructVector vec{{1, 2}, {3, 4}};
+        QVariant variant = QVariant::fromValue(vec);
+        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
+        QVERIFY(value.isArray());
+        QCOMPARE(value.toArray(), QJsonArray({QJsonObject{{"foo", 1}, {"bar", 2}},
+                                             QJsonObject{{"foo", 3}, {"bar", 4}}}));
+    }
 }
 
 void TestWebChannel::testWrapObjectWithMultipleTransports()
@@ -930,10 +955,13 @@ void TestWebChannel::testAsyncObject()
     args.append(QJsonValue("message"));
 
     {
-        QSignalSpy spy(&obj, &TestObject::propChanged);
+        int received = 0;
+        connect(&obj, &TestObject::propChanged, this, [&](const QString &arg) {
+            QCOMPARE(arg, args.at(0).toString());
+            ++received;
+        });
         channel.d_func()->publisher->invokeMethod(&obj, "setProp", args);
-        QTRY_COMPARE(spy.count(), 1);
-        QCOMPARE(spy.at(0).at(0).toString(), args.at(0).toString());
+        QTRY_COMPARE(received, 1);
     }
 
     channel.registerObject("myObj", &obj);
@@ -946,12 +974,13 @@ void TestWebChannel::testAsyncObject()
     channel.d_func()->publisher->handleMessage(connectMessage, m_dummyTransport);
 
     {
-        QSignalSpy spy(&obj, &TestObject::replay);
+        int received = 0;
+        connect(&obj, &TestObject::replay, this, [&]() { ++received; });
         QMetaObject::invokeMethod(&obj, "fire");
-        QTRY_COMPARE(spy.count(), 1);
+        QTRY_COMPARE(received, 1);
         channel.deregisterObject(&obj);
         QMetaObject::invokeMethod(&obj, "fire");
-        QTRY_COMPARE(spy.count(), 2);
+        QTRY_COMPARE(received, 2);
     }
 
     thread.quit();

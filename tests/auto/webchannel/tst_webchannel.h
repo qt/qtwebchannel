@@ -39,6 +39,19 @@
 
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
+struct TestStruct
+{
+    TestStruct(int foo = 0, int bar = 0)
+        : foo(foo)
+        , bar(bar)
+    {}
+    int foo;
+    int bar;
+};
+Q_DECLARE_METATYPE(TestStruct)
+using TestStructVector = std::vector<TestStruct>;
+Q_DECLARE_METATYPE(TestStructVector)
+
 QT_BEGIN_NAMESPACE
 
 class DummyTransport : public QWebChannelAbstractTransport
