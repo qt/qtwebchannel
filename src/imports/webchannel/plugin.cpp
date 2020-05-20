@@ -52,7 +52,7 @@ class QWebChannelPlugin : public QQmlExtensionPlugin
 
 public:
     QWebChannelPlugin(QObject *parent = 0) : QQmlExtensionPlugin(parent) { }
-    void registerTypes(const char *uri);
+    void registerTypes(const char *uri) override;
 };
 
 void QWebChannelPlugin::registerTypes(const char *uri)
