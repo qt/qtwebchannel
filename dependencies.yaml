@@ -1,4 +1,4 @@
 dependencies:
   ../qtwebsockets:
-    ref: 0c488149eafadc550ee4034a49c1bacdc1e955ec
+    ref: 6d9de9eca438845e2a843b4b9e668c1cc0cac47d
     required: false
