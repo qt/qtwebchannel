@@ -93,7 +93,7 @@ class QQmlWebChannelPrivate : public QWebChannelPrivate
 {
     Q_DECLARE_PUBLIC(QQmlWebChannel)
 public:
-    QVector<QObject*> registeredObjects;
+    QList<QObject *> registeredObjects;
 
     void _q_objectIdChanged(const QString &newId);
 };

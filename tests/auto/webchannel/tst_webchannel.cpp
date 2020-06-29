@@ -875,8 +875,8 @@ void TestWebChannel::testWrapValues()
         QCOMPARE(value.toInt(), (int) flags);
     }
     {
-        QVector<int> vec{1, 2, 3};
-        QVariant variant = QVariant::fromValue(vec);
+        QList<int> list { 1, 2, 3 };
+        QVariant variant = QVariant::fromValue(list);
         QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
         QVERIFY(value.isArray());
         QCOMPARE(value.toArray(), QJsonArray({1, 2, 3}));
@@ -1090,7 +1090,7 @@ void TestWebChannel::benchPropertyUpdates()
 
     QObject parent;
     const QHash<QString, QObject*> objects = createObjects(&parent);
-    QVector<BenchObject*> objectList;
+    QList<BenchObject *> objectList;
     objectList.reserve(objects.size());
     foreach (QObject *obj, objects) {
         objectList << qobject_cast<BenchObject*>(obj);

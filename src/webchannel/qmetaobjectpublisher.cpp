@@ -497,7 +497,7 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int met
 QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QByteArray &methodName,
                                             const QJsonArray &args)
 {
-    QVector<OverloadResolutionCandidate> candidates;
+    QList<OverloadResolutionCandidate> candidates;
 
     const QMetaObject *mo = object->metaObject();
     for (int i = 0; i < mo->methodCount(); ++i) {
@@ -737,10 +737,10 @@ void QMetaObjectPublisher::transportRemoved(QWebChannelAbstractTransport *transp
     auto it = transportedWrappedObjects.find(transport);
     // It is not allowed to modify a container while iterating over it. So save
     // objects which should be removed and call objectDestroyed() on them later.
-    QVector<QObject*> objectsForDeletion;
+    QList<QObject *> objectsForDeletion;
     while (it != transportedWrappedObjects.end() && it.key() == transport) {
         if (wrappedObjects.contains(it.value())) {
-            QVector<QWebChannelAbstractTransport*> &transports = wrappedObjects[it.value()].transports;
+            QList<QWebChannelAbstractTransport *> &transports = wrappedObjects[it.value()].transports;
             transports.removeOne(transport);
             if (transports.isEmpty())
                 objectsForDeletion.append(wrappedObjects[it.value()].object);

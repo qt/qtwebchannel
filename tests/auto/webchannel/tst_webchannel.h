@@ -32,7 +32,7 @@
 
 #include <QObject>
 #include <QVariant>
-#include <QVector>
+#include <QList>
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -68,10 +68,7 @@ public:
         emit messageReceived(message, this);
     }
 
-    QVector<QJsonObject> messagesSent() const
-    {
-        return mMessagesSent;
-    }
+    QList<QJsonObject> messagesSent() const { return mMessagesSent; }
 
 public slots:
     void sendMessage(const QJsonObject &message) override
@@ -79,7 +76,7 @@ public slots:
         mMessagesSent.push_back(message);
     }
 private:
-    QVector<QJsonObject> mMessagesSent;
+    QList<QJsonObject> mMessagesSent;
 };
 
 class TestObject : public QObject

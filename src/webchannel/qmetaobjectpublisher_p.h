@@ -301,7 +301,7 @@ private:
             : object(o)
         {}
         QObject *object;
-        QVector<QWebChannelAbstractTransport*> transports;
+        QList<QWebChannelAbstractTransport *> transports;
     };
 
     // Map of objects wrapped from invocation returns

@@ -54,7 +54,7 @@
 #include "qwebchannelglobal.h"
 
 #include <private/qobject_p.h>
-#include <QVector>
+#include <QList>
 
 QT_BEGIN_NAMESPACE
 
@@ -66,7 +66,7 @@ class Q_WEBCHANNEL_EXPORT QWebChannelPrivate : public QObjectPrivate
 {
     Q_DECLARE_PUBLIC(QWebChannel)
 public:
-    QVector<QWebChannelAbstractTransport*> transports;
+    QList<QWebChannelAbstractTransport *> transports;
     QMetaObjectPublisher *publisher;
 
     void init();

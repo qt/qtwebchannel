@@ -53,7 +53,7 @@
 
 #include <QObject>
 #include <QHash>
-#include <QVector>
+#include <QList>
 #include <QMetaMethod>
 #include <QDebug>
 
@@ -121,7 +121,7 @@ private:
 
     // maps meta object -> signalIndex -> list of arguments
     // NOTE: This data is "leaked" on disconnect until deletion of the handler, is this a problem?
-    typedef QVector<int> ArgumentTypeList;
+    typedef QList<int> ArgumentTypeList;
     typedef QHash<int, ArgumentTypeList> SignalArgumentHash;
     QHash<const QMetaObject *, SignalArgumentHash > m_signalArgumentTypes;
 
@@ -202,7 +202,7 @@ void SignalHandler<Receiver>::setupSignalArgumentTypes(const QMetaObject *metaOb
         return;
     }
     // find the type ids of the signal parameters, see also QSignalSpy::initArgs
-    QVector<int> args;
+    QList<int> args;
     args.reserve(signal.parameterCount());
     for (int i = 0; i < signal.parameterCount(); ++i) {
         int tp = signal.parameterType(i);
@@ -220,13 +220,13 @@ template<class Receiver>
 void SignalHandler<Receiver>::dispatch(const QObject *object, const int signalIdx, void **argumentData)
 {
     Q_ASSERT(m_signalArgumentTypes.contains(object->metaObject()));
-    const QHash<int, QVector<int> > &objectSignalArgumentTypes = m_signalArgumentTypes.value(object->metaObject());
-    QHash<int, QVector<int> >::const_iterator signalIt = objectSignalArgumentTypes.constFind(signalIdx);
+    const QHash<int, QList<int>> &objectSignalArgumentTypes = m_signalArgumentTypes.value(object->metaObject());
+    QHash<int, QList<int>>::const_iterator signalIt = objectSignalArgumentTypes.constFind(signalIdx);
     if (signalIt == objectSignalArgumentTypes.constEnd()) {
         // not connected to this signal, skip
         return;
     }
-    const QVector<int> &argumentTypes = *signalIt;
+    const QList<int> &argumentTypes = *signalIt;
     QVariantList arguments;
     arguments.reserve(argumentTypes.count());
     // TODO: basic overload resolution based on number of arguments?
