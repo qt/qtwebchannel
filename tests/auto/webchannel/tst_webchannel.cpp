@@ -936,6 +936,9 @@ void TestWebChannel::testInfiniteRecursion()
     channel.d_func()->publisher->initializeClient(m_dummyTransport);
 
     QJsonObject objectInfo = channel.d_func()->publisher->wrapResult(QVariant::fromValue(&obj), m_dummyTransport).toObject();
+
+    // Wrap the result twice to test for QTBUG-84007. A single result wrap will not trigger all recursion paths.
+    objectInfo = channel.d_func()->publisher->wrapResult(QVariant::fromValue(&obj), m_dummyTransport).toObject();
 }
 
 void TestWebChannel::testAsyncObject()

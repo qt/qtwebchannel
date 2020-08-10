@@ -793,14 +793,21 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
             wrappedObjects.insert(id, oi);
 
             initializePropertyUpdates(object, classInfo);
-        } else if (wrappedObjects.contains(id)) {
-            Q_ASSERT(object == wrappedObjects.value(id).object);
-            // check if this transport is already assigned to the object
-            if (transport && !wrappedObjects.value(id).transports.contains(transport)) {
-                wrappedObjects[id].transports.append(transport);
-                transportedWrappedObjects.insert(transport, id);
+        } else {
+            auto oi = wrappedObjects.find(id);
+            if (oi != wrappedObjects.end() && !oi->isBeingWrapped) {
+                Q_ASSERT(object == oi->object);
+                // check if this transport is already assigned to the object
+                if (transport && !oi->transports.contains(transport)) {
+                    oi->transports.append(transport);
+                    transportedWrappedObjects.insert(transport, id);
+                }
+                // QTBUG-84007: Block infinite recursion for self-contained objects
+                // which have already been wrapped
+                oi->isBeingWrapped = true;
+                classInfo = classInfoForObject(object, transport);
+                oi->isBeingWrapped = false;
             }
-            classInfo = classInfoForObject(object, transport);
         }
 
         QJsonObject objectInfo;
