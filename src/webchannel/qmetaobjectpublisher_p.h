@@ -292,13 +292,15 @@ private:
     QHash<const QObject *, QString> registeredObjectIds;
 
     // Groups individually wrapped objects with their class information and the transports that have access to it.
+    // Also tags objects that are in the process of being wrapped to prevent infinite recursion.
     struct ObjectInfo
     {
         ObjectInfo(QObject *o = nullptr)
-            : object(o)
+            : object(o), isBeingWrapped(false)
         {}
         QObject *object;
         QVector<QWebChannelAbstractTransport*> transports;
+        bool isBeingWrapped;
     };
 
     // Map of objects wrapped from invocation returns
