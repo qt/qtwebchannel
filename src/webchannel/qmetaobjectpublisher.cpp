@@ -640,9 +640,9 @@ QVariant QMetaObjectPublisher::unwrapVariant(const QVariant &value) const
 {
     switch (value.type())
     {
-        case QMetaType::QVariantList:
+        case QVariant::List:
             return unwrapList(value.toList());
-        case QMetaType::QVariantMap:
+        case QVariant::Map:
             return unwrapMap(value.toMap());
         default:
             break;
