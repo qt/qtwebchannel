@@ -565,7 +565,7 @@ void TestWebChannel::testInvokeMethodConversion()
         int getterMethod = metaObject()->indexOfMethod("readJsonValue()");
         QVERIFY(getterMethod != -1);
         auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
-        QCOMPARE(retVal, args.at(0).toVariant());
+        QCOMPARE(retVal, QVariant(args.at(0)));
     }
     {
         QJsonObject object;
