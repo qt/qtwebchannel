@@ -236,7 +236,7 @@ void SignalHandler<Receiver>::dispatch(const QObject *object, const int signalId
         if (type == QMetaType::QVariant) {
             arg = *reinterpret_cast<QVariant *>(argumentData[i + 1]);
         } else {
-            arg = QVariant(type, argumentData[i + 1]);
+            arg = QVariant(QMetaType(type), argumentData[i + 1]);
         }
         arguments.append(arg);
     }

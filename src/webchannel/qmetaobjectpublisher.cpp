@@ -471,7 +471,7 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMe
         // Only init variant with return type if its not a variant itself, which would
         // lead to nested variants which is not what we want.
         if (method.returnType() != QMetaType::QVariant)
-            returnValue = QVariant(method.returnType(), 0);
+            returnValue = QVariant(QMetaType(method.returnType()), nullptr);
 
         QGenericReturnArgument returnArgument(method.typeName(), returnValue.data());
         method.invoke(object, returnArgument,
@@ -669,7 +669,7 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         return QVariant::fromValue(unwrappedObject);
     } else if (isQFlagsType(targetType)) {
         int flagsValue = value.toInt();
-        return QVariant(targetType, reinterpret_cast<const void*>(&flagsValue));
+        return QVariant(QMetaType(targetType), reinterpret_cast<const void*>(&flagsValue));
     }
 
     // this converts QJsonObjects to QVariantMaps, which is not desired when
