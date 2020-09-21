@@ -78,7 +78,7 @@ bool isQFlagsType(uint id)
         return false;
     }
 
-    QByteArray name = QMetaType::typeName(id);
+    QByteArray name = type.name();
     name = name.mid(name.lastIndexOf(":") + 1);
     return mo->indexOfEnumerator(name.constData()) > -1;
 }
@@ -123,7 +123,7 @@ int doubleToNumberConversionScore(int userType)
         break;
     }
 
-    if (QMetaType::typeFlags(userType) & QMetaType::IsEnumeration)
+    if (QMetaType(userType).flags() & QMetaType::IsEnumeration)
         return doubleToNumberConversionScore(QMetaType::Int);
 
     return IncompatibleScore;
@@ -652,6 +652,7 @@ QVariant QMetaObjectPublisher::unwrapVariant(const QVariant &value) const
 
 QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
 {
+    QMetaType target(targetType);
     if (targetType == QMetaType::QJsonValue) {
         return QVariant::fromValue(value);
     } else if (targetType == QMetaType::QJsonArray) {
@@ -662,34 +663,35 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         if (!value.isObject())
             qWarning() << "Cannot not convert non-object argument" << value << "to QJsonObject.";
         return QVariant::fromValue(value.toObject());
-    } else if (QMetaType::typeFlags(targetType) & QMetaType::PointerToQObject) {
+    } else if (target.flags() & QMetaType::PointerToQObject) {
         QObject *unwrappedObject = unwrapObject(value.toObject()[KEY_ID].toString());
         if (unwrappedObject == Q_NULLPTR)
             qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
         return QVariant::fromValue(unwrappedObject);
     } else if (isQFlagsType(targetType)) {
         int flagsValue = value.toInt();
-        return QVariant(QMetaType(targetType), reinterpret_cast<const void*>(&flagsValue));
+        return QVariant(target, reinterpret_cast<const void*>(&flagsValue));
     }
 
     // this converts QJsonObjects to QVariantMaps, which is not desired when
     // we want to get a QJsonObject or QJsonValue (see above)
     QVariant variant = unwrapVariant(value.toVariant());
-    if (targetType != QMetaType::QVariant && !variant.convert(targetType)) {
-        qWarning() << "Could not convert argument" << value << "to target type" << QVariant::typeToName(targetType) << '.';
+    if (targetType != QMetaType::QVariant && !variant.convert(target)) {
+        qWarning() << "Could not convert argument" << value << "to target type" << target.name() << '.';
     }
     return variant;
 }
 
 int QMetaObjectPublisher::conversionScore(const QJsonValue &value, int targetType) const
 {
+    QMetaType target(targetType);
     if (targetType == QMetaType::QJsonValue) {
         return PerfectMatchScore;
     } else if (targetType == QMetaType::QJsonArray) {
         return value.isArray() ? PerfectMatchScore : IncompatibleScore;
     } else if (targetType == QMetaType::QJsonObject) {
         return value.isObject() ? PerfectMatchScore : IncompatibleScore;
-    } else if (QMetaType::typeFlags(targetType) & QMetaType::PointerToQObject) {
+    } else if (target.flags() & QMetaType::PointerToQObject) {
         if (value.isNull())
             return PerfectMatchScore;
         if (!value.isObject())
@@ -716,7 +718,7 @@ int QMetaObjectPublisher::conversionScore(const QJsonValue &value, int targetTyp
     QVariant variant = value.toVariant();
     if (variant.userType() == targetType) {
         return PerfectMatchScore;
-    } else if (variant.canConvert(targetType)) {
+    } else if (variant.canConvert(target)) {
         return GenericConversionScore;
     }
 
@@ -817,7 +819,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
             objectInfo[KEY_DATA] = classInfo;
 
         return objectInfo;
-    } else if (QMetaType::typeFlags(result.userType()).testFlag(QMetaType::IsEnumeration)) {
+    } else if (result.metaType().flags().testFlag(QMetaType::IsEnumeration)) {
         return result.toInt();
     } else if (isQFlagsType(result.userType())) {
         return *reinterpret_cast<const int*>(result.constData());
@@ -838,13 +840,13 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
         // but recover when conversion fails and fall back to the .value<QVariantList> conversion
         // see also: https://bugreports.qt.io/browse/QTBUG-80751
         auto list = result;
-        if (!list.convert(qMetaTypeId<QVariantList>()))
+        if (!list.convert(QMetaType::fromType<QVariantList>()))
             list = result;
         return wrapList(list.value<QVariantList>(), transport);
     } else if (result.canConvert<QVariantMap>()) {
         // recurse and potentially wrap contents of the map
         auto map = result;
-        if (!map.convert(qMetaTypeId<QVariantMap>()))
+        if (!map.convert(QMetaType::fromType<QVariantMap>()))
             map = result;
         return wrapMap(map.value<QVariantMap>(), transport);
     }
