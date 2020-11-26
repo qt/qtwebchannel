@@ -77,13 +77,13 @@ private:
     Q_PRIVATE_SLOT(d_func(), void _q_objectIdChanged(const QString &newId))
 
     static void registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *item);
-    static int registeredObjects_count(QQmlListProperty<QObject> *prop);
-    static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, int index);
+    static qsizetype registeredObjects_count(QQmlListProperty<QObject> *prop);
+    static QObject *registeredObjects_at(QQmlListProperty<QObject> *prop, qsizetype index);
     static void registeredObjects_clear(QQmlListProperty<QObject> *prop);
 
     static void transports_append(QQmlListProperty<QObject> *prop, QObject *item);
-    static int transports_count(QQmlListProperty<QObject> *prop);
-    static QObject *transports_at(QQmlListProperty<QObject> *prop, int index);
+    static qsizetype transports_count(QQmlListProperty<QObject> *prop);
+    static QObject *transports_at(QQmlListProperty<QObject> *prop, qsizetype index);
     static void transports_clear(QQmlListProperty<QObject> *prop);
 };
 

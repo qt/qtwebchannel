@@ -204,10 +204,8 @@ void QQmlWebChannel::disconnectFrom(QObject *transport)
 
 QQmlListProperty<QObject> QQmlWebChannel::registeredObjects()
 {
-    return QQmlListProperty<QObject>(this, 0,
-                                     registeredObjects_append,
-                                     registeredObjects_count,
-                                     registeredObjects_at,
+    return QQmlListProperty<QObject>(this, nullptr, registeredObjects_append,
+                                     registeredObjects_count, registeredObjects_at,
                                      registeredObjects_clear);
 }
 
@@ -229,12 +227,12 @@ void QQmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, Q
     connect(attached, SIGNAL(idChanged(QString)), channel, SLOT(_q_objectIdChanged(QString)));
 }
 
-int QQmlWebChannel::registeredObjects_count(QQmlListProperty<QObject> *prop)
+qsizetype QQmlWebChannel::registeredObjects_count(QQmlListProperty<QObject> *prop)
 {
     return static_cast<QQmlWebChannel*>(prop->object)->d_func()->registeredObjects.size();
 }
 
-QObject *QQmlWebChannel::registeredObjects_at(QQmlListProperty<QObject> *prop, int index)
+QObject *QQmlWebChannel::registeredObjects_at(QQmlListProperty<QObject> *prop, qsizetype index)
 {
     return static_cast<QQmlWebChannel*>(prop->object)->d_func()->registeredObjects.at(index);
 }
@@ -250,11 +248,8 @@ void QQmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
 
 QQmlListProperty<QObject> QQmlWebChannel::transports()
 {
-    return QQmlListProperty<QObject>(this, 0,
-                                                           transports_append,
-                                                           transports_count,
-                                                           transports_at,
-                                                           transports_clear);
+    return QQmlListProperty<QObject>(this, nullptr, transports_append, transports_count,
+                                     transports_at, transports_clear);
 }
 
 void QQmlWebChannel::transports_append(QQmlListProperty<QObject> *prop, QObject *transport)
@@ -263,12 +258,12 @@ void QQmlWebChannel::transports_append(QQmlListProperty<QObject> *prop, QObject 
     channel->connectTo(transport);
 }
 
-int QQmlWebChannel::transports_count(QQmlListProperty<QObject> *prop)
+qsizetype QQmlWebChannel::transports_count(QQmlListProperty<QObject> *prop)
 {
     return static_cast<QQmlWebChannel*>(prop->object)->d_func()->transports.size();
 }
 
-QObject *QQmlWebChannel::transports_at(QQmlListProperty<QObject> *prop, int index)
+QObject *QQmlWebChannel::transports_at(QQmlListProperty<QObject> *prop, qsizetype index)
 {
     QQmlWebChannel *channel = static_cast<QQmlWebChannel*>(prop->object);
     return channel->d_func()->transports.at(index);
