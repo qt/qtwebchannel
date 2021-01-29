@@ -831,6 +831,9 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
         // TODO: Improve QJSValue-QJsonValue conversion in Qt.
         return wrapResult(result.value<QJSValue>().toVariant(), transport, parentObjectId);
 #endif
+    } else if (result.metaType().id() == QMetaType::QString ||
+               result.metaType().id() == QMetaType::QByteArray) {
+        // avoid conversion to QVariantList
     } else if (result.canConvert<QVariantList>()) {
         // recurse and potentially wrap contents of the array
         // *don't* use result.toList() as that *only* works for QVariantList and QStringList!
