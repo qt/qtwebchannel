@@ -7,6 +7,9 @@ QMAKE_DOCS = $$PWD/doc/qtwebchannel.qdocconf
 RESOURCES += \
     resources.qrc
 
+QTQUICK_COMPILER_SKIPPED_RESOURCES += \
+    resources.qrc
+
 OTHER_FILES = \
     qwebchannel.js
 
