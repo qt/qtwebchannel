@@ -333,7 +333,7 @@ QJsonObject QMetaObjectPublisher::initializeClient(QWebChannelAbstractTransport 
 
 void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo)
 {
-    foreach (const QJsonValue &propertyInfoVar, objectInfo[KEY_PROPERTIES].toArray()) {
+    for (const QJsonValue &propertyInfoVar : objectInfo[KEY_PROPERTIES].toArray()) {
         const QJsonArray &propertyInfo = propertyInfoVar.toArray();
         if (propertyInfo.size() < 2) {
             qWarning() << "Invalid property info encountered:" << propertyInfoVar;
@@ -386,7 +386,7 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
         const SignalToArgumentsMap::const_iterator sigEnd = it.value().constEnd();
         for (SignalToArgumentsMap::const_iterator sigIt = it.value().constBegin(); sigIt != sigEnd; ++sigIt) {
             // TODO: can we get rid of the int <-> string conversions here?
-            foreach (const int propertyIndex, objectsSignalToPropertyMap.value(sigIt.key())) {
+            for (const int propertyIndex : objectsSignalToPropertyMap.value(sigIt.key())) {
                 const QMetaProperty &property = metaObject->property(propertyIndex);
                 Q_ASSERT(property.isValid());
                 properties[QString::number(propertyIndex)] = wrapResult(property.read(object), Q_NULLPTR, objectId);
@@ -400,7 +400,7 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
 
         // if the object is auto registered, just send the update only to clients which know this object
         if (wrappedObjects.contains(objectId)) {
-            foreach (QWebChannelAbstractTransport *transport, wrappedObjects.value(objectId).transports) {
+            for (QWebChannelAbstractTransport *transport : wrappedObjects.value(objectId).transports) {
                 QJsonArray &arr = specificUpdates[transport];
                 arr.push_back(obj);
             }
@@ -561,7 +561,7 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
 
         // if the object is wrapped, just send the response to clients which know this object
         if (wrappedObjects.contains(objectName)) {
-            foreach (QWebChannelAbstractTransport *transport, wrappedObjects.value(objectName).transports) {
+            for (QWebChannelAbstractTransport *transport : wrappedObjects.value(objectName).transports) {
                 transport->sendMessage(message);
             }
         } else {
@@ -753,7 +753,7 @@ void QMetaObjectPublisher::transportRemoved(QWebChannelAbstractTransport *transp
 
     transportedWrappedObjects.remove(transport);
 
-    foreach (QObject *obj, objectsForDeletion)
+    for (QObject *obj : std::as_const(objectsForDeletion))
         objectDestroyed(obj);
 }
 
@@ -860,7 +860,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
 QJsonArray QMetaObjectPublisher::wrapList(const QVariantList &list, QWebChannelAbstractTransport *transport, const QString &parentObjectId)
 {
     QJsonArray array;
-    foreach (const QVariant &arg, list) {
+    for (const QVariant &arg : list) {
         array.append(wrapResult(arg, transport, parentObjectId));
     }
     return array;
@@ -891,7 +891,7 @@ void QMetaObjectPublisher::broadcastMessage(const QJsonObject &message) const
         return;
     }
 
-    foreach (QWebChannelAbstractTransport *transport, webChannel->d_func()->transports) {
+    for (QWebChannelAbstractTransport *transport : webChannel->d_func()->transports) {
         transport->sendMessage(message);
     }
 }
