@@ -638,11 +638,11 @@ QVariant QMetaObjectPublisher::unwrapList(QVariantList list) const
 
 QVariant QMetaObjectPublisher::unwrapVariant(const QVariant &value) const
 {
-    switch (value.type())
+    switch (value.metaType().id())
     {
-        case QVariant::List:
+        case QMetaType::QVariantList:
             return unwrapList(value.toList());
-        case QVariant::Map:
+        case QMetaType::QVariantMap:
             return unwrapMap(value.toMap());
         default:
             break;
