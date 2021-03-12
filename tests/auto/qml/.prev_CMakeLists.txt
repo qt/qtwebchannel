@@ -10,7 +10,7 @@ file(GLOB_RECURSE test_data_glob
     data/*)
 list(APPEND test_data ${test_data_glob})
 
-qt_internal_add_test(tst_qmlwebchannel    # special case
+qt_internal_add_test(qml
     QMLTEST
     QML_IMPORTPATH
         "${CMAKE_CURRENT_BINARY_DIR}/../../../qml"
