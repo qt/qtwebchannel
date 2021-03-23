@@ -207,7 +207,7 @@ void QMetaObjectPublisher::registerObject(const QString &id, QObject *object)
             qWarning("Registered new object after initialization, existing clients won't be notified!");
             // TODO: send a message to clients that an object was added
         }
-        initializePropertyUpdates(object, classInfoForObject(object, Q_NULLPTR));
+        initializePropertyUpdates(object, classInfoForObject(object, nullptr));
     }
 }
 
@@ -333,7 +333,7 @@ QJsonObject QMetaObjectPublisher::initializeClient(QWebChannelAbstractTransport 
 
 void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo)
 {
-    for (const QJsonValue &propertyInfoVar : objectInfo[KEY_PROPERTIES].toArray()) {
+    for (const auto propertyInfoVar : objectInfo[KEY_PROPERTIES].toArray()) {
         const QJsonArray &propertyInfo = propertyInfoVar.toArray();
         if (propertyInfo.size() < 2) {
             qWarning() << "Invalid property info encountered:" << propertyInfoVar;
@@ -389,7 +389,7 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
             for (const int propertyIndex : objectsSignalToPropertyMap.value(sigIt.key())) {
                 const QMetaProperty &property = metaObject->property(propertyIndex);
                 Q_ASSERT(property.isValid());
-                properties[QString::number(propertyIndex)] = wrapResult(property.read(object), Q_NULLPTR, objectId);
+                properties[QString::number(propertyIndex)] = wrapResult(property.read(object), nullptr, objectId);
             }
             sigs[QString::number(sigIt.key())] = QJsonArray::fromVariantList(sigIt.value());
         }
@@ -555,7 +555,7 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
         message[KEY_OBJECT] = objectName;
         message[KEY_SIGNAL] = signalIndex;
         if (!arguments.isEmpty()) {
-            message[KEY_ARGS] = wrapList(arguments, Q_NULLPTR, objectName);
+            message[KEY_ARGS] = wrapList(arguments, nullptr, objectName);
         }
         message[KEY_TYPE] = TypeSignal;
 
@@ -609,7 +609,7 @@ QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const
     }
 
     qWarning() << "No wrapped object" << objectId;
-    return Q_NULLPTR;
+    return nullptr;
 }
 
 QVariant QMetaObjectPublisher::unwrapMap(QVariantMap map) const
@@ -665,7 +665,7 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         return QVariant::fromValue(value.toObject());
     } else if (target.flags() & QMetaType::PointerToQObject) {
         QObject *unwrappedObject = unwrapObject(value.toObject()[KEY_ID].toString());
-        if (unwrappedObject == Q_NULLPTR)
+        if (unwrappedObject == nullptr)
             qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
         return QVariant::fromValue(unwrappedObject);
     } else if (isQFlagsType(targetType)) {
@@ -702,7 +702,7 @@ int QMetaObjectPublisher::conversionScore(const QJsonValue &value, int targetTyp
             return IncompatibleScore;
 
         QObject *unwrappedObject = unwrapObject(object[KEY_ID].toString());
-        return unwrappedObject != Q_NULLPTR ? PerfectMatchScore : IncompatibleScore;
+        return unwrappedObject != nullptr ? PerfectMatchScore : IncompatibleScore;
     } else if (targetType == QMetaType::QVariant) {
         return VariantScore;
     }

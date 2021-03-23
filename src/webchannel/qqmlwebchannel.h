@@ -59,7 +59,7 @@ class Q_WEBCHANNEL_EXPORT QQmlWebChannel : public QWebChannel
     Q_PROPERTY( QQmlListProperty<QObject> registeredObjects READ registeredObjects )
 
 public:
-    explicit QQmlWebChannel(QObject *parent = Q_NULLPTR);
+    explicit QQmlWebChannel(QObject *parent = nullptr);
     virtual ~QQmlWebChannel();
 
     Q_INVOKABLE void registerObjects(const QVariantMap &objects);
