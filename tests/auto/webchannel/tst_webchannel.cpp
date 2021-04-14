@@ -406,6 +406,10 @@ void TestWebChannel::testInfoForObject()
         addMethod(QStringLiteral("overload"), "overload(QString)", false);
         addMethod(QStringLiteral("overload"), "overload(QString,int)", false);
         addMethod(QStringLiteral("overload"), "overload(QJsonArray)", false);
+        addMethod(QStringLiteral("bindableStringProperty"), "bindableStringProperty()");
+        addMethod(QStringLiteral("getStringProperty"), "getStringProperty()");
+        addMethod(QStringLiteral("bindStringPropertyToStringProperty2"), "bindStringPropertyToStringProperty2()");
+        addMethod(QStringLiteral("setStringProperty2"), "setStringProperty2(QString&)");
         addMethod(QStringLiteral("method1"), "method1()");
         QCOMPARE(info["methods"].toArray(), expected);
     }
@@ -511,6 +515,19 @@ void TestWebChannel::testInfoForObject()
                 property.append(signal);
             }
             property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.prop())));
+            expected.append(property);
+        }
+        {
+            QJsonArray property;
+            property.append(obj.metaObject()->indexOfProperty("stringProperty"));
+            property.append(QStringLiteral("stringProperty"));
+            {
+                QJsonArray signal;
+                signal.append(1);
+                signal.append(obj.metaObject()->indexOfMethod("stringPropertyChanged()"));
+                property.append(signal);
+            }
+            property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.readStringProperty())));
             expected.append(property);
         }
         QCOMPARE(info["properties"].toArray(), expected);
@@ -988,6 +1005,41 @@ void TestWebChannel::testAsyncObject()
 
     thread.quit();
     thread.wait();
+}
+
+void TestWebChannel::testQProperty()
+{
+    QWebChannel channel;
+    TestObject testObj;
+    testObj.setObjectName("testObject");
+
+    QProperty<QString> obj1("Hello");
+    testObj.bindableStringProperty().setBinding([&](){ return obj1.value(); });
+    QCOMPARE(obj1.value(), testObj.readStringProperty());
+
+    channel.registerObject(testObj.objectName(), &testObj);
+    channel.connectTo(m_dummyTransport);
+    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+
+    QVariant result;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+
+    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+    QCOMPARE(result.toString(), obj1.value());
+
+    obj1 = "world";
+    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+    QCOMPARE(result.toString(), obj1.value());
+
+    publisher->invokeMethod(&testObj, "setStringProperty2", {"Hey"});
+    publisher->invokeMethod(&testObj, "bindStringPropertyToStringProperty2", {});
+    obj1 = "This should not affect getStringProperty";
+    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+    QCOMPARE(result.toString(), "Hey");
+
+    publisher->invokeMethod(&testObj, "setStringProperty2", {"again"});
+    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+    QCOMPARE(result.toString(), "again");
 }
 
 class FunctionWrapper : public QObject
