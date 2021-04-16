@@ -126,7 +126,7 @@ TestCase {
         compare(client.clientMessages.length, 0);
     }
 
-    function test_property()
+    function test_notifyProperty()
     {
         compare(myObj.myProperty, 1);
 
@@ -155,6 +155,36 @@ TestCase {
         compare(myObj.myProperty, 2);
         client.awaitIdle(); // property update
         compare(changedValue, 2);
+        compare(channel.objects.myObj.myProperty, 2)
+    }
+
+    function test_bindableProperty()
+    {
+        compare(testObject.stringProperty, "foo");
+
+        var initialValue;
+
+        var channel = client.createChannel(function(channel) {
+            initialValue = channel.objects.testObject.stringProperty;
+            // now trigger a write from the client side
+            channel.objects.testObject.stringProperty = "bar";
+        });
+
+        client.awaitInit();
+        var msg = client.awaitMessage();
+
+        compare(initialValue, "foo");
+        compare(testObject.stringProperty, "bar");
+
+        client.awaitIdle(); // init
+
+        // Change property, should be propagated to HTML client.
+        // This is a bindable property only. Not change signal will be emitted
+        // because there is none.
+        testObject.stringProperty = "baz";
+        compare(testObject.stringProperty, "baz");
+        client.awaitIdle(); // property update
+        compare(channel.objects.testObject.stringProperty, "baz");
     }
 
     function test_method()

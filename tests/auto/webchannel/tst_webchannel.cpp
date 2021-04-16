@@ -406,6 +406,7 @@ void TestWebChannel::testInfoForObject()
         addMethod(QStringLiteral("overload"), "overload(QString)", false);
         addMethod(QStringLiteral("overload"), "overload(QString,int)", false);
         addMethod(QStringLiteral("overload"), "overload(QJsonArray)", false);
+        addMethod(QStringLiteral("setStringProperty"), "setStringProperty(QString)");
         addMethod(QStringLiteral("bindableStringProperty"), "bindableStringProperty()");
         addMethod(QStringLiteral("getStringProperty"), "getStringProperty()");
         addMethod(QStringLiteral("bindStringPropertyToStringProperty2"), "bindStringPropertyToStringProperty2()");
@@ -523,8 +524,6 @@ void TestWebChannel::testInfoForObject()
             property.append(QStringLiteral("stringProperty"));
             {
                 QJsonArray signal;
-                signal.append(1);
-                signal.append(obj.metaObject()->indexOfMethod("stringPropertyChanged()"));
                 property.append(signal);
             }
             property.append(QJsonValue::fromVariant(QVariant::fromValue(obj.readStringProperty())));
@@ -982,6 +981,15 @@ void TestWebChannel::testAsyncObject()
         QTRY_COMPARE(received, 1);
     }
 
+    {
+        int received = 0;
+        auto handler = obj.bindableStringProperty().onValueChanged([&] {
+            ++received;
+        });
+        channel.d_func()->publisher->invokeMethod(&obj, "setStringProperty", args);
+        QTRY_COMPARE(received, 1);
+    }
+
     channel.registerObject("myObj", &obj);
     channel.d_func()->publisher->initializeClient(m_dummyTransport);
 
@@ -1012,44 +1020,53 @@ void TestWebChannel::testQProperty()
 
     DummyTransport transport;
     QWebChannel channel;
-    TestObject testObj;
-    testObj.setObjectName("testObject");
-
-    QProperty<QString> obj1("Hello");
-    testObj.bindableStringProperty().setBinding([&](){ return obj1.value(); });
-
-    QCOMPARE(obj1.value(), testObj.readStringProperty());
-
-    channel.registerObject(testObj.objectName(), &testObj);
-    channel.connectTo(&transport);
-    channel.d_func()->publisher->initializeClient(&transport);
-
-    QVariant result;
     QMetaObjectPublisher *publisher = channel.d_func()->publisher;
-    publisher->setClientIsIdle(true);
 
-    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
-    QCOMPARE(result.toString(), obj1.value());
+    {
+        TestObject testObj;
+        testObj.setObjectName("testObject");
 
-    obj1 = "world";
-    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
-    QCOMPARE(result.toString(), obj1.value());
+        QProperty<QString> obj1("Hello");
+        testObj.bindableStringProperty().setBinding([&](){ return obj1.value(); });
 
-    publisher->sendPendingPropertyUpdates();
-    QVERIFY(!transport.messagesSent().isEmpty());
-    const QJsonObject updateMessage = transport.messagesSent().last()["data"][0].toObject();
-    QCOMPARE(updateMessage["object"], testObj.objectName());
-    QCOMPARE(updateMessage["properties"][QString::number(IndexOfStringProperty)], obj1.value());
+        QCOMPARE(obj1.value(), testObj.readStringProperty());
 
-    publisher->invokeMethod(&testObj, "setStringProperty2", {"Hey"});
-    publisher->invokeMethod(&testObj, "bindStringPropertyToStringProperty2", {});
-    obj1 = "This should not affect getStringProperty";
-    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
-    QCOMPARE(result.toString(), "Hey");
+        channel.registerObject(testObj.objectName(), &testObj);
+        channel.connectTo(&transport);
 
-    publisher->invokeMethod(&testObj, "setStringProperty2", {"again"});
-    result = publisher->invokeMethod(&testObj, "getStringProperty", {});
-    QCOMPARE(result.toString(), "again");
+        publisher->initializeClient(&transport);
+        // One bindable property should result in one observer
+        QCOMPARE(publisher->propertyObservers.count(&testObj), 1);
+
+        QVariant result;
+        publisher->setClientIsIdle(true);
+        result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+        QCOMPARE(result.toString(), obj1.value());
+
+        obj1 = "world";
+        result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+        QCOMPARE(result.toString(), obj1.value());
+
+        publisher->sendPendingPropertyUpdates();
+        QVERIFY(!transport.messagesSent().isEmpty());
+        const QJsonObject updateMessage = transport.messagesSent().last()["data"][0].toObject();
+        QCOMPARE(updateMessage["object"], testObj.objectName());
+        QCOMPARE(updateMessage["properties"][QString::number(IndexOfStringProperty)], obj1.value());
+
+        publisher->invokeMethod(&testObj, "setStringProperty2", {"Hey"});
+        publisher->invokeMethod(&testObj, "bindStringPropertyToStringProperty2", {});
+        obj1 = "This should not affect getStringProperty";
+        result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+        QCOMPARE(result.toString(), "Hey");
+
+        publisher->invokeMethod(&testObj, "setStringProperty2", {"again"});
+        result = publisher->invokeMethod(&testObj, "getStringProperty", {});
+        QCOMPARE(result.toString(), "again");
+    }
+
+    // Ensure that the observer has been removed after the object has been
+    // destroyed
+    QCOMPARE(publisher->propertyObservers.size(), 0);
 }
 
 class FunctionWrapper : public QObject

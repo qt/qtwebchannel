@@ -39,11 +39,14 @@ class TestObject : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QVariantMap objectMap READ objectMap CONSTANT)
+    Q_PROPERTY(QString stringProperty READ stringProperty WRITE setStringProperty BINDABLE bindableStringProperty)
 public:
     explicit TestObject(QObject *parent = Q_NULLPTR);
     ~TestObject();
 
     QVariantMap objectMap() const;
+    QString stringProperty() const;
+    QBindable<QString> bindableStringProperty() { return &m_stringProperty; }
 
 public slots:
     void triggerSignals();
@@ -53,6 +56,7 @@ public slots:
     QString testOverload(const QString &str, int i);
     int testVariantType(const QVariant &val);
     bool testEmbeddedObjects(const QVariantList &list);
+    void setStringProperty(const QString &stringProperty);
 
 signals:
     void testSignalBool(bool testBool);
@@ -64,6 +68,7 @@ signals:
 
 private:
     QObject *embeddedObject;
+    Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(TestObject, QString, m_stringProperty, "foo")
 };
 
 QT_END_NAMESPACE

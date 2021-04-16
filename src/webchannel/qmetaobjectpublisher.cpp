@@ -183,6 +183,24 @@ const int PROPERTY_UPDATE_INTERVAL = 50;
 
 Q_DECLARE_TYPEINFO(OverloadResolutionCandidate, Q_MOVABLE_TYPE);
 
+void QWebChannelPropertyChangeNotifier::notify(
+        QPropertyObserver *self, QUntypedPropertyData *)
+{
+    auto This = static_cast<QWebChannelPropertyChangeNotifier*>(self);
+
+    // Use the indirection with Qt::AutoConnection to ensure invocation
+    // in the correct thread.
+    // Explicitly copy the parameters into the lambda so that this instance can be destroyed after posting a queued
+    // invocation. The current design doesn't allow this anyway, but I don't want bad surprises in a possible future
+    // commit.
+    QMetaObject::invokeMethod(
+                This->publisher,
+                [publisher=This->publisher, object=This->object, propertyIndex=This->propertyIndex]
+    {
+        publisher->propertyValueChanged(object, propertyIndex);
+    }, Qt::AutoConnection);
+}
+
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
     : QObject(webChannel)
     , webChannel(webChannel)
@@ -247,8 +265,8 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWeb
                 signalInfo.append(QString::fromLatin1(notifySignal));
             }
             signalInfo.append(prop.notifySignalIndex());
-        } else if (!prop.isConstant()) {
-            qWarning("Property '%s'' of object '%s' has no notify signal and is not constant, "
+        } else if (!prop.isConstant() && !prop.isBindable()) {
+            qWarning("Property '%s'' of object '%s' has no notify signal, is not bindable and is not constant, "
                      "value updates in HTML will be broken!",
                      prop.name(), object->metaObject()->className());
         }
@@ -308,8 +326,8 @@ void QMetaObjectPublisher::setClientIsIdle(bool isIdle)
     clientIsIdle = isIdle;
     if (!isIdle && timer.isActive()) {
         timer.stop();
-    } else if (isIdle && !timer.isActive()) {
-        timer.start(PROPERTY_UPDATE_INTERVAL, this);
+    } else {
+        startPropertyUpdateTimer();
     }
 }
 
@@ -330,8 +348,9 @@ QJsonObject QMetaObjectPublisher::initializeClient(QWebChannelAbstractTransport 
     return objectInfos;
 }
 
-void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo)
+void QMetaObjectPublisher::initializePropertyUpdates(QObject *const object, const QJsonObject &objectInfo)
 {
+    auto *metaObject = object->metaObject();
     auto *signalHandler = signalHandlerFor(object);
     for (const auto propertyInfoVar : objectInfo[KEY_PROPERTIES].toArray()) {
         const QJsonArray &propertyInfo = propertyInfoVar.toArray();
@@ -341,22 +360,32 @@ void QMetaObjectPublisher::initializePropertyUpdates(const QObject *const object
         }
         const int propertyIndex = propertyInfo.at(0).toInt();
         const QJsonArray &signalData = propertyInfo.at(2).toArray();
+        const QMetaProperty metaProp = metaObject->property(propertyIndex);
 
-        if (signalData.isEmpty()) {
-            // Property without NOTIFY signal
-            continue;
+        if (!signalData.isEmpty()) {
+            // Property with a NOTIFY signal
+            const int signalIndex = signalData.at(1).toInt();
+
+            QSet<int> &connectedProperties = signalToPropertyMap[object][signalIndex];
+
+            // Only connect for a property update once
+            if (connectedProperties.isEmpty()) {
+                signalHandler->connectTo(object, signalIndex);
+            }
+
+            connectedProperties.insert(propertyIndex);
+        } else if (metaProp.isBindable()) {
+            const auto [begin, end] = propertyObservers.equal_range(object);
+            const auto it = std::find_if(begin, end, [&](auto &n) {
+                return n.second.propertyIndex == propertyIndex;
+            });
+            // Only connect for a property update once
+            if (it == end) {
+                auto it = propertyObservers.emplace(
+                            object, QWebChannelPropertyChangeNotifier{this, object, propertyIndex});
+                metaProp.bindable(object).observe(&it->second);
+            }
         }
-
-        const int signalIndex = signalData.at(1).toInt();
-
-        QSet<int> &connectedProperties = signalToPropertyMap[object][signalIndex];
-
-        // Only connect for a property update once
-        if (connectedProperties.isEmpty()) {
-            signalHandler->connectTo(object, signalIndex);
-        }
-
-        connectedProperties.insert(propertyIndex);
     }
 
     // also always connect to destroyed signal
@@ -383,16 +412,21 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
         QJsonObject properties;
         // maps signal index to list of arguments of the last emit
         QJsonObject sigs;
-        const SignalToArgumentsMap::const_iterator sigEnd = it.value().constEnd();
-        for (SignalToArgumentsMap::const_iterator sigIt = it.value().constBegin(); sigIt != sigEnd; ++sigIt) {
-            // TODO: can we get rid of the int <-> string conversions here?
-            for (const int propertyIndex : objectsSignalToPropertyMap.value(sigIt.key())) {
-                const QMetaProperty &property = metaObject->property(propertyIndex);
-                Q_ASSERT(property.isValid());
-                properties[QString::number(propertyIndex)] = wrapResult(property.read(object), nullptr, objectId);
-            }
+
+        const auto indexes = it.value().propertyIndices(objectsSignalToPropertyMap);
+
+        // TODO: can we get rid of the int <-> string conversions here?
+        for (const int propertyIndex : indexes) {
+            const QMetaProperty &property = metaObject->property(propertyIndex);
+            Q_ASSERT(property.isValid());
+            properties[QString::number(propertyIndex)] = wrapResult(property.read(object), nullptr, objectId);
+        }
+
+        const auto sigMap = it.value().signalMap;
+        for (auto sigIt = sigMap.constBegin(); sigIt != sigMap.constEnd(); ++sigIt) {
             sigs[QString::number(sigIt.key())] = QJsonArray::fromVariantList(sigIt.value());
         }
+
         QJsonObject obj;
         obj[KEY_OBJECT] = objectId;
         obj[KEY_SIGNALS] = sigs;
@@ -572,10 +606,22 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
             objectDestroyed(object);
         }
     } else {
-        pendingPropertyUpdates[object][signalIndex] = arguments;
-        if (clientIsIdle && !blockUpdates && !timer.isActive()) {
-            timer.start(PROPERTY_UPDATE_INTERVAL, this);
-        }
+        auto &propertyUpdate = pendingPropertyUpdates[object];
+        propertyUpdate.signalMap[signalIndex] = arguments;
+        startPropertyUpdateTimer();
+    }
+}
+
+void QMetaObjectPublisher::propertyValueChanged(const QObject *object, const int propertyIndex)
+{
+    pendingPropertyUpdates[object].plainProperties.insert(propertyIndex);
+    startPropertyUpdateTimer();
+}
+
+void QMetaObjectPublisher::startPropertyUpdateTimer()
+{
+    if (clientIsIdle && !blockUpdates && !timer.isActive()) {
+        timer.start(PROPERTY_UPDATE_INTERVAL, this);
     }
 }
 
@@ -595,6 +641,7 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
         signalToPropertyMap.remove(object);
     }
     pendingPropertyUpdates.remove(object);
+    propertyObservers.erase(object);
 }
 
 QObject *QMetaObjectPublisher::unwrapObject(const QString &objectId) const

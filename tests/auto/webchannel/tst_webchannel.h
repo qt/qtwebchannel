@@ -90,7 +90,7 @@ class TestObject : public QObject
     Q_PROPERTY(QObject * objectProperty READ objectProperty WRITE setObjectProperty NOTIFY objectPropertyChanged)
     Q_PROPERTY(TestObject * returnedObject READ returnedObject WRITE setReturnedObject NOTIFY returnedObjectChanged)
     Q_PROPERTY(QString prop READ prop WRITE setProp NOTIFY propChanged)
-    Q_PROPERTY(QString stringProperty READ readStringProperty WRITE setStringProperty BINDABLE bindableStringProperty NOTIFY stringPropertyChanged)
+    Q_PROPERTY(QString stringProperty READ readStringProperty WRITE setStringProperty BINDABLE bindableStringProperty)
 
 public:
     explicit TestObject(QObject *parent = 0)
@@ -131,7 +131,6 @@ public:
     }
 
     QString readStringProperty() const { return mStringProperty; }
-    void setStringProperty(const QString &v) { mStringProperty = v; }
 
     Q_INVOKABLE void method1() {}
 
@@ -152,7 +151,6 @@ signals:
     void replay();
     void overloadSignal(int);
     void overloadSignal(float);
-    void stringPropertyChanged();
 
 public slots:
     void slot1() {}
@@ -180,6 +178,7 @@ public slots:
     QString overload(const QString &str, int i) { return str.toUpper() + QString::number(i + 1); }
     QString overload(const QJsonArray &v) { return QString::number(v[1].toInt()) + v[0].toString(); }
 
+    void setStringProperty(const QString &v) { mStringProperty = v; }
     QBindable<QString> bindableStringProperty() { return &mStringProperty; }
     QString getStringProperty() const { return mStringProperty; }
     void bindStringPropertyToStringProperty2() { bindableStringProperty().setBinding(Qt::makePropertyBinding(mStringProperty2)); }
@@ -195,7 +194,7 @@ public:
     QObject *mObjectProperty;
     TestObject *mReturnedObject;
     QString mProp;
-    Q_OBJECT_BINDABLE_PROPERTY(TestObject, QString, mStringProperty, &TestObject::stringPropertyChanged);
+    Q_OBJECT_BINDABLE_PROPERTY(TestObject, QString, mStringProperty);
     QProperty<QString> mStringProperty2;
 };
 

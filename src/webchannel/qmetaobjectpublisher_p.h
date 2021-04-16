@@ -86,8 +86,24 @@ enum MessageType {
     TYPES_LAST_VALUE = 10
 };
 
+class QMetaObjectPublisher;
 class QWebChannel;
 class QWebChannelAbstractTransport;
+
+struct QWebChannelPropertyChangeNotifier : QPropertyObserver
+{
+    QWebChannelPropertyChangeNotifier(QMetaObjectPublisher *publisher, const QObject *object, int propertyIndex)
+        : QPropertyObserver(&QWebChannelPropertyChangeNotifier::notify),
+          publisher(publisher), object(object), propertyIndex(propertyIndex)
+    {
+    }
+
+    QMetaObjectPublisher *publisher = nullptr;
+    const QObject *object = nullptr;
+    int propertyIndex = 0;
+    static void notify(QPropertyObserver *, QUntypedPropertyData *);
+};
+
 class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
     Q_OBJECT
@@ -136,7 +152,7 @@ public:
      * When receiving a notify signal, it will store the information in pendingPropertyUpdates which
      * gets send via a Qt.propertyUpdate message to the server when the grouping timer timeouts.
      */
-    void initializePropertyUpdates(const QObject *const object, const QJsonObject &objectInfo);
+    void initializePropertyUpdates(QObject *const object, const QJsonObject &objectInfo);
 
     /**
      * Send the clients the new property values since the last time this function was invoked.
@@ -184,6 +200,17 @@ public:
      * Callback of the signalHandler which forwards the signal invocation to the webchannel clients.
      */
     void signalEmitted(const QObject *object, const int signalIndex, const QVariantList &arguments);
+
+    /**
+     * Callback for bindable property value changes which forwards the change to the webchannel clients.
+     */
+    void propertyValueChanged(const QObject *object, const int propertyIndex);
+
+    /**
+     * Called after a property has been updated. Starts the update timer if
+     * the client is idle and updates are not blocked.
+     */
+    void startPropertyUpdateTimer();
 
     /**
      * Callback for registered or wrapped objects which erases all data related to @p object.
@@ -319,10 +346,32 @@ private:
     typedef QHash<int, QSet<int> > SignalToPropertyNameMap;
     QHash<const QObject *, SignalToPropertyNameMap> signalToPropertyMap;
 
+    // Keeps property observers alive for as long as we track an object
+    std::unordered_multimap<const QObject*, QWebChannelPropertyChangeNotifier> propertyObservers;
+
     // Objects that changed their properties and are waiting for idle client.
-    // map of object name to map of signal index to arguments
     typedef QHash<int, QVariantList> SignalToArgumentsMap;
-    typedef QHash<const QObject *, SignalToArgumentsMap> PendingPropertyUpdates;
+
+    // A set of plain property index (for bindable properties) and a map of
+    // signal index to arguments (for property updates from a notify signal).
+    // NOTIFY signals and their arguments are first collected and then mapped to
+    // the corresponding property in sendPendingPropertyUpdates()
+    struct PropertyUpdate
+    {
+    public:
+        SignalToArgumentsMap signalMap;
+        QSet<int> plainProperties;
+
+        /**
+         * Given a SignalToPropertyNameMap, returns the set of all property
+         * indices of properties that were changed in this PropertyUpdate.
+         */
+        QSet<int> propertyIndices(const SignalToPropertyNameMap &map) const;
+    };
+
+    // map of object to either a property index for plain bindable properties
+    // or a to map of signal index to arguments
+    typedef QHash<const QObject *, PropertyUpdate> PendingPropertyUpdates;
     PendingPropertyUpdates pendingPropertyUpdates;
 
     // Aggregate property updates since we get multiple Qt.idle message when we have multiple
@@ -330,6 +379,14 @@ private:
     // prevent message flooding.
     QBasicTimer timer;
 };
+
+inline QSet<int> QMetaObjectPublisher::PropertyUpdate::propertyIndices(const SignalToPropertyNameMap &map) const {
+    auto indexes = plainProperties;
+    for (auto it = signalMap.cbegin(); it != signalMap.cend(); ++it) {
+        indexes += map.value(it.key());
+    }
+    return indexes;
+}
 
 QT_END_NAMESPACE
 

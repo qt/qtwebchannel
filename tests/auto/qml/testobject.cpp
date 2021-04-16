@@ -49,6 +49,11 @@ QVariantMap TestObject::objectMap() const
     return map;
 }
 
+QString TestObject::stringProperty() const
+{
+    return m_stringProperty;
+}
+
 void TestObject::triggerSignals()
 {
     emit testSignalBool(true);
@@ -88,6 +93,11 @@ bool TestObject::testEmbeddedObjects(const QVariantList &list)
             list[0].metaType().id() == QMetaType::QObjectStar &&
             list[1].metaType().id() == QMetaType::QVariantMap &&
             list[1].toMap()["obj"].metaType().id() == QMetaType::QObjectStar;
+}
+
+void TestObject::setStringProperty(const QString &stringProperty)
+{
+    m_stringProperty = stringProperty;
 }
 
 QT_END_NAMESPACE

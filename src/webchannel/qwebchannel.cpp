@@ -175,6 +175,9 @@ QHash<QString, QObject *> QWebChannel::registeredObjects() const
     The properties, signals and public methods of the \a object are published to the remote clients.
     There, an object with the identifier \a id is then constructed.
 
+    \note A property that is \c BINDABLE but does not have a \c NOTIFY signal will have working property
+          updates on the client side, but no mechanism to register a callback for the change notifications.
+
     \note A current limitation is that objects must be registered before any client is initialized.
 
     \sa QWebChannel::registerObjects(), QWebChannel::deregisterObject(), QWebChannel::registeredObjects()
