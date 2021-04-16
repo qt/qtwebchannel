@@ -131,7 +131,7 @@ public:
     }
 
     QString readStringProperty() const { return mStringProperty; }
-    void setStringProperty(QString v) { mStringProperty = v; emit stringPropertyChanged(); }
+    void setStringProperty(const QString &v) { mStringProperty = v; }
 
     Q_INVOKABLE void method1() {}
 
@@ -179,10 +179,11 @@ public slots:
     QString overload(const QString &str) { return str.toUpper(); }
     QString overload(const QString &str, int i) { return str.toUpper() + QString::number(i + 1); }
     QString overload(const QJsonArray &v) { return QString::number(v[1].toInt()) + v[0].toString(); }
+
     QBindable<QString> bindableStringProperty() { return &mStringProperty; }
     QString getStringProperty() const { return mStringProperty; }
     void bindStringPropertyToStringProperty2() { bindableStringProperty().setBinding(Qt::makePropertyBinding(mStringProperty2)); }
-    void setStringProperty2(QString& string) { mStringProperty2 = string; }
+    void setStringProperty2(const QString &string) { mStringProperty2 = string; }
 
 protected slots:
     void slot3() {}
@@ -194,7 +195,7 @@ public:
     QObject *mObjectProperty;
     TestObject *mReturnedObject;
     QString mProp;
-    Q_OBJECT_BINDABLE_PROPERTY(TestObject, QString, mStringProperty);
+    Q_OBJECT_BINDABLE_PROPERTY(TestObject, QString, mStringProperty, &TestObject::stringPropertyChanged);
     QProperty<QString> mStringProperty2;
 };
 

@@ -409,7 +409,7 @@ void TestWebChannel::testInfoForObject()
         addMethod(QStringLiteral("bindableStringProperty"), "bindableStringProperty()");
         addMethod(QStringLiteral("getStringProperty"), "getStringProperty()");
         addMethod(QStringLiteral("bindStringPropertyToStringProperty2"), "bindStringPropertyToStringProperty2()");
-        addMethod(QStringLiteral("setStringProperty2"), "setStringProperty2(QString&)");
+        addMethod(QStringLiteral("setStringProperty2"), "setStringProperty2(QString)");
         addMethod(QStringLiteral("method1"), "method1()");
         QCOMPARE(info["methods"].toArray(), expected);
     }
@@ -1007,20 +1007,26 @@ void TestWebChannel::testAsyncObject()
 
 void TestWebChannel::testQProperty()
 {
+    static const int IndexOfStringProperty =
+            TestObject::staticMetaObject.indexOfProperty("stringProperty");
+
+    DummyTransport transport;
     QWebChannel channel;
     TestObject testObj;
     testObj.setObjectName("testObject");
 
     QProperty<QString> obj1("Hello");
     testObj.bindableStringProperty().setBinding([&](){ return obj1.value(); });
+
     QCOMPARE(obj1.value(), testObj.readStringProperty());
 
     channel.registerObject(testObj.objectName(), &testObj);
-    channel.connectTo(m_dummyTransport);
-    channel.d_func()->publisher->initializeClient(m_dummyTransport);
+    channel.connectTo(&transport);
+    channel.d_func()->publisher->initializeClient(&transport);
 
     QVariant result;
     QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+    publisher->setClientIsIdle(true);
 
     result = publisher->invokeMethod(&testObj, "getStringProperty", {});
     QCOMPARE(result.toString(), obj1.value());
@@ -1028,6 +1034,12 @@ void TestWebChannel::testQProperty()
     obj1 = "world";
     result = publisher->invokeMethod(&testObj, "getStringProperty", {});
     QCOMPARE(result.toString(), obj1.value());
+
+    publisher->sendPendingPropertyUpdates();
+    QVERIFY(!transport.messagesSent().isEmpty());
+    const QJsonObject updateMessage = transport.messagesSent().last()["data"][0].toObject();
+    QCOMPARE(updateMessage["object"], testObj.objectName());
+    QCOMPARE(updateMessage["properties"][QString::number(IndexOfStringProperty)], obj1.value());
 
     publisher->invokeMethod(&testObj, "setStringProperty2", {"Hey"});
     publisher->invokeMethod(&testObj, "bindStringPropertyToStringProperty2", {});
