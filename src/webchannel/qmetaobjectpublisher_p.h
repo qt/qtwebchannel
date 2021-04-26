@@ -107,6 +107,8 @@ struct QWebChannelPropertyChangeNotifier : QPropertyObserver
 class Q_WEBCHANNEL_EXPORT QMetaObjectPublisher : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(int propertyUpdateIntervalTime READ propertyUpdateInterval WRITE
+                       setPropertyUpdateInterval)
 public:
     explicit QMetaObjectPublisher(QWebChannel *webChannel);
     virtual ~QMetaObjectPublisher();
@@ -210,7 +212,7 @@ public:
      * Called after a property has been updated. Starts the update timer if
      * the client is idle and updates are not blocked.
      */
-    void startPropertyUpdateTimer();
+    void startPropertyUpdateTimer(bool forceRestart = false);
 
     /**
      * Callback for registered or wrapped objects which erases all data related to @p object.
@@ -282,6 +284,19 @@ public:
     void deleteWrappedObject(QObject *object) const;
 
     /**
+     * The property update interval in milliseconds.
+     *
+     * This interval can be changed to a different interval in milliseconds by
+     * setting it to a positive value. Property updates are batched and sent out
+     * after the interval expires. If set to zero, the updates occurring within a
+     * single event loop run are batched and sent out on the next run.
+     * If negative, updates will be sent immediately.
+     * Default value is 50 milliseconds.
+     */
+    int propertyUpdateInterval();
+    void setPropertyUpdateInterval(int ms);
+
+    /**
      * When updates are blocked, no property updates are transmitted to remote clients.
      */
     void setBlockUpdates(bool block);
@@ -318,6 +333,12 @@ private:
     // object info map set.
     bool propertyUpdatesInitialized;
 
+    // The update interval in ms when more than zero.
+    // Update in next event loop when zero.
+    // Update immediately when less than zero.
+    Q_OBJECT_BINDABLE_PROPERTY(QMetaObjectPublisher, int, propertyUpdateIntervalTime);
+
+    QPropertyChangeHandler<std::function<void()>> propertyUpdateIntervalHandler;
     // Map of registered objects indexed by their id.
     QHash<QString, QObject *> registeredObjects;
 

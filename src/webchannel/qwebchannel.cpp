@@ -225,6 +225,36 @@ void QWebChannel::setBlockUpdates(bool block)
 }
 
 /*!
+    \property QWebChannel::propertyUpdateInterval
+
+    \brief The property update interval.
+
+    This interval can be changed to a different interval in milliseconds by
+    setting it to a positive value. Property updates are batched and sent out
+    after the interval expires. If set to zero, the updates occurring within a
+    single event loop run are batched and sent out on the next run.
+    If negative, updates will be sent immediately.
+    Default value is 50 milliseconds.
+*/
+int QWebChannel::propertyUpdateInterval() const
+{
+    Q_D(const QWebChannel);
+    return d->publisher->propertyUpdateInterval();
+}
+
+void QWebChannel::setPropertyUpdateInterval(int ms)
+{
+    Q_D(QWebChannel);
+    d->publisher->setPropertyUpdateInterval(ms);
+}
+
+QBindable<int> QWebChannel::bindablePropertyUpdateInterval()
+{
+    Q_D(QWebChannel);
+    return &d->publisher->propertyUpdateIntervalTime;
+}
+
+/*!
     Connects the QWebChannel to the given \a transport object.
 
     The transport object then handles the communication between the C++ application and a remote

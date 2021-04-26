@@ -177,8 +177,6 @@ QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
     return response;
 }
 
-/// TODO: what is the proper value here?
-const int PROPERTY_UPDATE_INTERVAL = 50;
 }
 
 Q_DECLARE_TYPEINFO(OverloadResolutionCandidate, Q_MOVABLE_TYPE);
@@ -202,11 +200,14 @@ void QWebChannelPropertyChangeNotifier::notify(
 }
 
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
-    : QObject(webChannel)
-    , webChannel(webChannel)
-    , clientIsIdle(false)
-    , blockUpdates(false)
-    , propertyUpdatesInitialized(false)
+    : QObject(webChannel),
+      webChannel(webChannel),
+      clientIsIdle(false),
+      blockUpdates(false),
+      propertyUpdatesInitialized(false),
+      propertyUpdateIntervalTime(50),
+      propertyUpdateIntervalHandler(propertyUpdateIntervalTime.onValueChanged(
+              std::function([&]() { this->startPropertyUpdateTimer(true); })))
 {
 }
 
@@ -618,10 +619,15 @@ void QMetaObjectPublisher::propertyValueChanged(const QObject *object, const int
     startPropertyUpdateTimer();
 }
 
-void QMetaObjectPublisher::startPropertyUpdateTimer()
+void QMetaObjectPublisher::startPropertyUpdateTimer(bool forceRestart)
 {
-    if (clientIsIdle && !blockUpdates && !timer.isActive()) {
-        timer.start(PROPERTY_UPDATE_INTERVAL, this);
+    if (!clientIsIdle || blockUpdates)
+        return;
+    if (propertyUpdateIntervalTime >= 0) {
+        if (forceRestart || !timer.isActive())
+            timer.start(propertyUpdateIntervalTime, this);
+    } else {
+        sendPendingPropertyUpdates();
     }
 }
 
@@ -1014,6 +1020,16 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
     }
 }
 
+int QMetaObjectPublisher::propertyUpdateInterval()
+{
+    return propertyUpdateIntervalTime;
+}
+
+void QMetaObjectPublisher::setPropertyUpdateInterval(int ms)
+{
+    propertyUpdateIntervalTime = ms;
+}
+
 void QMetaObjectPublisher::setBlockUpdates(bool block)
 {
     if (blockUpdates == block) {
@@ -1022,6 +1038,7 @@ void QMetaObjectPublisher::setBlockUpdates(bool block)
     blockUpdates = block;
 
     if (!blockUpdates) {
+        startPropertyUpdateTimer();
         sendPendingPropertyUpdates();
     } else if (timer.isActive()) {
         timer.stop();
@@ -1033,6 +1050,8 @@ void QMetaObjectPublisher::setBlockUpdates(bool block)
 void QMetaObjectPublisher::timerEvent(QTimerEvent *event)
 {
     if (event->timerId() == timer.timerId()) {
+        if (propertyUpdateIntervalTime <= 0)
+            timer.stop();
         sendPendingPropertyUpdates();
     } else {
         QObject::timerEvent(event);

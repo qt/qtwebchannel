@@ -357,6 +357,8 @@ private slots:
     void testInfiniteRecursion();
     void testAsyncObject();
     void testQProperty();
+    void testPropertyUpdateInterval_data();
+    void testPropertyUpdateInterval();
     void testDeletionDuringMethodInvocation_data();
     void testDeletionDuringMethodInvocation();
 

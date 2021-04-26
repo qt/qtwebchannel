@@ -1069,6 +1069,105 @@ void TestWebChannel::testQProperty()
     QCOMPARE(publisher->propertyObservers.size(), 0);
 }
 
+void TestWebChannel::testPropertyUpdateInterval_data()
+{
+    QTest::addColumn<int>("firstUpdateInterval");
+    QTest::addColumn<int>("firstUpdateWithin");
+    QTest::addColumn<int>("secondUpdateInterval");
+    QTest::addColumn<int>("secondUpdateWithin");
+
+    QTest::newRow("1500ms") << 1500 << 2000 << 1500 << 2000;
+    QTest::newRow("Next event") << 0 << 0 << 0 << 0;
+    QTest::newRow("Immediately") << -1 << 0 << -1 << 0;
+    QTest::newRow("1500ms then next event") << 1500 << 2000 << 0 << 0;
+    QTest::newRow("Next event then 1500ms") << 0 << 0 << 1500 << 2000;
+    QTest::newRow("Immediately the next event") << -1 << 0 << 0 << 0;
+    QTest::newRow("Next event then immediately") << 0 << 0 << -1 << 0;
+    QTest::newRow("Immediately then 1500ms") << -1 << 0 << 1500 << 2000;
+    QTest::newRow("1500ms then immediately") << 1500 << 2000 << -1 << 0;
+}
+
+void TestWebChannel::testPropertyUpdateInterval()
+{
+    DummyTransport transport;
+    QWebChannel channel;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+    publisher->setClientIsIdle(true);
+
+    QFETCH(int, firstUpdateInterval);
+    QFETCH(int, firstUpdateWithin);
+
+    QProperty<int> propertyUpdateInterval(firstUpdateInterval);
+    channel.bindablePropertyUpdateInterval().setBinding(
+            Qt::makePropertyBinding(propertyUpdateInterval));
+    QCOMPARE(channel.propertyUpdateInterval(), firstUpdateInterval);
+
+    TestObject testObj;
+    testObj.setObjectName("testObject");
+    channel.registerObject(testObj.objectName(), &testObj);
+    channel.connectTo(&transport);
+    QProperty<QString> obj1("Hello");
+    testObj.bindableStringProperty().setBinding([&]() { return obj1.value(); });
+    publisher->initializeClient(&transport);
+    QVERIFY(transport.messagesSent().isEmpty());
+
+    if (firstUpdateWithin > 0) {
+        QVERIFY(publisher->timer.isActive());
+    }
+
+    // First update
+    obj1 = "world";
+    if (firstUpdateInterval > 0) {
+        QCoreApplication::processEvents();
+        QVERIFY(transport.messagesSent().isEmpty());
+        QTRY_COMPARE_WITH_TIMEOUT(transport.messagesSent().size(), 1u, firstUpdateWithin);
+    } else if (firstUpdateInterval == 0) {
+        QCOMPARE(transport.messagesSent().size(), 0u);
+        QCoreApplication::processEvents();
+        QCOMPARE(transport.messagesSent().size(), 1u);
+    } else {
+        QCOMPARE(transport.messagesSent().size(), 1u);
+    }
+
+    QFETCH(int, secondUpdateInterval);
+    QFETCH(int, secondUpdateWithin);
+    propertyUpdateInterval = secondUpdateInterval;
+    publisher->setClientIsIdle(true);
+    obj1 = "and";
+
+    if (secondUpdateInterval > 0) {
+        QCoreApplication::processEvents();
+        QCOMPARE(transport.messagesSent().size(), 1u);
+        QCOMPARE(channel.propertyUpdateInterval(), secondUpdateInterval);
+        QVERIFY(publisher->timer.isActive());
+        QTRY_COMPARE_WITH_TIMEOUT(transport.messagesSent().size(), 2u, secondUpdateWithin);
+    } else if (secondUpdateInterval == 0) {
+        QCOMPARE(transport.messagesSent().size(), 1u);
+        QCoreApplication::processEvents();
+        QCOMPARE(transport.messagesSent().size(), 2u);
+    } else {
+        QCOMPARE(transport.messagesSent().size(), 2u);
+    }
+
+    publisher->setClientIsIdle(true);
+    channel.setBlockUpdates(true);
+    obj1 = "again";
+
+    QCOMPARE(transport.messagesSent().size(), 2u);
+    if (secondUpdateWithin > 0) {
+        // Confirm that it is blocked even when waiting
+        QThread::msleep(secondUpdateWithin);
+        QCoreApplication::processEvents();
+        QCOMPARE(transport.messagesSent().size(), 2u);
+    } else if (secondUpdateInterval == 0) {
+        // Confirm that it is blocked even when processing events
+        QCoreApplication::processEvents();
+        QCOMPARE(transport.messagesSent().size(), 2u);
+    }
+    channel.setBlockUpdates(false);
+    QCOMPARE(transport.messagesSent().size(), 3u);
+}
+
 class FunctionWrapper : public QObject
 {
     Q_OBJECT

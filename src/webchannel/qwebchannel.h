@@ -56,6 +56,8 @@ class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
     Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged)
+    Q_PROPERTY(int propertyUpdateInterval READ propertyUpdateInterval WRITE
+                       setPropertyUpdateInterval BINDABLE bindablePropertyUpdateInterval)
 public:
     explicit QWebChannel(QObject *parent = nullptr);
     ~QWebChannel();
@@ -66,8 +68,11 @@ public:
     Q_INVOKABLE void deregisterObject(QObject *object);
 
     bool blockUpdates() const;
-
     void setBlockUpdates(bool block);
+
+    int propertyUpdateInterval() const;
+    void setPropertyUpdateInterval(int ms);
+    QBindable<int> bindablePropertyUpdateInterval();
 
 Q_SIGNALS:
     void blockUpdatesChanged(bool block);
