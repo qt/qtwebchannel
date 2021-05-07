@@ -59,6 +59,7 @@
 #include <QBasicTimer>
 #include <QPointer>
 #include <QJsonObject>
+#include <QQueue>
 
 #include <unordered_map>
 
@@ -130,16 +131,35 @@ public:
     void broadcastMessage(const QJsonObject &message) const;
 
     /**
+     * Enqueue the given @p message to all known transports.
+     */
+    void enqueueBroadcastMessage(const QJsonObject &message);
+
+    /**
+     * Enqueue the given @p message to @p transport.
+     */
+    void enqueueMessage(const QJsonObject &message, QWebChannelAbstractTransport *transport);
+
+    /**
+     * If client for given @p transport is idle, send queued messaged to @p transport and then mark
+     * the client as not idle.
+     */
+    void sendEnqueuedPropertyUpdates(QWebChannelAbstractTransport *transport);
+
+    /**
      * Serialize the QMetaObject of @p object and return it in JSON form.
      */
     QJsonObject classInfoForObject(const QObject *object, QWebChannelAbstractTransport *transport);
 
     /**
-     * Set the client to idle or busy, based on the value of @p isIdle.
-     *
-     * When the value changed, start/stop the property update timer accordingly.
+     * Set the client to idle or busy for a single @p transport, based on the value of @p isIdle.
      */
-    void setClientIsIdle(bool isIdle);
+    void setClientIsIdle(bool isIdle, QWebChannelAbstractTransport *transport);
+
+    /**
+     * Check that client is idle for @p transport.
+     */
+    bool isClientIdle(QWebChannelAbstractTransport *transport);
 
     /**
      * Initialize clients by sending them the class information of the registered objects.
@@ -322,8 +342,15 @@ private:
     std::unordered_map<const QThread*, SignalHandler<QMetaObjectPublisher>> signalHandlers;
     SignalHandler<QMetaObjectPublisher> *signalHandlerFor(const QObject *object);
 
-    // true when the client is idle, false otherwise
-    bool clientIsIdle;
+    struct TransportState
+    {
+        TransportState() : clientIsIdle(false) { }
+        // true when the client is idle, false otherwise
+        bool clientIsIdle;
+        // messages to send
+        QQueue<QJsonObject> queuedMessages;
+    };
+    QHash<QWebChannelAbstractTransport *, TransportState> transportState;
 
     // true when no property updates should be sent, false otherwise
     bool blockUpdates;

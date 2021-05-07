@@ -46,7 +46,11 @@ TestWebChannel::~TestWebChannel()
 
 bool TestWebChannel::clientIsIdle() const
 {
-    return QWebChannel::d_func()->publisher->clientIsIdle;
+    for (auto *transport : QWebChannel::d_func()->transports) {
+        if (QWebChannel::d_func()->publisher->isClientIdle(transport))
+            return true;
+    }
+    return false;
 }
 
 QT_END_NAMESPACE

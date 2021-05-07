@@ -202,7 +202,6 @@ void QWebChannelPropertyChangeNotifier::notify(
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
     : QObject(webChannel),
       webChannel(webChannel),
-      clientIsIdle(false),
       blockUpdates(false),
       propertyUpdatesInitialized(false),
       propertyUpdateIntervalTime(50),
@@ -319,17 +318,17 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWeb
     return data;
 }
 
-void QMetaObjectPublisher::setClientIsIdle(bool isIdle)
+void QMetaObjectPublisher::setClientIsIdle(bool isIdle, QWebChannelAbstractTransport *transport)
 {
-    if (clientIsIdle == isIdle) {
-        return;
-    }
-    clientIsIdle = isIdle;
-    if (!isIdle && timer.isActive()) {
-        timer.stop();
-    } else {
-        startPropertyUpdateTimer();
-    }
+    transportState[transport].clientIsIdle = isIdle;
+    if (isIdle)
+        sendEnqueuedPropertyUpdates(transport);
+}
+
+bool QMetaObjectPublisher::isClientIdle(QWebChannelAbstractTransport *transport)
+{
+    auto found = transportState.find(transport);
+    return found != transportState.end() && found.value().clientIsIdle;
 }
 
 QJsonObject QMetaObjectPublisher::initializeClient(QWebChannelAbstractTransport *transport)
@@ -395,7 +394,7 @@ void QMetaObjectPublisher::initializePropertyUpdates(QObject *const object, cons
 
 void QMetaObjectPublisher::sendPendingPropertyUpdates()
 {
-    if (blockUpdates || !clientIsIdle || pendingPropertyUpdates.isEmpty()) {
+    if (blockUpdates) {
         return;
     }
 
@@ -450,18 +449,19 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
 
     // data does not contain specific updates
     if (!data.isEmpty()) {
-        setClientIsIdle(false);
-
         message[KEY_DATA] = data;
-        broadcastMessage(message);
+        enqueueBroadcastMessage(message);
     }
 
     // send every property update which is not supposed to be broadcasted
     const QHash<QWebChannelAbstractTransport*, QJsonArray>::const_iterator suend = specificUpdates.constEnd();
     for (QHash<QWebChannelAbstractTransport*, QJsonArray>::const_iterator it = specificUpdates.constBegin(); it != suend; ++it) {
         message[KEY_DATA] = it.value();
-        it.key()->sendMessage(message);
+        enqueueMessage(message, it.key());
     }
+
+    for (auto state = transportState.begin(); state != transportState.end(); ++state)
+        sendEnqueuedPropertyUpdates(state.key());
 }
 
 QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMethod &method,
@@ -621,7 +621,7 @@ void QMetaObjectPublisher::propertyValueChanged(const QObject *object, const int
 
 void QMetaObjectPublisher::startPropertyUpdateTimer(bool forceRestart)
 {
-    if (!clientIsIdle || blockUpdates)
+    if (blockUpdates)
         return;
     if (propertyUpdateIntervalTime >= 0) {
         if (forceRestart || !timer.isActive())
@@ -949,6 +949,40 @@ void QMetaObjectPublisher::broadcastMessage(const QJsonObject &message) const
     }
 }
 
+void QMetaObjectPublisher::enqueueBroadcastMessage(const QJsonObject &message)
+{
+    if (webChannel->d_func()->transports.isEmpty()) {
+        qWarning("QWebChannel is not connected to any transports, cannot send message: %s",
+                 QJsonDocument(message).toJson().constData());
+        return;
+    }
+
+    for (auto *transport : webChannel->d_func()->transports) {
+        auto &state = transportState[transport];
+        state.queuedMessages.append(message);
+    }
+}
+
+void QMetaObjectPublisher::enqueueMessage(const QJsonObject &message,
+                                          QWebChannelAbstractTransport *transport)
+{
+    auto &state = transportState[transport];
+    state.queuedMessages.append(message);
+}
+
+void QMetaObjectPublisher::sendEnqueuedPropertyUpdates(QWebChannelAbstractTransport *transport)
+{
+    auto found = transportState.find(transport);
+    if (found != transportState.end() && found.value().clientIsIdle
+        && !found.value().queuedMessages.isEmpty()) {
+        for (auto message : found.value().queuedMessages) {
+            transport->sendMessage(message);
+        }
+        found.value().queuedMessages.clear();
+        found.value().clientIsIdle = false;
+    }
+}
+
 void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannelAbstractTransport *transport)
 {
     if (!webChannel->d_func()->transports.contains(transport)) {
@@ -963,7 +997,7 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
 
     const MessageType type = toType(message.value(KEY_TYPE));
     if (type == TypeIdle) {
-        setClientIsIdle(true);
+        setClientIsIdle(true, transport);
     } else if (type == TypeInit) {
         if (!message.contains(KEY_ID)) {
             qWarning("JSON message object is missing the id property: %s",
