@@ -215,13 +215,19 @@ void QWebChannel::deregisterObject(QObject *object)
 bool QWebChannel::blockUpdates() const
 {
     Q_D(const QWebChannel);
-    return d->publisher->blockUpdates;
+    return d->publisher->blockUpdates();
 }
 
 void QWebChannel::setBlockUpdates(bool block)
 {
     Q_D(QWebChannel);
     d->publisher->setBlockUpdates(block);
+}
+
+QBindable<bool> QWebChannel::bindableBlockUpdates()
+{
+    Q_D(QWebChannel);
+    return &d->publisher->blockUpdatesStatus;
 }
 
 /*!

@@ -1160,7 +1160,7 @@ void TestWebChannel::testPropertyUpdateInterval()
     QFETCH(int, secondUpdateWithin);
     propertyUpdateInterval = secondUpdateInterval;
     publisher->setClientIsIdle(true, &transport);
-    obj1 = "and";
+    obj1 = "!!!";
 
     if (secondUpdateInterval > 0) {
         QCoreApplication::processEvents();
@@ -1175,24 +1175,41 @@ void TestWebChannel::testPropertyUpdateInterval()
     } else {
         QCOMPARE(transport.messagesSent().size(), 2u);
     }
+}
 
+void TestWebChannel::testQPropertyBlockUpdates()
+{
+    DummyTransport transport;
+    QWebChannel channel;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+    publisher->setPropertyUpdateInterval(0);
+    QProperty<bool> blockUpdates(false);
+    channel.bindableBlockUpdates().setBinding(Qt::makePropertyBinding(blockUpdates));
+    QCOMPARE(channel.blockUpdates(), false);
+    bool blockedSignalled(false);
+    connect(&channel, &QWebChannel::blockUpdatesChanged, this,
+            [&](bool block) { blockedSignalled = block; });
+
+    TestObject testObj;
+    testObj.setObjectName("testObject");
+    channel.registerObject(testObj.objectName(), &testObj);
+    channel.connectTo(&transport);
+    QProperty<QString> obj1("Hello");
+    testObj.bindableStringProperty().setBinding(Qt::makePropertyBinding(obj1));
+    publisher->initializeClient(&transport);
+    QVERIFY(transport.messagesSent().isEmpty());
+
+    blockUpdates = true;
+    QCOMPARE(blockedSignalled, true);
     publisher->setClientIsIdle(true, &transport);
-    channel.setBlockUpdates(true);
-    obj1 = "again";
+    obj1 = "world";
 
-    QCOMPARE(transport.messagesSent().size(), 2u);
-    if (secondUpdateWithin > 0) {
-        // Confirm that it is blocked even when waiting
-        QThread::msleep(secondUpdateWithin);
-        QCoreApplication::processEvents();
-        QCOMPARE(transport.messagesSent().size(), 2u);
-    } else if (secondUpdateInterval == 0) {
-        // Confirm that it is blocked even when processing events
-        QCoreApplication::processEvents();
-        QCOMPARE(transport.messagesSent().size(), 2u);
-    }
-    channel.setBlockUpdates(false);
-    QCOMPARE(transport.messagesSent().size(), 3u);
+    QTest::qWait(0);
+    QCOMPARE(transport.messagesSent().size(), 0u);
+
+    blockUpdates = false;
+    QCOMPARE(blockedSignalled, false);
+    QCOMPARE(transport.messagesSent().size(), 1u);
 }
 
 void TestWebChannel::testPropertyMultipleTransports()

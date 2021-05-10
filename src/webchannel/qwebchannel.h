@@ -55,7 +55,8 @@ class Q_WEBCHANNEL_EXPORT QWebChannel : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY(QWebChannel)
-    Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged)
+    Q_PROPERTY(bool blockUpdates READ blockUpdates WRITE setBlockUpdates NOTIFY blockUpdatesChanged
+                       BINDABLE bindableBlockUpdates)
     Q_PROPERTY(int propertyUpdateInterval READ propertyUpdateInterval WRITE
                        setPropertyUpdateInterval BINDABLE bindablePropertyUpdateInterval)
 public:
@@ -69,6 +70,7 @@ public:
 
     bool blockUpdates() const;
     void setBlockUpdates(bool block);
+    QBindable<bool> bindableBlockUpdates();
 
     int propertyUpdateInterval() const;
     void setPropertyUpdateInterval(int ms);

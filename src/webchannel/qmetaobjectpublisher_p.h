@@ -320,6 +320,7 @@ public:
      * When updates are blocked, no property updates are transmitted to remote clients.
      */
     void setBlockUpdates(bool block);
+    bool blockUpdates() const;
 
 Q_SIGNALS:
     void blockUpdatesChanged(bool block);
@@ -334,6 +335,8 @@ protected:
     void timerEvent(QTimerEvent *) override;
 
 private:
+    void onBlockUpdatesChanged();
+
     friend class QQmlWebChannelPrivate;
     friend class QWebChannel;
     friend class TestWebChannel;
@@ -353,8 +356,9 @@ private:
     QHash<QWebChannelAbstractTransport *, TransportState> transportState;
 
     // true when no property updates should be sent, false otherwise
-    bool blockUpdates;
+    Q_OBJECT_BINDABLE_PROPERTY(QMetaObjectPublisher, bool, blockUpdatesStatus);
 
+    QPropertyChangeHandler<std::function<void()>> blockUpdatesHandler;
     // true when at least one client was initialized and thus
     // the property updates have been initialized and the
     // object info map set.

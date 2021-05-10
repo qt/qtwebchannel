@@ -202,7 +202,9 @@ void QWebChannelPropertyChangeNotifier::notify(
 QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
     : QObject(webChannel),
       webChannel(webChannel),
-      blockUpdates(false),
+      blockUpdatesStatus(false),
+      blockUpdatesHandler(blockUpdatesStatus.onValueChanged(
+              std::function<void()>([&]() { this->onBlockUpdatesChanged(); }))),
       propertyUpdatesInitialized(false),
       propertyUpdateIntervalTime(50),
       propertyUpdateIntervalHandler(propertyUpdateIntervalTime.onValueChanged(
@@ -394,7 +396,7 @@ void QMetaObjectPublisher::initializePropertyUpdates(QObject *const object, cons
 
 void QMetaObjectPublisher::sendPendingPropertyUpdates()
 {
-    if (blockUpdates) {
+    if (blockUpdatesStatus) {
         return;
     }
 
@@ -621,8 +623,9 @@ void QMetaObjectPublisher::propertyValueChanged(const QObject *object, const int
 
 void QMetaObjectPublisher::startPropertyUpdateTimer(bool forceRestart)
 {
-    if (blockUpdates)
+    if (blockUpdatesStatus)
         return;
+
     if (propertyUpdateIntervalTime >= 0) {
         if (forceRestart || !timer.isActive())
             timer.start(propertyUpdateIntervalTime, this);
@@ -1066,19 +1069,24 @@ void QMetaObjectPublisher::setPropertyUpdateInterval(int ms)
 
 void QMetaObjectPublisher::setBlockUpdates(bool block)
 {
-    if (blockUpdates == block) {
-        return;
-    }
-    blockUpdates = block;
+    blockUpdatesStatus = block;
+}
 
-    if (!blockUpdates) {
+void QMetaObjectPublisher::onBlockUpdatesChanged()
+{
+    if (!blockUpdatesStatus) {
         startPropertyUpdateTimer();
         sendPendingPropertyUpdates();
     } else if (timer.isActive()) {
         timer.stop();
     }
 
-    emit blockUpdatesChanged(block);
+    emit blockUpdatesChanged(blockUpdatesStatus);
+}
+
+bool QMetaObjectPublisher::blockUpdates() const
+{
+    return blockUpdatesStatus;
 }
 
 void QMetaObjectPublisher::timerEvent(QTimerEvent *event)
