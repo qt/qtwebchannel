@@ -1036,7 +1036,7 @@ void TestWebChannel::testQProperty()
 
         publisher->initializeClient(&transport);
         // One bindable property should result in one observer
-        QCOMPARE(publisher->propertyObservers.count(&testObj), 1);
+        QCOMPARE(publisher->propertyObservers.count(&testObj), 1u);
 
         QVariant result;
         publisher->setClientIsIdle(true);
@@ -1066,7 +1066,7 @@ void TestWebChannel::testQProperty()
 
     // Ensure that the observer has been removed after the object has been
     // destroyed
-    QCOMPARE(publisher->propertyObservers.size(), 0);
+    QCOMPARE(publisher->propertyObservers.size(), 0u);
 }
 
 void TestWebChannel::testPropertyUpdateInterval_data()
