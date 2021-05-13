@@ -207,7 +207,7 @@ QMetaObjectPublisher::QMetaObjectPublisher(QWebChannel *webChannel)
       propertyUpdatesInitialized(false),
       propertyUpdateIntervalTime(50),
       propertyUpdateIntervalHandler(propertyUpdateIntervalTime.onValueChanged(
-              std::function([&]() { this->startPropertyUpdateTimer(true); })))
+              std::function<void()>([&]() { this->startPropertyUpdateTimer(true); })))
 {
 }
 
