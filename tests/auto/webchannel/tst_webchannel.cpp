@@ -905,6 +905,37 @@ void TestWebChannel::testWrapValues()
         QCOMPARE(value.toArray(), QJsonArray({QJsonObject{{"foo", 1}, {"bar", 2}},
                                              QJsonObject{{"foo", 3}, {"bar", 4}}}));
     }
+    {
+        QVariant variant = QVariant::fromValue(nullptr);
+        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
+        QVERIFY(value.isNull());
+    }
+    {
+        QVariantHash hash;
+        hash["One"] = 1;
+        hash["Two"] = 2;
+        QVariant variant = QVariant::fromValue(hash);
+        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
+        QVERIFY(value.isObject());
+        QVERIFY(value["One"].isDouble());
+        QCOMPARE(value["One"].toInt(), 1);
+        QVERIFY(value["Two"].isDouble());
+        QCOMPARE(value["Two"].toInt(), 2);
+        QVERIFY(value["Three"].isUndefined());
+    }
+    {
+        QVariantMap map;
+        map["One"] = 1;
+        map["Two"] = 2;
+        QVariant variant = QVariant::fromValue(map);
+        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
+        QVERIFY(value.isObject());
+        QVERIFY(value["One"].isDouble());
+        QCOMPARE(value["One"].toInt(), 1);
+        QVERIFY(value["Two"].isDouble());
+        QCOMPARE(value["Two"].toInt(), 2);
+        QVERIFY(value["Three"].isUndefined());
+    }
 }
 
 void TestWebChannel::testWrapObjectWithMultipleTransports()
