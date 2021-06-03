@@ -6,9 +6,14 @@
 
 qt_internal_add_qml_module(webchannel
     URI "QtWebChannel"
-    VERSION "1.0" #special case
-    CLASSNAME QWebChannelPlugin
-    SKIP_TYPE_REGISTRATION
+    VERSION "${PROJECT_VERSION}"
+    PAST_MAJOR_VERSIONS 1
+    CLASS_NAME QWebChannelPlugin
+    PLUGIN_TARGET webchannel
+    NO_PLUGIN_OPTIONAL
+    NO_GENERATE_PLUGIN_SOURCE
+    NO_GENERATE_QMLTYPES
+    INSTALL_SOURCE_QMLTYPES "plugins.qmltypes"
     SOURCES
         plugin.cpp
     INCLUDE_DIRECTORIES
