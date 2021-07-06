@@ -18,7 +18,7 @@ qt_internal_add_qml_module(webchannel
         plugin.cpp
     INCLUDE_DIRECTORIES
         ../../webchannel
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::Core
         Qt::Quick
         Qt::WebChannelPrivate
