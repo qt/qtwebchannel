@@ -179,7 +179,7 @@ QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
 
 }
 
-Q_DECLARE_TYPEINFO(OverloadResolutionCandidate, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(OverloadResolutionCandidate, Q_RELOCATABLE_TYPE);
 
 void QWebChannelPropertyChangeNotifier::notify(
         QPropertyObserver *self, QUntypedPropertyData *)
