@@ -49,12 +49,12 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.2
-import QtQuick.Dialogs 1.2
-import QtQuick.Controls 2.0
-import QtQuick.Window 2.0
-import QtQuick.Layouts 1.1
-import Qt.WebSockets 1.0
+import QtQuick
+import QtQuick.Dialogs
+import QtQuick.Controls
+import QtQuick.Window
+import QtQuick.Layouts
+import QtWebSockets
 import "qwebchannel.js" as WebChannel
 
 ApplicationWindow {
@@ -77,7 +77,7 @@ ApplicationWindow {
             sendTextMessage(arg);
         }
 
-        onTextMessageReceived: {
+        onTextMessageReceived: function(message) {
             onmessage({data: message});
         }
 
@@ -135,7 +135,7 @@ ApplicationWindow {
 
         Connections {
             target: mainUi.message
-            onEditingFinished: {
+            function onEditingFinished() {
                 if (mainUi.message.text.length) {
                     //call the sendMessage method to send the message
                     root.channel.objects.chatserver.sendMessage(loginName,
@@ -163,7 +163,7 @@ ApplicationWindow {
             Connections {
                 target: loginUi.loginButton
 
-                onClicked: {
+                function onClicked() {
                     //call the login method
                     root.channel.objects.chatserver.login(loginName, function(arg) {
                         //check the return value for success
@@ -179,12 +179,19 @@ ApplicationWindow {
         }
     }
 
-    MessageDialog {
+    Dialog {
         id: errorDialog
+        property alias text: message.text
 
-        icon: StandardIcon.Critical
-        standardButtons: StandardButton.Close
+        anchors.centerIn: parent
+        // FIXME: icon!
+        //icon: StandardIcon.Critical
+        standardButtons: Dialog.Close
         title: "Chat client"
+
+        Text {
+            id: message
+        }
 
         onAccepted: {
             Qt.quit();

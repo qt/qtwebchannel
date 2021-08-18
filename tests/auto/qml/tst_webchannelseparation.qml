@@ -25,11 +25,11 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-import QtQuick 2.0
-import QtTest 1.0
+import QtQuick
+import QtTest
 
-import QtWebChannel 1.0
-import QtWebChannel.Tests 1.0
+import QtWebChannel
+import QtWebChannel.Tests
 import "qrc:///qtwebchannel/qwebchannel.js" as JSClient
 
 TestCase {
