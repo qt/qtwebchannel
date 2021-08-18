@@ -23,3 +23,10 @@ qt_internal_extend_target(tst_webchannel CONDITION TARGET Qt::Qml
     PUBLIC_LIBRARIES
         Qt::Qml
 )
+
+qt_internal_extend_target(tst_webchannel CONDITION TARGET Qt::Concurrent
+    DEFINES
+        WEBCHANNEL_TESTS_CAN_USE_CONCURRENT
+    PUBLIC_LIBRARIES
+        Qt::Concurrent
+)

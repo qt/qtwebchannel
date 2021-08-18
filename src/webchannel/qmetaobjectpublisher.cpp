@@ -44,6 +44,9 @@
 #include "qwebchannelabstracttransport.h"
 
 #include <QEvent>
+#if QT_CONFIG(future)
+#include <QFuture>
+#endif
 #include <QJsonDocument>
 #include <QDebug>
 #include <QJsonObject>
@@ -176,6 +179,80 @@ QJsonObject createResponse(const QJsonValue &id, const QJsonValue &data)
     response[KEY_DATA] = data;
     return response;
 }
+
+#if QT_CONFIG(future)
+QMetaType resultTypeOfQFuture(QByteArrayView typeName)
+{
+    if (!typeName.startsWith("QFuture<") || !typeName.endsWith('>'))
+        return {};
+
+    return QMetaType::fromName(typeName.sliced(8, typeName.length() - 9));
+}
+
+template<typename Func>
+void attachContinuationToFutureInVariant(const QVariant &result, QPointer<QObject> contextObject,
+                                         Func continuation)
+{
+    Q_ASSERT(result.canConvert<QFuture<void>>());
+
+    // QMetaObject::invokeMethod() indirection to work around an issue with passing
+    // a context object to QFuture::then(). See below.
+    const auto safeContinuation = [contextObject, continuation=std::move(continuation)]
+            (const QVariant &result)
+    {
+        if (!contextObject)
+            return;
+
+        QMetaObject::invokeMethod(contextObject.get(), [continuation, result] {
+            continuation(result);
+        });
+    };
+
+    auto f = result.value<QFuture<void>>();
+
+    // Be explicit about what we capture so that we don't accidentally run into
+    // threading issues.
+    f.then([resultType=resultTypeOfQFuture(result.typeName()), f, continuation=safeContinuation]
+    {
+        if (!resultType.isValid() || resultType == QMetaType::fromType<void>()) {
+            continuation(QVariant{});
+            return;
+        }
+
+        auto iface = QFutureInterfaceBase::get(f);
+        // If we pass a context object to f.then() and the future originates in a
+        // different thread, this assertions fails. Why?
+        // For the time being, work around that with QMetaObject::invokeMethod()
+        // in safeSendResponse().
+        Q_ASSERT(iface.resultCount() > 0);
+
+        QMutexLocker<QMutex> locker(&iface.mutex());
+        if (iface.resultStoreBase().resultAt(0).isVector()) {
+            locker.unlock();
+            // This won't work because we cannot generically get a QList<T> into
+            // a QVariant with T only known at runtime.
+            // TBH, I don't know how to trigger this.
+            qWarning() << "Result lists in a QFuture return value are not supported!";
+            continuation(QVariant{});
+            return;
+        }
+
+        // pointer<void>() wouldn't compile because of the isVector-codepath
+        // using QList<T> in that method. We're not taking that path anyway (see the
+        // above check), so we can use char instead to not break strict aliasing
+        // requirements.
+        const auto data = iface.resultStoreBase().resultAt(0).pointer<char>();
+        locker.unlock();
+
+        const QVariant result(resultType, data);
+        continuation(result);
+    }).onCanceled([continuation=safeContinuation] {
+        // Will catch both failure and cancellation.
+        // Maybe send something more meaningful?
+        continuation(QVariant{});
+    });
+}
+#endif
 
 }
 
@@ -1043,9 +1120,29 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
                                       method.toInt(-1),
                                       message.value(KEY_ARGS).toArray());
             }
-            if (!publisherExists || !transportExists)
-                return;
-            transport->sendMessage(createResponse(message.value(KEY_ID), wrapResult(result, transport)));
+
+            auto sendResponse = [publisherExists, transportExists, id=message.value(KEY_ID)]
+                    (const QVariant &result)
+            {
+                if (!publisherExists || !transportExists)
+                    return;
+
+                Q_ASSERT(QThread::currentThread() == publisherExists->thread());
+
+                const auto wrappedResult =
+                        publisherExists->wrapResult(result, transportExists.get());
+                transportExists->sendMessage(createResponse(id, wrappedResult));
+            };
+
+#if QT_CONFIG(future)
+            if (result.canConvert<QFuture<void>>()) {
+                attachContinuationToFutureInVariant(result, publisherExists.get(), sendResponse);
+            } else {
+                sendResponse(result);
+            }
+#else
+            sendResponse(result);
+#endif
         } else if (type == TypeConnectToSignal) {
             signalHandlerFor(object)->connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
         } else if (type == TypeDisconnectFromSignal) {

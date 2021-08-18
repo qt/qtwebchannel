@@ -36,6 +36,9 @@
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QJsonArray>
+#if QT_CONFIG(future)
+#include <QFuture>
+#endif
 
 #include <QtWebChannel/QWebChannelAbstractTransport>
 
@@ -133,6 +136,18 @@ public:
     QString readStringProperty() const { return mStringProperty; }
 
     Q_INVOKABLE void method1() {}
+
+#if QT_CONFIG(future)
+    Q_INVOKABLE QFuture<int> futureIntResult() const;
+    Q_INVOKABLE QFuture<int> futureDelayedIntResult() const;
+#ifdef WEBCHANNEL_TESTS_CAN_USE_CONCURRENT
+    Q_INVOKABLE QFuture<int> futureIntResultFromThread() const;
+#endif
+    Q_INVOKABLE QFuture<void> futureVoidResult() const;
+    Q_INVOKABLE QFuture<QString> futureStringResult() const;
+    Q_INVOKABLE QFuture<int> cancelledFuture() const;
+    Q_INVOKABLE QFuture<int> failedFuture() const;
+#endif
 
 protected:
     Q_INVOKABLE void method2() {}
@@ -363,6 +378,11 @@ private slots:
     void testQPropertyBlockUpdates();
     void testDeletionDuringMethodInvocation_data();
     void testDeletionDuringMethodInvocation();
+
+#if QT_CONFIG(future)
+    void testAsyncMethodReturningFuture_data();
+    void testAsyncMethodReturningFuture();
+#endif
 
     void benchClassInfo();
     void benchInitializeClients();

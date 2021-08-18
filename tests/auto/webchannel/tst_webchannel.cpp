@@ -38,6 +38,13 @@
 #include <QJSEngine>
 #endif
 
+#include <QPromise>
+#include <QTimer>
+
+#ifdef WEBCHANNEL_TESTS_CAN_USE_CONCURRENT
+#include <QtConcurrent>
+#endif
+
 QT_USE_NAMESPACE
 
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
@@ -197,6 +204,59 @@ QVariantList convert_to_js(const TestStructVector &list)
     return ret;
 }
 }
+
+#if QT_CONFIG(future)
+QFuture<int> TestObject::futureIntResult() const
+{
+    return QtFuture::makeReadyFuture(42);
+}
+
+QFuture<int> TestObject::futureDelayedIntResult() const
+{
+    QPromise<int> p;
+    const auto f = p.future();
+    p.start();
+    QTimer::singleShot(10, this, [p=std::move(p)]() mutable {
+        p.addResult(7);
+        p.finish();
+    });
+    return f;
+}
+
+#ifdef WEBCHANNEL_TESTS_CAN_USE_CONCURRENT
+QFuture<int> TestObject::futureIntResultFromThread() const
+{
+    return QtConcurrent::run([] {
+        return 1337;
+    });
+}
+#endif
+
+QFuture<void> TestObject::futureVoidResult() const
+{
+    return QtFuture::makeReadyFuture();
+}
+
+QFuture<QString> TestObject::futureStringResult() const
+{
+    return QtFuture::makeReadyFuture<QString>("foo");
+}
+
+QFuture<int> TestObject::cancelledFuture() const
+{
+    QPromise<int> p;
+    auto f = p.future();
+    p.start();
+    f.cancel();
+    Q_ASSERT(f.isCanceled());
+    return f;
+}
+
+QFuture<int> TestObject::failedFuture() const
+{
+    return QtFuture::makeExceptionalFuture<int>(QException{});
+}
+#endif
 
 TestWebChannel::TestWebChannel(QObject *parent)
     : QObject(parent)
@@ -412,6 +472,17 @@ void TestWebChannel::testInfoForObject()
         addMethod(QStringLiteral("bindStringPropertyToStringProperty2"), "bindStringPropertyToStringProperty2()");
         addMethod(QStringLiteral("setStringProperty2"), "setStringProperty2(QString)");
         addMethod(QStringLiteral("method1"), "method1()");
+#if QT_CONFIG(future)
+        addMethod(QStringLiteral("futureIntResult"), "futureIntResult()");
+        addMethod(QStringLiteral("futureDelayedIntResult"), "futureDelayedIntResult()");
+#ifdef WEBCHANNEL_TESTS_CAN_USE_CONCURRENT
+        addMethod(QStringLiteral("futureIntResultFromThread"), "futureIntResultFromThread()");
+#endif
+        addMethod(QStringLiteral("futureVoidResult"), "futureVoidResult()");
+        addMethod(QStringLiteral("futureStringResult"), "futureStringResult()");
+        addMethod(QStringLiteral("cancelledFuture"), "cancelledFuture()");
+        addMethod(QStringLiteral("failedFuture"), "failedFuture()");
+#endif
         QCOMPARE(info["methods"].toArray(), expected);
     }
 
@@ -1308,6 +1379,48 @@ void TestWebChannel::testDeletionDuringMethodInvocation()
     if (!deleteTransport)
         QCOMPARE(transport->messagesSent().size(), deleteChannel ? 0 : 1);
 }
+
+#if QT_CONFIG(future)
+void TestWebChannel::testAsyncMethodReturningFuture_data()
+{
+    QTest::addColumn<QString>("methodName");
+    QTest::addColumn<QJsonValue>("result");
+
+    QTest::addRow("int") << "futureIntResult" << QJsonValue{42};
+    QTest::addRow("int-delayed") << "futureDelayedIntResult" << QJsonValue{7};
+#ifdef WEBCHANNEL_TESTS_CAN_USE_CONCURRENT
+    QTest::addRow("int-thread") << "futureIntResultFromThread" << QJsonValue{1337};
+#endif
+    QTest::addRow("void") << "futureVoidResult" << QJsonValue{};
+    QTest::addRow("QString") << "futureStringResult" << QJsonValue{"foo"};
+
+    QTest::addRow("cancelled") << "cancelledFuture" << QJsonValue{};
+    QTest::addRow("failed")    << "failedFuture"    << QJsonValue{};
+}
+
+void TestWebChannel::testAsyncMethodReturningFuture()
+{
+    QFETCH(QString, methodName);
+    QFETCH(QJsonValue, result);
+
+    QWebChannel channel;
+    TestObject obj;
+    channel.registerObject("testObject", &obj);
+
+    DummyTransport transport;
+    channel.connectTo(&transport);
+
+    transport.emitMessageReceived({
+        {"type", TypeInvokeMethod},
+        {"object", "testObject"},
+        {"method", methodName},
+        {"id", 1}
+    });
+
+    QTRY_COMPARE(transport.messagesSent().size(), 1);
+    QCOMPARE(transport.messagesSent().first().value("data"), result);
+}
+#endif
 
 static QHash<QString, QObject*> createObjects(QObject *parent)
 {

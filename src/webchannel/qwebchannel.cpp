@@ -66,6 +66,9 @@ QT_BEGIN_NAMESPACE
     On the client side, a JavaScript object will be created for any published C++ QObject. It mirrors the
     C++ object's API and thus is intuitively useable.
 
+    QWebChannel transparently supports QFuture. When a client calls a method that returns a QFuture,
+    QWebChannel will send a response with the QFuture result only after the QFuture has finished.
+
     The C++ QWebChannel API makes it possible to talk to any HTML client, which could run on a local
     or even remote machine. The only limitation is that the HTML client supports the JavaScript
     features used by \c{qwebchannel.js}. As such, one can interact
