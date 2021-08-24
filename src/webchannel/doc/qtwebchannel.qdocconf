@@ -15,10 +15,6 @@ qhp.QtWebChannel.virtualFolder                      = qtwebchannel
 qhp.QtWebChannel.indexTitle                         = Qt WebChannel
 qhp.QtWebChannel.indexRoot                          =
 
-qhp.QtWebChannel.filterAttributes                   = qtwebchannel $QT_VERSION qtrefdoc
-qhp.QtWebChannel.customFilters.Qt.name              = QtWebChannel $QT_VERSION
-qhp.QtWebChannel.customFilters.Qt.filterAttributes  = qtwebchannel $QT_VERSION
-
 qhp.QtWebChannel.subprojects                        = classes qml examples javascript
 
 qhp.QtWebChannel.subprojects.classes.title          = C++ Classes
