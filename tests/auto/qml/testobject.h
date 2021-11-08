@@ -31,6 +31,7 @@
 #define TESTOBJECT_H
 
 #include <QObject>
+#include <QProperty>
 #include <QVariantMap>
 
 QT_BEGIN_NAMESPACE

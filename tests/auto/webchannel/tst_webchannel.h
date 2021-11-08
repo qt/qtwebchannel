@@ -31,6 +31,7 @@
 #define TST_WEBCHANNEL_H
 
 #include <QObject>
+#include <QProperty>
 #include <QVariant>
 #include <QList>
 #include <QJsonValue>
