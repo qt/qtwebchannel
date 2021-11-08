@@ -58,6 +58,7 @@
 #include <QMetaObject>
 #include <QBasicTimer>
 #include <QPointer>
+#include <QProperty>
 #include <QJsonObject>
 #include <QQueue>
 
