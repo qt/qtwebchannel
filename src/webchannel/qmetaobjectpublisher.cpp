@@ -978,11 +978,23 @@ void QMetaObjectPublisher::sendEnqueuedPropertyUpdates(QWebChannelAbstractTransp
     auto found = transportState.find(transport);
     if (found != transportState.end() && found.value().clientIsIdle
         && !found.value().queuedMessages.isEmpty()) {
-        for (auto message : found.value().queuedMessages) {
+
+        // If the client is connected with an in-process transport, it can
+        // happen that a message triggers a subsequent property change. In
+        // that case, we need to ensure that the queued messages have already
+        // been cleared; otherwise the recursive call will send everythig again.
+        // Case in point: The qmlwebchannel tests fail if we don't clear the
+        // queued messages before sending them out.
+        // For that same reason set the client to "busy" (aka non-idle) just
+        // right before sending out the messages; otherwise a potential
+        // "Idle" type message will not correctly restore the Idle state.
+        const auto messages = std::move(found.value().queuedMessages);
+        Q_ASSERT(found.value().queuedMessages.isEmpty());
+        found.value().clientIsIdle = false;
+
+        for (const auto &message : messages) {
             transport->sendMessage(message);
         }
-        found.value().queuedMessages.clear();
-        found.value().clientIsIdle = false;
     }
 }
 
