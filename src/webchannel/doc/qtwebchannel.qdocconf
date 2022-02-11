@@ -53,5 +53,3 @@ examples.fileextensions                             += "*.html *.json"
 navigation.landingpage                              = "Qt WebChannel"
 navigation.cppclassespage                           = "Qt WebChannel C++ Classes"
 navigation.qmltypespage                             = "Qt WebChannel QML Types"
-
-manifestmeta.highlighted.names                      += "QtWebChannel/Qt WebChannel Standalone Example"
