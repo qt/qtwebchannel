@@ -1,0 +1,13 @@
+# See qtbase/src/testlib/qtestblacklist.cpp for format
+#QTBUG-101521
+[tst_multiclient::compile]
+qnx
+#QTBUG-101521
+[tst_bench::compile]
+qnx
+#QTBUG-101521
+[tst_webchannel::compile]
+qnx
+#QTBUG-101521
+[tst_webchannelseparation::compile]
+qnx
