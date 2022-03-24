@@ -33,56 +33,55 @@
 
     Qt WebChannel enables peer-to-peer communication between a server (QML/C++
     application) and a client (HTML/JavaScript or QML application). It is
-    supported out of the box by \l{Qt WebEngine}. In addition it can work on all
-    browsers that support \l{Qt WebSockets}{WebSockets}, enabling Qt WebChannel
-    clients to run in any JavaScript environment (including QML). This requires
-    the implementation of a custom transport based on Qt WebSockets.
+    supported out of the box by \l{Qt WebEngine}. In addition, it can work on
+    all browsers that support \l{Qt WebSockets}{WebSockets}, enabling Qt
+    WebChannel clients to run in any JavaScript environment (including QML).
+    This requires implementing a custom transport based on Qt WebSockets.
 
-    The module provides a JavaScript library for seamless integration of C++
-    and QML applications with HTML/JavaScript and QML clients. The clients must use the
-    JavaScript library to access the serialized QObjects published by the host
-    applications.
+    The module provides a JavaScript library for seamless integration of C++ and
+    QML applications with HTML/JavaScript and QML clients. The clients must use
+    the JavaScript library to access the serialized QObjects published by the
+    host applications.
 
-    \section1 Getting Started
+    \section1 Using the Module
 
-    To use these classes in your application, use the following include
-    statement:
+    \section2 QML API
 
-    \code
-    #include <QtWebChannel/QtWebChannel>
-    \endcode
+    \include {module-use.qdocinc} {using the qml api} {QtWebChannel}
 
-    To link against the module, add this line to your \l qmake \c .pro file:
+    \section2 C++ API
 
-    \code
-    QT += webchannel
-    \endcode
+    \include {module-use.qdocinc} {using the c++ api}
 
-    The QML types are accessed by using:
-    \qml \QtMinorVersion
-    import QtWebChannel 1.\1
-    \endqml
+    \section3 Building with CMake
+
+    \include {module-use.qdocinc} {building with cmake} {WebChannel}
+
+    \section3 Building with qmake
+
+    \include {module-use.qdocinc} {building_with_qmake} {webchannel}
+
+    \section1 Examples
+
+    \list
+        \li \l {Qt WebChannel Examples} {Examples}
+    \endlist
+
+    \section1 Reference
+
+    \list
+        \li \l {Qt WebChannel JavaScript API} {JavaScript API}
+        \li \l {Qt WebChannel C++ Classes} {C++ API}
+        \li \l {Qt WebChannel QML Types} {QML API}
+    \endlist
 
     \section1 Licenses
 
-    Qt WebChannel is available under commercial licenses from \l{The Qt Company}.
+    Qt WebChannel is available under commercial licenses from
+    \l{The Qt Company}.
     In addition, it is available under free software licenses.
     These free software licenses are
     \l{GNU Lesser General Public License, version 3}, or
     the \l{GNU General Public License, version 2}.
     See \l{Qt Licensing} for further details.
-
-    \section1 API Reference
-
-    \list
-    \li \l{Qt WebChannel JavaScript API}{JavaScript API}
-    \li \l{Qt WebChannel C++ Classes}{C++ API}
-    \li \l{Qt WebChannel QML Types}{QML API}
-    \endlist
-
-    \section1 Examples
-
-    \list
-    \li \l{Qt WebChannel Examples}{Examples}
-    \endlist
 */
