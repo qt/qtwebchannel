@@ -19,17 +19,17 @@ qhp.QtWebChannel.subprojects                        = classes qml examples javas
 
 qhp.QtWebChannel.subprojects.classes.title          = C++ Classes
 qhp.QtWebChannel.subprojects.classes.indexTitle     = Qt WebChannel C++ Classes
-qhp.QtWebChannel.subprojects.classes.selectors      = class fake:headerfile
+qhp.QtWebChannel.subprojects.classes.selectors      = class headerfile
 qhp.QtWebChannel.subprojects.classes.sortPages      = true
 
 qhp.QtWebChannel.subprojects.qml.title              = QML Types
 qhp.QtWebChannel.subprojects.qml.indexTitle         = Qt WebChannel QML Types
-qhp.QtWebChannel.subprojects.qml.selectors          = qmlclass
+qhp.QtWebChannel.subprojects.qml.selectors          = qmltype
 qhp.QtWebChannel.subprojects.qml.sortPages          = true
 
 qhp.QtWebChannel.subprojects.examples.title         = Examples
 qhp.QtWebChannel.subprojects.examples.indexTitle    = Qt WebChannel Examples
-qhp.QtWebChannel.subprojects.examples.selectors     = fake:example
+qhp.QtWebChannel.subprojects.examples.selectors     = doc:example
 qhp.QtWebChannel.subprojects.examples.sortPages     = true
 
 qhp.QtWebChannel.subprojects.javascript.title         = JavaScript API
@@ -37,7 +37,7 @@ qhp.QtWebChannel.subprojects.javascript.indexTitle    = Qt WebChannel JavaScript
 
 tagfile                                             = ../../../doc/qtwebchannel/qtwebchannel.tags
 
-depends                                             += qtcore qtquick qtqml qmake qtdoc qtwebengine qtwebsockets
+depends                                             += qtcore qtquick qtqml qtdoc qtwebengine qtwebsockets qmake qtcmake
 
 headerdirs                                          += .. \
                                                        ../../imports
@@ -53,3 +53,6 @@ examples.fileextensions                             += "*.html *.json"
 navigation.landingpage                              = "Qt WebChannel"
 navigation.cppclassespage                           = "Qt WebChannel C++ Classes"
 navigation.qmltypespage                             = "Qt WebChannel QML Types"
+
+# Enforce zero warnings for the documention build
+warninglimit = 0
