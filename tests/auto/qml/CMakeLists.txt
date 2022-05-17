@@ -14,7 +14,7 @@ qt_internal_add_test(tst_qmlwebchannel    # special case
     QMLTEST
     QML_IMPORTPATH
         "${CMAKE_CURRENT_BINARY_DIR}/../../../qml"
-        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/data"
     SOURCES
         qml.cpp
         testobject.cpp testobject.h
