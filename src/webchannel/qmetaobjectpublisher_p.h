@@ -61,6 +61,7 @@
 #include <QProperty>
 #include <QJsonObject>
 #include <QQueue>
+#include <QSet>
 
 #include <unordered_map>
 
