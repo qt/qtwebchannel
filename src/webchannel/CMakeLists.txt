@@ -14,6 +14,7 @@ qt_internal_add_module(WebChannel
         qwebchannelabstracttransport.cpp qwebchannelabstracttransport.h
         signalhandler_p.h
         variantargument_p.h
+        qwebchannelglobal.h
     LIBRARIES
         Qt::CorePrivate
     PUBLIC_LIBRARIES
@@ -49,15 +50,11 @@ qt_internal_add_resource(WebChannel "resources"
 
 qt_internal_extend_target(WebChannel CONDITION TARGET Qt::Qml
     SOURCES
-        qqmlwebchannel.cpp
-        qqmlwebchannelattached.cpp
+        qqmlwebchannel.cpp qqmlwebchannel.h
+        qqmlwebchannelattached.cpp qqmlwebchannelattached_p.h
     PUBLIC_LIBRARIES
         Qt::Qml
 )
-
-#### Keys ignored in scope 2:.:.:webchannel.pro:TARGET Qt::Qml:
-# PRIVATE_HEADERS = "qqmlwebchannelattached_p.h"
-# PUBLIC_HEADERS = "qqmlwebchannel.h"
 
 qt_internal_extend_target(WebChannel CONDITION NOT TARGET Qt::Qml
     DEFINES
