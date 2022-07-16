@@ -28,7 +28,7 @@ struct VariantArgument
     operator QGenericArgument() const
     {
         if (type == QMetaType::QVariant) {
-            return Q_ARG(QVariant, value);
+            return QGenericArgument("QVariant", &value);
         }
         if (!value.isValid()) {
             return QGenericArgument();
