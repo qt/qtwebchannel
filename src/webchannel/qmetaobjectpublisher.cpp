@@ -20,6 +20,8 @@
 #endif
 #include <QUuid>
 
+#include <QtCore/private/qmetaobject_p.h>
+
 QT_BEGIN_NAMESPACE
 
 namespace {
@@ -507,6 +509,63 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
         sendEnqueuedPropertyUpdates(state.key());
 }
 
+QVariant QMetaObjectPublisher::invokeMethod_helper(QObject *const object, const QMetaMethod &method,
+                                                   const QJsonArray &args)
+{
+    // a good value for the number of arguments we'll preallocate in QVLA
+    constexpr qsizetype ArgumentCount = 16;
+
+    QVarLengthArray<QVariant, ArgumentCount> variants;
+    QVarLengthArray<const char *, ArgumentCount> names(method.parameterCount() + 1);
+    QVarLengthArray<void *, ArgumentCount> parameters(names.size());
+    variants.reserve(names.size());
+    variants << QVariant();
+
+    // start with the formal parameters
+    for (qsizetype i = 0; i < names.size() - 1; ++i) {
+        QMetaType mt = method.parameterMetaType(i);
+        QVariant &v = variants.emplace_back(toVariant(args.at(i), mt.id()));
+        parameters[i + 1] = v.data();
+        names[i + 1] = mt.name();
+    }
+
+    // now, the return type
+    QMetaType mt = method.returnMetaType();
+    names[0] = mt.name();
+    if (int id = mt.id(); id != QMetaType::Void) {
+        // Only init variant with return type if its not a variant itself,
+        // which would lead to nested variants which is not what we want.
+        if (id == QMetaType::QVariant) {
+            parameters[0] = &variants[0];
+        } else {
+            variants[0] = QVariant(mt);
+            parameters[0] = variants[0].data();
+        }
+    } else {
+        parameters[0] = nullptr;
+    }
+
+    // step 3: make the call
+    QMetaMethodInvoker::InvokeFailReason r =
+            QMetaMethodInvoker::invokeImpl(method, object, Qt::AutoConnection,
+                                           parameters.size(), parameters.constData(),
+                                           names.constData());
+
+    if (r == QMetaMethodInvoker::InvokeFailReason::None)
+        return variants.first();
+
+    // print warnings for failures to match
+    if (int(r) >= int(QMetaMethodInvoker::InvokeFailReason::FormalParameterMismatch)) {
+        int n = int(r) - int(QMetaMethodInvoker::InvokeFailReason::FormalParameterMismatch);
+        QByteArray callee = object->metaObject()->className() + QByteArrayView("::")
+                + method.methodSignature();
+        qWarning() << "Cannot convert formal parameter" << n << "from" << names[n + 1]
+                   << "in call to" << callee.constData();
+    }
+
+    return QJsonValue();
+}
+
 QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMethod &method,
                                               const QJsonArray &args)
 {
@@ -523,41 +582,12 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMe
     } else if (method.methodType() != QMetaMethod::Method && method.methodType() != QMetaMethod::Slot) {
         qWarning() << "Cannot invoke non-public method" << method.name() << "on object" << object << '.';
         return QJsonValue();
-    } else if (args.size() > 10) {
-        qWarning() << "Cannot invoke method" << method.name() << "on object" << object << "with more than 10 arguments, as that is not supported by QMetaMethod::invoke.";
-        return QJsonValue();
     } else if (args.size() > method.parameterCount()) {
         qWarning() << "Ignoring additional arguments while invoking method" << method.name() << "on object" << object << ':'
                    << args.size() << "arguments given, but method only takes" << method.parameterCount() << '.';
     }
 
-    // construct converter objects of QVariant to QGenericArgument
-    VariantArgument arguments[10];
-    for (int i = 0; i < qMin(args.size(), method.parameterCount()); ++i) {
-        arguments[i].value = toVariant(args.at(i), method.parameterType(i));
-        arguments[i].type = method.parameterType(i);
-    }
-    // construct QGenericReturnArgument
-    QVariant returnValue;
-    if (method.returnType() == QMetaType::Void) {
-        // Skip return for void methods (prevents runtime warnings inside Qt), and allows
-        // QMetaMethod to invoke void-returning methods on QObjects in a different thread.
-        method.invoke(object,
-                  arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
-                  arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
-    } else {
-        // Only init variant with return type if its not a variant itself, which would
-        // lead to nested variants which is not what we want.
-        if (method.returnType() != QMetaType::QVariant)
-            returnValue = QVariant(QMetaType(method.returnType()), nullptr);
-
-        QGenericReturnArgument returnArgument(method.typeName(), returnValue.data());
-        method.invoke(object, returnArgument,
-                  arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
-                  arguments[5], arguments[6], arguments[7], arguments[8], arguments[9]);
-    }
-    // now we can call the method
-    return returnValue;
+    return invokeMethod_helper(object, method, args);
 }
 
 QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const int methodIndex,
@@ -583,8 +613,7 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QByteAr
         if (method.name() != methodName || method.parameterCount() != args.count()
                 || method.access() != QMetaMethod::Public
                 || (method.methodType() != QMetaMethod::Method
-                        && method.methodType() != QMetaMethod::Slot)
-                || method.parameterCount() > 10)
+                        && method.methodType() != QMetaMethod::Slot))
         {
             // Not a candidate
             continue;
@@ -600,13 +629,13 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QByteAr
     }
 
     std::sort(candidates.begin(), candidates.end());
-
     if (candidates.size() > 1 && candidates[0].badness == candidates[1].badness) {
         qWarning().nospace() << "Ambiguous overloads for method " << methodName << ". Choosing "
                              << candidates.first().method.methodSignature();
+
     }
 
-    return invokeMethod(object, candidates.first().method, args);
+    return invokeMethod_helper(object, candidates.first().method, args);
 }
 
 void QMetaObjectPublisher::setProperty(QObject *object, const int propertyIndex, const QJsonValue &value)

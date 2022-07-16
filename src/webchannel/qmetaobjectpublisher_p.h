@@ -15,7 +15,7 @@
 // We mean it.
 //
 
-#include "variantargument_p.h"
+#include "qwebchannelglobal.h"
 #include "signalhandler_p.h"
 
 #include <QStringList>
@@ -28,8 +28,6 @@
 #include <QSet>
 
 #include <unordered_map>
-
-#include "qwebchannelglobal.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -152,6 +150,12 @@ public:
      * @sa timer, initializePropertyUpdates
      */
     void sendPendingPropertyUpdates();
+
+    /**
+     * Helper function for the invokeMehtods below
+     */
+    QVariant invokeMethod_helper(QObject *const object, const QMetaMethod &method,
+                                 const QJsonArray &args);
 
     /**
      * Invoke the @p method on @p object with the arguments @p args.

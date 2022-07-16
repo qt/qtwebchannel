@@ -13,7 +13,6 @@ qt_internal_add_module(WebChannel
         qwebchannel.cpp qwebchannel.h qwebchannel_p.h
         qwebchannelabstracttransport.cpp qwebchannelabstracttransport.h
         signalhandler_p.h
-        variantargument_p.h
         qwebchannelglobal.h
     LIBRARIES
         Qt::CorePrivate
