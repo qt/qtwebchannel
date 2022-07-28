@@ -23,7 +23,7 @@ qt_internal_add_test(tst_qmlwebchannel    # special case
         testobject.cpp testobject.h
         testtransport.cpp testtransport.h
         testwebchannel.cpp testwebchannel.h
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::CorePrivate
         Qt::Gui
         Qt::WebChannelPrivate
