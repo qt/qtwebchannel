@@ -518,6 +518,7 @@ QVariant QMetaObjectPublisher::invokeMethod_helper(QObject *const object, const 
     QVarLengthArray<QVariant, ArgumentCount> variants;
     QVarLengthArray<const char *, ArgumentCount> names(method.parameterCount() + 1);
     QVarLengthArray<void *, ArgumentCount> parameters(names.size());
+    QVarLengthArray<const QtPrivate::QMetaTypeInterface *, ArgumentCount> metaTypes(names.size());
     variants.reserve(names.size());
     variants << QVariant();
 
@@ -527,11 +528,13 @@ QVariant QMetaObjectPublisher::invokeMethod_helper(QObject *const object, const 
         QVariant &v = variants.emplace_back(toVariant(args.at(i), mt.id()));
         parameters[i + 1] = v.data();
         names[i + 1] = mt.name();
+        metaTypes[i + 1] = mt.iface();
     }
 
     // now, the return type
     QMetaType mt = method.returnMetaType();
     names[0] = mt.name();
+    metaTypes[0] = mt.iface();
     if (int id = mt.id(); id != QMetaType::Void) {
         // Only init variant with return type if its not a variant itself,
         // which would lead to nested variants which is not what we want.
@@ -549,7 +552,7 @@ QVariant QMetaObjectPublisher::invokeMethod_helper(QObject *const object, const 
     QMetaMethodInvoker::InvokeFailReason r =
             QMetaMethodInvoker::invokeImpl(method, object, Qt::AutoConnection,
                                            parameters.size(), parameters.constData(),
-                                           names.constData());
+                                           names.constData(), metaTypes.constData());
 
     if (r == QMetaMethodInvoker::InvokeFailReason::None)
         return variants.first();
