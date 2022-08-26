@@ -5,7 +5,7 @@
 #include <QtQml/qqml.h>
 
 #ifndef QUICK_TEST_SOURCE_DIR
-#define QUICK_TEST_SOURCE_DIR Q_NULLPTR
+#define QUICK_TEST_SOURCE_DIR nullptr
 #endif
 
 #include "testtransport.h"

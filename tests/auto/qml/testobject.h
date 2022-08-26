@@ -17,7 +17,7 @@ class TestObject : public QObject
     Q_PROPERTY(QVariantMap objectMap READ objectMap CONSTANT)
     Q_PROPERTY(QString stringProperty READ stringProperty WRITE setStringProperty BINDABLE bindableStringProperty)
 public:
-    explicit TestObject(QObject *parent = Q_NULLPTR);
+    explicit TestObject(QObject *parent = nullptr);
     ~TestObject();
 
     QVariantMap objectMap() const;

@@ -72,10 +72,10 @@ class TestObject : public QObject
     Q_PROPERTY(QString stringProperty READ readStringProperty WRITE setStringProperty BINDABLE bindableStringProperty)
 
 public:
-    explicit TestObject(QObject *parent = 0)
+    explicit TestObject(QObject *parent = nullptr)
         : QObject(parent)
-        , mObjectProperty(0)
-        , mReturnedObject(Q_NULLPTR)
+        , mObjectProperty(nullptr)
+        , mReturnedObject(nullptr)
     { }
 
     enum Foo {
