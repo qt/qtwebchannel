@@ -918,70 +918,49 @@ void TestWebChannel::testPassWrappedObjectBack()
     QCOMPARE(registeredObj.mReturnedObject, &returnedObjProperty);
 }
 
+void TestWebChannel::testWrapValues_data()
+{
+    QTest::addColumn<QVariant>("variant");
+    QTest::addColumn<QJsonValue>("json");
+
+    QTest::addRow("enum") << QVariant::fromValue(TestObject::Asdf)
+                          << QJsonValue(static_cast<int>(TestObject::Asdf));
+
+    const TestObject::TestFlags flags = TestObject::FirstFlag | TestObject::SecondFlag;
+    QTest::addRow("flags") << QVariant::fromValue(flags)
+                           << QJsonValue(static_cast<int>(flags));
+
+    QTest::addRow("list") << QVariant::fromValue(QList<int>{1, 2, 3})
+                          << QJsonValue(QJsonArray{1, 2, 3});
+
+    QTest::addRow("customVector") << QVariant::fromValue(TestStructVector{{1, 2}, {3, 4}})
+                                  << QJsonValue(QJsonArray({QJsonObject{{"foo", 1}, {"bar", 2}},
+                                                            QJsonObject{{"foo", 3}, {"bar", 4}}}));
+
+    QTest::addRow("nullptr") << QVariant::fromValue(nullptr)
+                             << QJsonValue();
+
+    QTest::addRow("hash") << QVariant::fromValue(QVariantHash{{"One", 1},
+                                                              {"Two", 2}})
+                          << QJsonValue(QJsonObject{{"One", 1},
+                                                    {"Two", 2}});
+
+    QTest::addRow("map") << QVariant::fromValue(QVariantMap{{"One", 1},
+                                                            {"Two", 2}})
+                         << QJsonValue(QJsonObject{{"One", 1},
+                                                   {"Two", 2}});
+}
+
 void TestWebChannel::testWrapValues()
 {
     QWebChannel channel;
     channel.connectTo(m_dummyTransport);
 
-    {
-        QVariant variant = QVariant::fromValue(TestObject::Asdf);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isDouble());
-        QCOMPARE(value.toInt(), (int) TestObject::Asdf);
-    }
-    {
-        TestObject::TestFlags flags =  TestObject::FirstFlag | TestObject::SecondFlag;
-        QVariant variant = QVariant::fromValue(flags);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isDouble());
-        QCOMPARE(value.toInt(), (int) flags);
-    }
-    {
-        QList<int> list { 1, 2, 3 };
-        QVariant variant = QVariant::fromValue(list);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isArray());
-        QCOMPARE(value.toArray(), QJsonArray({1, 2, 3}));
-    }
-    {
-        TestStructVector vec{{1, 2}, {3, 4}};
-        QVariant variant = QVariant::fromValue(vec);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isArray());
-        QCOMPARE(value.toArray(), QJsonArray({QJsonObject{{"foo", 1}, {"bar", 2}},
-                                             QJsonObject{{"foo", 3}, {"bar", 4}}}));
-    }
-    {
-        QVariant variant = QVariant::fromValue(nullptr);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isNull());
-    }
-    {
-        QVariantHash hash;
-        hash["One"] = 1;
-        hash["Two"] = 2;
-        QVariant variant = QVariant::fromValue(hash);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isObject());
-        QVERIFY(value["One"].isDouble());
-        QCOMPARE(value["One"].toInt(), 1);
-        QVERIFY(value["Two"].isDouble());
-        QCOMPARE(value["Two"].toInt(), 2);
-        QVERIFY(value["Three"].isUndefined());
-    }
-    {
-        QVariantMap map;
-        map["One"] = 1;
-        map["Two"] = 2;
-        QVariant variant = QVariant::fromValue(map);
-        QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
-        QVERIFY(value.isObject());
-        QVERIFY(value["One"].isDouble());
-        QCOMPARE(value["One"].toInt(), 1);
-        QVERIFY(value["Two"].isDouble());
-        QCOMPARE(value["Two"].toInt(), 2);
-        QVERIFY(value["Three"].isUndefined());
-    }
+    QFETCH(QVariant, variant);
+    QFETCH(QJsonValue, json);
+
+    QJsonValue value = channel.d_func()->publisher->wrapResult(variant, m_dummyTransport);
+    QCOMPARE(value, json);
 }
 
 void TestWebChannel::testWrapObjectWithMultipleTransports()
@@ -1000,22 +979,29 @@ void TestWebChannel::testWrapObjectWithMultipleTransports()
     QCOMPARE(pub->transportedWrappedObjects.count(), 2);
 }
 
+void TestWebChannel::testJsonToVariant_data()
+{
+    QTest::addColumn<QJsonValue>("json");
+    QTest::addColumn<QVariant>("targetVariant");
+
+    QTest::addRow("enum") << QJsonValue(static_cast<int>(TestObject::Asdf))
+                          << QVariant::fromValue(TestObject::Asdf);
+
+    const TestObject::TestFlags flags =  TestObject::FirstFlag | TestObject::SecondFlag;
+    QTest::addRow("flags") << QJsonValue(static_cast<int>(flags))
+                           << QVariant::fromValue(flags);
+}
+
 void TestWebChannel::testJsonToVariant()
 {
     QWebChannel channel;
     channel.connectTo(m_dummyTransport);
 
-    {
-        QVariant variant = QVariant::fromValue(TestObject::Asdf);
-        QVariant convertedValue = channel.d_func()->publisher->toVariant(static_cast<int>(TestObject::Asdf), variant.userType());
-        QCOMPARE(convertedValue, variant);
-    }
-    {
-        TestObject::TestFlags flags =  TestObject::FirstFlag | TestObject::SecondFlag;
-        QVariant variant = QVariant::fromValue(flags);
-        QVariant convertedValue = channel.d_func()->publisher->toVariant(static_cast<int>(flags), variant.userType());
-        QCOMPARE(convertedValue, variant);
-    }
+    QFETCH(QJsonValue, json);
+    QFETCH(QVariant, targetVariant);
+
+    QVariant convertedValue = channel.d_func()->publisher->toVariant(json, targetVariant.userType());
+    QCOMPARE(convertedValue, targetVariant);
 }
 
 void TestWebChannel::testInfiniteRecursion()
