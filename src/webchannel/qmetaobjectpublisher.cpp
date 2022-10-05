@@ -152,7 +152,7 @@ QMetaType resultTypeOfQFuture(QByteArrayView typeName)
     if (!typeName.startsWith("QFuture<") || !typeName.endsWith('>'))
         return {};
 
-    return QMetaType::fromName(typeName.sliced(8, typeName.length() - 9));
+    return QMetaType::fromName(typeName.sliced(8, typeName.size() - 9));
 }
 
 template<typename Func>
@@ -302,7 +302,7 @@ QJsonObject QMetaObjectPublisher::classInfoForObject(const QObject *object, QWeb
             // optimize: compress the common propertyChanged notification names, just send a 1
             const QByteArray &notifySignal = prop.notifySignal().name();
             static const QByteArray changedSuffix = QByteArrayLiteral("Changed");
-            if (notifySignal.length() == changedSuffix.length() + propertyName.length() &&
+            if (notifySignal.size() == changedSuffix.size() + propertyName.size() &&
                 notifySignal.endsWith(changedSuffix) && notifySignal.startsWith(prop.name()))
             {
                 signalInfo.append(1);

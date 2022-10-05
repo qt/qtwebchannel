@@ -195,9 +195,9 @@ void SignalHandler<Receiver>::dispatch(const QObject *object, const int signalId
     }
     const QList<int> &argumentTypes = *signalIt;
     QVariantList arguments;
-    arguments.reserve(argumentTypes.count());
+    arguments.reserve(argumentTypes.size());
     // TODO: basic overload resolution based on number of arguments?
-    for (int i = 0; i < argumentTypes.count(); ++i) {
+    for (int i = 0; i < argumentTypes.size(); ++i) {
         const QMetaType::Type type = static_cast<QMetaType::Type>(argumentTypes.at(i));
         QVariant arg;
         if (type == QMetaType::QVariant) {

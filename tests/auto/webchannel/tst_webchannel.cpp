@@ -976,7 +976,7 @@ void TestWebChannel::testWrapObjectWithMultipleTransports()
     pub->wrapResult(QVariant::fromValue(&obj), dummyTransport);
     pub->wrapResult(QVariant::fromValue(&obj), dummyTransport2);
 
-    QCOMPARE(pub->transportedWrappedObjects.count(), 2);
+    QCOMPARE(pub->transportedWrappedObjects.size(), 2);
 }
 
 void TestWebChannel::testJsonToVariant_data()
@@ -1545,9 +1545,9 @@ void TestWebChannel::qtbug46548_overriddenProperties()
     QSignalSpy spy(&engine, &TestJSEngine::channelSetupReady);
     connect(&engine, &TestJSEngine::channelSetupReady, TestSubclassedFunctor(&engine));
     engine.initWebChannelJS();
-    if (!spy.count())
+    if (!spy.size())
         spy.wait();
-    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.size(), 1);
     QJSValue subclassedTestObject = engine.evaluate("channel.objects[\"subclassedTestObject\"]");
     QVERIFY(subclassedTestObject.isObject());
 
