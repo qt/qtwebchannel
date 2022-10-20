@@ -14,7 +14,8 @@
     can load the file via \c qrc:///qtwebchannel/qwebchannel.js. For external clients, you
     need to copy the file to your web server. Then instantiate a QWebChannel object and pass
     it a transport object and a callback function, which will be invoked once the
-    initialization of the channel finishes and the published objects become available.
+    initialization of the channel finishes and the published objects become available. An optional
+    third argument contains an array of converter wrapper functions or a single one.
 
     The transport object implements a minimal message passing interface. It should be an object
     with a \c send() function, which takes a stringified JSON message and transmits it to the
@@ -26,6 +27,14 @@
     fully operational. In case of a WebSocket, that means you should create the QWebChannel in the
     socket's \c onopen handler. Take a look at the \l{Qt WebChannel Standalone Example} to see how
     this is done.
+
+    A converter wrapper function is either a string with the name of a built-in converter or a
+    user supplied function that takes the object to process as an argument and returns the
+    resultant type or undefined if the function does not apply. If undefined is returned the next
+    converter is processed. If there are no converters that returns a value other than undefined,
+    processing proceeds as normal. "Date" is the only currently built-in converter function. It
+    takes a string with an ISO 8601 date and returns a new Date object if the syntax is right and
+    the date is valid.
 
     \section1 Interacting with QObjects
 

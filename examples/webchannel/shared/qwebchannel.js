@@ -17,7 +17,7 @@ var QWebChannelMessageTypes = {
     response: 10,
 };
 
-var QWebChannel = function(transport, initCallback)
+var QWebChannel = function(transport, initCallback, converters)
 {
     if (typeof transport !== "object" || typeof transport.send !== "function") {
         console.error("The QWebChannel expects a transport object with a send function and onmessage callback property." +
@@ -27,6 +27,43 @@ var QWebChannel = function(transport, initCallback)
 
     var channel = this;
     this.transport = transport;
+
+    var converterRegistry =
+    {
+        Date : function(response) {
+            if (typeof response === "string"
+                && response.match(
+                        /^-?\d+-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d*)?([-+\u2212](\d{2}):(\d{2})|Z)?$/)) {
+                var date = new Date(response);
+                if (!isNaN(date))
+                    return date;
+            }
+            return undefined; // Return undefined if current converter is not applicable
+        }
+    };
+
+    this.usedConverters = [];
+
+    this.addConverter = function(converter)
+    {
+        if (typeof converter === "string") {
+            if (converterRegistry.hasOwnProperty(converter))
+                this.usedConverters.push(converterRegistry[converter]);
+            else
+                console.error("Converter '" + converter + "' not found");
+        } else if (typeof converter === "function") {
+            this.usedConverters.push(converter);
+        } else {
+            console.error("Invalid converter object type " + typeof converter);
+        }
+    }
+
+    if (Array.isArray(converters)) {
+        for (const converter of converters)
+            this.addConverter(converter);
+    } else if (converters !== undefined) {
+        this.addConverter(converters);
+    }
 
     this.send = function(data)
     {
@@ -154,6 +191,12 @@ function QObject(name, data, webChannel)
 
     this.unwrapQObject = function(response)
     {
+        for (const converter of webChannel.usedConverters) {
+            var result = converter(response);
+            if (result !== undefined)
+                return result;
+        }
+
         if (response instanceof Array) {
             // support list of objects
             return response.map(qobj => object.unwrapQObject(qobj))

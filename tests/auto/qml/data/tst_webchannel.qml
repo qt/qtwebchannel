@@ -36,6 +36,11 @@ TestCase {
         property var bar: 1
         WebChannel.id: "myOtherObj"
     }
+    QtObject {
+        id: myValueObj
+        property var value: undefined
+        WebChannel.id: "myValueObj"
+    }
     property var lastFactoryObj
     QtObject{ id: bar; objectName: "bar" }
     QtObject{ id: baz; objectName: "baz" }
@@ -76,7 +81,7 @@ TestCase {
     TestWebChannel {
         id: webChannel
         transports: [client.serverTransport]
-        registeredObjects: [myObj, myOtherObj, myFactory, testObject]
+        registeredObjects: [myObj, myOtherObj, myValueObj, myFactory, testObject]
     }
 
     function initChannel() {
@@ -685,5 +690,57 @@ TestCase {
         client.awaitIdle();
 
         compare(success, true);
+    }
+
+    function test_customUpcaseWrapper()
+    {
+        var channel = client.createChannel(function(channel) {
+            channel.objects.testObject.stringProperty = "foo";
+        }, function(arg) { return (typeof arg === "string") ? arg.toUpperCase() : undefined });
+
+        client.awaitInit();
+        function awaitMessage(type)
+        {
+            var msg = client.awaitMessage();
+            compare(msg.type, type);
+            compare(msg.object, "testObject");
+        }
+        awaitMessage(JSClient.QWebChannelMessageTypes.setProperty);
+        compare(testObject.stringProperty, "foo"); // Don't convert in this direction
+        client.awaitIdle(); // init
+
+        testObject.stringProperty = "bar";
+        compare(testObject.stringProperty, "bar");
+        client.awaitIdle(); // property update
+        compare(channel.objects.testObject.stringProperty, "BAR"); // Case converted
+    }
+
+    function test_dateWrapper()
+    {
+        var channel = client.createChannel(undefined, "Date");
+        client.awaitInit();
+        client.awaitIdle();
+
+        var dateString = "2022-01-01T10:00:00Z";
+        myValueObj.value = dateString;
+        compare(myValueObj.value, dateString);
+        client.awaitIdle(); // property update
+        var value = channel.objects.myValueObj.value;
+        verify(value instanceof Date);
+        verify(!isNaN(value));
+        compare(value.getUTCFullYear(), 2022);
+        compare(value.getUTCMonth(), 0); // 0 = January
+        compare(value.getUTCDate(), 1);
+        compare(value.getUTCHours(), 10);
+        compare(value.getUTCMinutes(), 0);
+        compare(value.getUTCSeconds(), 0);
+
+        var invalidDate = "2022-13-31T10:00:00Z"; // Month after december
+        myValueObj.value = invalidDate;
+        compare(myValueObj.value, invalidDate);
+        client.awaitIdle(); // property update
+        value = channel.objects.myValueObj.value;
+        verify(typeof value === "string"); // Not converted to Date
+        compare(value, invalidDate);
     }
 }
