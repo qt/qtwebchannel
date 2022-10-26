@@ -782,17 +782,8 @@ QVariant QMetaObjectPublisher::unwrapVariant(const QVariant &value) const
 QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
 {
     QMetaType target(targetType);
-    if (targetType == QMetaType::QJsonValue) {
-        return QVariant::fromValue(value);
-    } else if (targetType == QMetaType::QJsonArray) {
-        if (!value.isArray())
-            qWarning() << "Cannot not convert non-array argument" << value << "to QJsonArray.";
-        return QVariant::fromValue(value.toArray());
-    } else if (targetType == QMetaType::QJsonObject) {
-        if (!value.isObject())
-            qWarning() << "Cannot not convert non-object argument" << value << "to QJsonObject.";
-        return QVariant::fromValue(value.toObject());
-    } else if (target.flags() & QMetaType::PointerToQObject) {
+
+    if (target.flags() & QMetaType::PointerToQObject) {
         QObject *unwrappedObject = unwrapObject(value.toObject()[KEY_ID].toString());
         if (unwrappedObject == nullptr)
             qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
@@ -802,13 +793,18 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         return QVariant(target, reinterpret_cast<const void*>(&flagsValue));
     }
 
-    // this converts QJsonObjects to QVariantMaps, which is not desired when
-    // we want to get a QJsonObject or QJsonValue (see above)
-    QVariant variant = unwrapVariant(value.toVariant());
-    if (targetType != QMetaType::QVariant && !variant.convert(target)) {
-        qWarning() << "Could not convert argument" << value << "to target type" << target.name() << '.';
+    QVariant variant = QJsonValue::fromVariant(value);
+    // Try explicit conversion to the target type first. If that fails, fall
+    // back to generic conversion
+    if (auto converted = variant; converted.convert(target)) {
+        variant = std::move(converted);
+    } else {
+        if (targetType != QMetaType::QVariant) {
+            qWarning() << "Could not convert argument" << value << "to target type" << target.name() << '.';
+        }
+        variant = value.toVariant();
     }
-    return variant;
+    return unwrapVariant(variant);
 }
 
 int QMetaObjectPublisher::conversionScore(const QJsonValue &value, int targetType) const
@@ -981,6 +977,9 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
         if (!map.convert(QMetaType::fromType<QVariantMap>()))
             map = result;
         return wrapMap(map.value<QVariantMap>(), transport);
+    } else if (auto v = result; v.convert(QMetaType::fromType<QJsonValue>())) {
+        // Support custom converters to QJsonValue
+        return v.value<QJsonValue>();
     }
 
     return QJsonValue::fromVariant(result);

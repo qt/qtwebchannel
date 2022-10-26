@@ -33,6 +33,12 @@ QT_BEGIN_NAMESPACE
     QWebChannel transparently supports QFuture. When a client calls a method that returns a QFuture,
     QWebChannel will send a response with the QFuture result only after the QFuture has finished.
 
+    Custom conversion of types to and from JSON is supported by defining converters with
+    QMetaType::registerConverter() to and from QJsonValue. Note that custom converters from QJsonValue to a concrete
+    type must fail if the QJsonValue does not match the expected format. Otherwise QWebChannel cannot fall back to its
+    default conversion mechanisms.
+    Custom converters are also available on \l{Qt WebChannel JavaScript API}{the JavaScript side}.
+
     The C++ QWebChannel API makes it possible to talk to any HTML client, which could run on a local
     or even remote machine. The only limitation is that the HTML client supports the JavaScript
     features used by \c{qwebchannel.js}. As such, one can interact
@@ -40,7 +46,8 @@ QT_BEGIN_NAMESPACE
 
     There also exists a declarative \l{Qt WebChannel QML Types}{WebChannel API}.
 
-    \sa {Qt WebChannel Standalone Example}, {Qt WebChannel JavaScript API}{JavaScript API}
+    \sa {Qt WebChannel Standalone Example}, {Qt WebChannel JavaScript API}{JavaScript API},
+        QMetaType::registerConverter()
 */
 
 /*!

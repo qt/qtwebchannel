@@ -21,6 +21,7 @@
 #endif
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 QT_USE_NAMESPACE
@@ -244,8 +245,34 @@ TestWebChannel::TestWebChannel(QObject *parent)
     , m_lastDouble(0)
 {
     qRegisterMetaType<TestStruct>();
+    Q_ASSERT(QMetaType::fromType<TestStruct>().isEqualityComparable());
+    Q_ASSERT(QMetaType::fromType<TestStruct>().hasRegisteredDebugStreamOperator());
+
     qRegisterMetaType<TestStructVector>();
     QMetaType::registerConverter<TestStructVector, QVariantList>(convert_to_js);
+
+    QMetaType::registerConverter<TestStruct, QString>();
+
+    QMetaType::registerConverter<TestStruct, QJsonValue>(
+        [](const TestStruct &s) {
+            return QJsonObject {
+                { "__type__", "TestStruct" },
+                { "foo", s.foo },
+                { "bar", s.bar },
+            };
+        });
+
+    QMetaType::registerConverter<QJsonValue, TestStruct>(
+        [](const QJsonValue &value) -> std::optional<TestStruct> {
+            const auto object = value.toObject();
+            if (object.value("__type__").toString() != QStringLiteral("TestStruct"))
+                return std::nullopt;
+
+            return TestStruct {
+                object.value("foo").toInt(),
+                object.value("bar").toInt(),
+            };
+        });
 }
 
 TestWebChannel::~TestWebChannel()
@@ -952,6 +979,11 @@ void TestWebChannel::testWrapValues_data()
                                                             {"Two", 2}})
                          << QJsonValue(QJsonObject{{"One", 1},
                                                    {"Two", 2}});
+
+    QTest::addRow("customType") << QVariant::fromValue(TestStruct{42, 7})
+                                << QJsonValue(QJsonObject{{"__type__", "TestStruct"},
+                                                          {"foo", 42},
+                                                          {"bar", 7}});
 }
 
 void TestWebChannel::testWrapValues()
@@ -993,6 +1025,11 @@ void TestWebChannel::testJsonToVariant_data()
     const TestObject::TestFlags flags =  TestObject::FirstFlag | TestObject::SecondFlag;
     QTest::addRow("flags") << QJsonValue(static_cast<int>(flags))
                            << QVariant::fromValue(flags);
+
+    QTest::addRow("customType") << QJsonValue(QJsonObject{{"__type__", "TestStruct"},
+                                                          {"foo", 42},
+                                                          {"bar", 7}})
+                                << QVariant::fromValue(TestStruct{42, 7});
 }
 
 void TestWebChannel::testJsonToVariant()
