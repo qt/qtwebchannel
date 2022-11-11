@@ -885,7 +885,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
                 if (oi.transports.isEmpty())
                     oi.transports = webChannel->d_func()->transports;
 
-                for (auto transport : qAsConst(oi.transports)) {
+                for (auto transport : std::as_const(oi.transports)) {
                     transportedWrappedObjects.insert(transport, id);
                 }
             }
