@@ -20,6 +20,9 @@
 #include <QtConcurrent>
 #endif
 
+#include <memory>
+#include <vector>
+
 QT_USE_NAMESPACE
 
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
@@ -1469,31 +1472,30 @@ void TestWebChannel::benchRegisterObjects()
 void TestWebChannel::benchRemoveTransport()
 {
     QWebChannel channel;
-    QList<DummyTransport*> dummyTransports;
-    for (int i = 500; i > 0; i--)
-        dummyTransports.append(new DummyTransport(this));
+    std::vector<std::unique_ptr<DummyTransport>> dummyTransports(500);
+    for (auto &e : dummyTransports)
+        e = std::make_unique<DummyTransport>(this);
 
-    QList<QSharedPointer<TestObject>> objs;
+    std::vector<std::unique_ptr<TestObject>> objs;
     QMetaObjectPublisher *pub = channel.d_func()->publisher;
 
-    foreach (DummyTransport *transport, dummyTransports) {
+    for (auto &e : dummyTransports) {
+        DummyTransport *transport = e.get();
         channel.connectTo(transport);
         channel.d_func()->publisher->initializeClient(transport);
 
         /* 30 objects per transport */
         for (int i = 30; i > 0; i--) {
-            QSharedPointer<TestObject> obj = QSharedPointer<TestObject>::create();
-            objs.append(obj);
-            pub->wrapResult(QVariant::fromValue(obj.data()), transport);
+            auto obj = std::make_unique<TestObject>();
+            pub->wrapResult(QVariant::fromValue(obj.get()), transport);
+            objs.push_back(std::move(obj));
         }
     }
 
     QBENCHMARK_ONCE {
-        for (auto transport : dummyTransports)
-            pub->transportRemoved(transport);
+        for (auto &transport : dummyTransports)
+            pub->transportRemoved(transport.get());
     }
-
-    qDeleteAll(dummyTransports);
 }
 
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
