@@ -264,12 +264,12 @@ void SignalHandler<Receiver>::clear()
 template<class Receiver>
 void SignalHandler<Receiver>::remove(const QObject *object)
 {
-    Q_ASSERT(m_connectionsCounter.contains(object));
-    const SignalConnectionHash &connections = m_connectionsCounter.value(object);
-    foreach (const ConnectionPair &connection, connections) {
+    auto it = m_connectionsCounter.find(object);
+    Q_ASSERT(it != m_connectionsCounter.cend());
+    const SignalConnectionHash connections = std::move(it.value());
+    m_connectionsCounter.erase(it);
+    for (const ConnectionPair &connection : connections)
         QObject::disconnect(connection.first);
-    }
-    m_connectionsCounter.remove(object);
 }
 
 QT_END_NAMESPACE
