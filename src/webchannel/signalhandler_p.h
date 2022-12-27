@@ -249,12 +249,12 @@ int SignalHandler<Receiver>::qt_metacall(QMetaObject::Call call, int methodId, v
 template<class Receiver>
 void SignalHandler<Receiver>::clear()
 {
-    foreach (const SignalConnectionHash &connections, m_connectionsCounter) {
-        foreach (const ConnectionPair &connection, connections) {
+    // "consume loop": disconnectNotify() calls unknown code
+    const auto oldConnectionsCounter = std::exchange(m_connectionsCounter, {});
+    for (const SignalConnectionHash &connections : oldConnectionsCounter) {
+        for (const ConnectionPair &connection : connections)
             QObject::disconnect(connection.first);
-        }
     }
-    m_connectionsCounter.clear();
     const SignalArgumentHash keep = m_signalArgumentTypes.take(&QObject::staticMetaObject);
     m_signalArgumentTypes.clear();
     m_signalArgumentTypes[&QObject::staticMetaObject] = keep;
