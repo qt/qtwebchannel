@@ -17,7 +17,7 @@
 
 #include "qwebchannelglobal.h"
 
-#include <private/qobject_p.h>
+#include <QtCore/private/qobject_p.h>
 #include <QList>
 
 QT_BEGIN_NAMESPACE

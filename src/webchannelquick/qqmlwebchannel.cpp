@@ -1,12 +1,11 @@
-// Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+// Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author
+// Milian Wolff <milian.wolff@kdab.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qqmlwebchannel.h"
-
-#include "qwebchannel_p.h"
-#include "qmetaobjectpublisher_p.h"
-#include "qwebchannelabstracttransport.h"
-
+#include <QtWebChannel/qwebchannelabstracttransport.h>
+#include <QtWebChannel/private/qwebchannel_p.h>
+#include <QtWebChannel/private/qmetaobjectpublisher_p.h>
 #include <QtQml/QQmlContext>
 
 #include "qqmlwebchannelattached_p.h"
@@ -71,7 +70,8 @@ public:
 void QQmlWebChannelPrivate::_q_objectIdChanged(const QString &newId)
 {
     Q_Q(QQmlWebChannel);
-    const QQmlWebChannelAttached *const attached = qobject_cast<QQmlWebChannelAttached*>(q->sender());
+    const QQmlWebChannelAttached *const attached =
+            qobject_cast<QQmlWebChannelAttached *>(q->sender());
     Q_ASSERT(attached);
     Q_ASSERT(attached->parent());
     Q_ASSERT(registeredObjects.contains(attached->parent()));
@@ -86,15 +86,11 @@ void QQmlWebChannelPrivate::_q_objectIdChanged(const QString &newId)
     q->registerObject(newId, object);
 }
 
-QQmlWebChannel::QQmlWebChannel(QObject *parent)
-    : QWebChannel(*(new QQmlWebChannelPrivate), parent)
+QQmlWebChannel::QQmlWebChannel(QObject *parent) : QWebChannel(*(new QQmlWebChannelPrivate), parent)
 {
 }
 
-QQmlWebChannel::~QQmlWebChannel()
-{
-
-}
+QQmlWebChannel::~QQmlWebChannel() { }
 
 /*!
     \qmlmethod void WebChannel::registerObjects(QVariantMap objects)
@@ -104,8 +100,8 @@ QQmlWebChannel::~QQmlWebChannel()
     Once registered, all signals and property changes are automatically propagated to the clients.
     Public invokable methods, including slots, are also accessible to the clients.
 
-    This imperative API can be used to register objects on the fly. For static objects, the declarative
-    registeredObjects property should be preferred.
+    This imperative API can be used to register objects on the fly. For static objects, the
+   declarative registeredObjects property should be preferred.
 
     \sa registeredObjects
 */
@@ -114,7 +110,7 @@ void QQmlWebChannel::registerObjects(const QVariantMap &objects)
     Q_D(QQmlWebChannel);
     QMap<QString, QVariant>::const_iterator it = objects.constBegin();
     for (; it != objects.constEnd(); ++it) {
-        QObject *object = it.value().value<QObject*>();
+        QObject *object = it.value().value<QObject *>();
         if (!object) {
             qWarning("Invalid QObject given to register under name %s", qPrintable(it.key()));
             continue;
@@ -140,10 +136,12 @@ QQmlWebChannelAttached *QQmlWebChannel::qmlAttachedProperties(QObject *obj)
 */
 void QQmlWebChannel::connectTo(QObject *transport)
 {
-    if (QWebChannelAbstractTransport *realTransport = qobject_cast<QWebChannelAbstractTransport*>(transport)) {
+    if (QWebChannelAbstractTransport *realTransport =
+                qobject_cast<QWebChannelAbstractTransport *>(transport)) {
         QWebChannel::connectTo(realTransport);
     } else {
-        qWarning() << "Cannot connect to transport" << transport << " - it is not a QWebChannelAbstractTransport.";
+        qWarning() << "Cannot connect to transport" << transport
+                   << " - it is not a QWebChannelAbstractTransport.";
     }
 }
 
@@ -159,10 +157,12 @@ void QQmlWebChannel::connectTo(QObject *transport)
 */
 void QQmlWebChannel::disconnectFrom(QObject *transport)
 {
-    if (QWebChannelAbstractTransport *realTransport = qobject_cast<QWebChannelAbstractTransport*>(transport)) {
+    if (QWebChannelAbstractTransport *realTransport =
+                qobject_cast<QWebChannelAbstractTransport *>(transport)) {
         QWebChannel::disconnectFrom(realTransport);
     } else {
-        qWarning() << "Cannot disconnect from transport" << transport << " - it is not a QWebChannelAbstractTransport.";
+        qWarning() << "Cannot disconnect from transport" << transport
+                   << " - it is not a QWebChannelAbstractTransport.";
     }
 }
 
@@ -175,14 +175,15 @@ QQmlListProperty<QObject> QQmlWebChannel::registeredObjects()
 
 void QQmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *object)
 {
-    const QQmlWebChannelAttached *const attached = qobject_cast<QQmlWebChannelAttached*>(
-        qmlAttachedPropertiesObject<QQmlWebChannel>(object, false /* don't create */));
+    const QQmlWebChannelAttached *const attached = qobject_cast<QQmlWebChannelAttached *>(
+            qmlAttachedPropertiesObject<QQmlWebChannel>(object, false /* don't create */));
     if (!attached) {
         const QQmlContext *const context = qmlContext(object);
-        qWarning() << "Cannot register object" << context->nameForObject(object) << '(' << object << ") without attached WebChannel.id property. Did you forget to set it?";
+        qWarning() << "Cannot register object" << context->nameForObject(object) << '(' << object
+                   << ") without attached WebChannel.id property. Did you forget to set it?";
         return;
     }
-    QQmlWebChannel *channel = static_cast<QQmlWebChannel*>(prop->object);
+    QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
     if (!attached->id().isEmpty()) {
         // TODO: warning in such cases?
         channel->registerObject(attached->id(), object);
@@ -193,17 +194,17 @@ void QQmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, Q
 
 qsizetype QQmlWebChannel::registeredObjects_count(QQmlListProperty<QObject> *prop)
 {
-    return static_cast<QQmlWebChannel*>(prop->object)->d_func()->registeredObjects.size();
+    return static_cast<QQmlWebChannel *>(prop->object)->d_func()->registeredObjects.size();
 }
 
 QObject *QQmlWebChannel::registeredObjects_at(QQmlListProperty<QObject> *prop, qsizetype index)
 {
-    return static_cast<QQmlWebChannel*>(prop->object)->d_func()->registeredObjects.at(index);
+    return static_cast<QQmlWebChannel *>(prop->object)->d_func()->registeredObjects.at(index);
 }
 
 void QQmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
 {
-    QQmlWebChannel *channel = static_cast<QQmlWebChannel*>(prop->object);
+    QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
     foreach (QObject *object, channel->d_func()->registeredObjects) {
         channel->deregisterObject(object);
     }
@@ -218,24 +219,24 @@ QQmlListProperty<QObject> QQmlWebChannel::transports()
 
 void QQmlWebChannel::transports_append(QQmlListProperty<QObject> *prop, QObject *transport)
 {
-    QQmlWebChannel *channel = static_cast<QQmlWebChannel*>(prop->object);
+    QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
     channel->connectTo(transport);
 }
 
 qsizetype QQmlWebChannel::transports_count(QQmlListProperty<QObject> *prop)
 {
-    return static_cast<QQmlWebChannel*>(prop->object)->d_func()->transports.size();
+    return static_cast<QQmlWebChannel *>(prop->object)->d_func()->transports.size();
 }
 
 QObject *QQmlWebChannel::transports_at(QQmlListProperty<QObject> *prop, qsizetype index)
 {
-    QQmlWebChannel *channel = static_cast<QQmlWebChannel*>(prop->object);
+    QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
     return channel->d_func()->transports.at(index);
 }
 
 void QQmlWebChannel::transports_clear(QQmlListProperty<QObject> *prop)
 {
-    QWebChannel *channel = static_cast<QWebChannel*>(prop->object);
+    QWebChannel *channel = static_cast<QWebChannel *>(prop->object);
     foreach (QWebChannelAbstractTransport *transport, channel->d_func()->transports) {
         channel->disconnectFrom(transport);
     }

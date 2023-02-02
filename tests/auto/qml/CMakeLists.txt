@@ -1,11 +1,6 @@
 # Copyright (C) 2022 The Qt Company Ltd.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Generated from qml.pro.
-
-#####################################################################
-## qml Test:
-#####################################################################
 
 # Collect test data
 file(GLOB_RECURSE test_data_glob
@@ -13,7 +8,7 @@ file(GLOB_RECURSE test_data_glob
     data/*)
 list(APPEND test_data ${test_data_glob})
 
-qt_internal_add_test(tst_qmlwebchannel    # special case
+qt_internal_add_test(tst_qmlwebchannel
     QMLTEST
     QML_IMPORTPATH
         "${CMAKE_CURRENT_BINARY_DIR}/../../../qml"
@@ -25,13 +20,8 @@ qt_internal_add_test(tst_qmlwebchannel    # special case
         testwebchannel.cpp testwebchannel.h
     LIBRARIES
         Qt::CorePrivate
-        Qt::Gui
         Qt::WebChannelPrivate
+        Qt::WebChannelQuick
     TESTDATA ${test_data}
 )
 
-#### Keys ignored in scope 1:.:.:qml.pro:<TRUE>:
-# DISTFILES = "tst_webchannelseparation.qml"
-# IMPORTPATH = "$$OUT_PWD/../../../qml" "$$PWD"
-# OTHER_FILES = "Client.qml" "WebChannelTest.qml" "tst_webchannel.qml" "tst_metaobjectpublisher.qml" "tst_bench.qml" "tst_multiclient.qml"
-# TEMPLATE = "app"

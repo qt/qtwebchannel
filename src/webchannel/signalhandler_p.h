@@ -21,7 +21,6 @@
 #include <QMetaMethod>
 #include <QDebug>
 #include <QThread>
-#include <private/qglobal_p.h>
 
 QT_BEGIN_NAMESPACE
 

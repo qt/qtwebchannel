@@ -40,10 +40,10 @@ tagfile                                             = ../../../doc/qtwebchannel/
 depends                                             += qtcore qtquick qtqml qtdoc qtwebengine qtwebsockets qmake qtcmake
 
 headerdirs                                          += .. \
-                                                       ../../imports
+                                                       ../../webchannelquick
 
 sourcedirs                                          += .. \
-                                                       ../../imports
+                                                       ../../webchannelquick
 
 imagedirs                                           += images
 

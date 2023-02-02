@@ -4,9 +4,9 @@
 
 #include "tst_webchannel.h"
 
-#include <qwebchannel.h>
-#include <qwebchannel_p.h>
-#include <qmetaobjectpublisher_p.h>
+#include <QtWebChannel/qwebchannel.h>
+#include <QtWebChannel/private/qwebchannel_p.h>
+#include <QtWebChannel/private/qmetaobjectpublisher_p.h>
 
 #include <QtTest>
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE

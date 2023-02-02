@@ -1,25 +1,20 @@
-// Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+// Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author
+// Milian Wolff <milian.wolff@kdab.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qqmlwebchannelattached_p.h"
 
 QT_USE_NAMESPACE
 
-QQmlWebChannelAttached::QQmlWebChannelAttached(QObject *parent)
-    : QObject(parent)
-{
+QQmlWebChannelAttached::QQmlWebChannelAttached(QObject *parent) : QObject(parent) { }
 
-}
-
-QQmlWebChannelAttached::~QQmlWebChannelAttached()
-{
-
-}
+QQmlWebChannelAttached::~QQmlWebChannelAttached() { }
 
 /*!
     \qmlattachedproperty QString WebChannel::id
 
-    \brief The identifier under which an object, registered to a WebChannel, is known to remote clients.
+    \brief The identifier under which an object, registered to a WebChannel, is known to remote
+   clients.
 
     This property must be set for every object that should be published over the WebChannel.
     While no restrictions are enforced on the format of the id, it is usually a good idea to

@@ -3,8 +3,8 @@
 
 #include "testwebchannel.h"
 
-#include <private/qwebchannel_p.h>
-#include <private/qmetaobjectpublisher_p.h>
+#include <QtWebChannel/private/qwebchannel_p.h>
+#include <QtWebChannel/private/qmetaobjectpublisher_p.h>
 
 QT_BEGIN_NAMESPACE
 

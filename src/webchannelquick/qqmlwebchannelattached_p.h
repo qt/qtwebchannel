@@ -1,4 +1,5 @@
-// Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
+// Copyright (C) 2016 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author
+// Milian Wolff <milian.wolff@kdab.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #ifndef QQMLWEBCHANNELATTACHED_H
@@ -16,17 +17,17 @@
 //
 
 #include <QObject>
-
-#include "qwebchannelglobal.h"
-#include "private/qglobal_p.h"
+#include <QtQml/qqml.h>
+#include <QtWebChannelQuick/qwebchannelquickglobal.h>
 
 QT_BEGIN_NAMESPACE
 
-class Q_WEBCHANNEL_EXPORT QQmlWebChannelAttached : public QObject
+class Q_WEBCHANNELQUICK_EXPORT QQmlWebChannelAttached : public QObject
 {
     Q_OBJECT
-
-    Q_PROPERTY( QString id READ id WRITE setId NOTIFY idChanged FINAL )
+    Q_PROPERTY(QString id READ id WRITE setId NOTIFY idChanged FINAL)
+    QML_ANONYMOUS
+    QML_ADDED_IN_VERSION(1, 0)
 public:
     explicit QQmlWebChannelAttached(QObject *parent = 0);
     virtual ~QQmlWebChannelAttached();

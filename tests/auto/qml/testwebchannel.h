@@ -4,7 +4,7 @@
 #ifndef TESTWEBCHANNEL_H
 #define TESTWEBCHANNEL_H
 
-#include <QtWebChannel/QQmlWebChannel>
+#include <QtWebChannelQuick/qqmlwebchannel.h>
 
 QT_BEGIN_NAMESPACE
 

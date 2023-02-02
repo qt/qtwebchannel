@@ -5,5 +5,5 @@
 
 add_subdirectory(webchannel)
 if(TARGET Qt::Quick)
-    add_subdirectory(imports)
+    add_subdirectory(webchannelquick)
 endif()
