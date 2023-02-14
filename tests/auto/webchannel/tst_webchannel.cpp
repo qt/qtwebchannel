@@ -335,6 +335,16 @@ void TestWebChannel::setJsonValue(const QJsonValue& v)
     emit lastJsonValueChanged();
 }
 
+QUrl TestWebChannel::readUrl() const
+{
+    return m_lastUrl;
+}
+
+void TestWebChannel::setUrl(const QUrl& u)
+{
+    m_lastUrl = u;
+}
+
 QJsonObject TestWebChannel::readJsonObject() const
 {
     return m_lastJsonObject;
@@ -683,6 +693,15 @@ void TestWebChannel::testInvokeMethodConversion()
         auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
         QCOMPARE(retVal, QVariant::fromValue(array));
     }
+    {
+        args[0] = QJsonValue::fromVariant(QUrl("aviancarrier:/ok"));
+        channel.d_func()->publisher->invokeMethod(this, "setUrl", args);
+        QVERIFY(m_lastUrl.isValid());
+        int getterMethod = metaObject()->indexOfMethod("readUrl()");
+        QVERIFY(getterMethod != -1);
+        auto retVal = channel.d_func()->publisher->invokeMethod(this, getterMethod, {});
+        QCOMPARE(retVal, args.at(0).toVariant().toUrl());
+    }
 }
 
 void TestWebChannel::testFunctionOverloading()
@@ -974,6 +993,9 @@ void TestWebChannel::testWrapValues_data()
                                                               {"Two", 2}})
                           << QJsonValue(QJsonObject{{"One", 1},
                                                     {"Two", 2}});
+
+    QTest::addRow("url") << QVariant::fromValue(QUrl("aviancarrier:/test"))
+                         << QJsonValue(QJsonValue(QString("aviancarrier:/test")));
 
     QTest::addRow("map") << QVariant::fromValue(QVariantMap{{"One", 1},
                                                             {"Two", 2}})

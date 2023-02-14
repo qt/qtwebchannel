@@ -793,16 +793,16 @@ QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType
         return QVariant(target, reinterpret_cast<const void*>(&flagsValue));
     }
 
-    QVariant variant = QJsonValue::fromVariant(value);
-    // Try explicit conversion to the target type first. If that fails, fall
-    // back to generic conversion
+    QVariant variant = value.toVariant();
+    // Try variant conversion to the target type first. If that fails,
+    // try conversion over QJsonvalue.
     if (auto converted = variant; converted.convert(target)) {
         variant = std::move(converted);
-    } else {
-        if (targetType != QMetaType::QVariant) {
+    } else if (targetType != QMetaType::QVariant) {
+        if (QVariant converted = value; converted.convert(target))
+            variant = std::move(converted);
+        else
             qWarning() << "Could not convert argument" << value << "to target type" << target.name() << '.';
-        }
-        variant = value.toVariant();
     }
     return unwrapVariant(variant);
 }

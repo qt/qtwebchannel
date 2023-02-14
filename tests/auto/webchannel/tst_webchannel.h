@@ -329,6 +329,9 @@ public slots:
     QJsonArray readJsonArray() const;
     void setJsonArray(const QJsonArray &v);
 
+    QUrl readUrl() const;
+    void setUrl(const QUrl &u);
+
     int readOverload(int i);
     QString readOverload(const QString &arg);
     QString readOverload(const QString &arg, int i);
@@ -396,6 +399,7 @@ private:
     QJsonValue m_lastJsonValue;
     QJsonObject m_lastJsonObject;
     QJsonArray m_lastJsonArray;
+    QUrl m_lastUrl;
 };
 
 QT_END_NAMESPACE
