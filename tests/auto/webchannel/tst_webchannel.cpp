@@ -187,7 +187,7 @@ QVariantList convert_to_js(const TestStructVector &list)
 #if QT_CONFIG(future)
 QFuture<int> TestObject::futureIntResult() const
 {
-    return QtFuture::makeReadyFuture(42);
+    return QtFuture::makeReadyValueFuture(42);
 }
 
 QFuture<int> TestObject::futureDelayedIntResult() const
@@ -213,12 +213,12 @@ QFuture<int> TestObject::futureIntResultFromThread() const
 
 QFuture<void> TestObject::futureVoidResult() const
 {
-    return QtFuture::makeReadyFuture();
+    return QtFuture::makeReadyVoidFuture();
 }
 
 QFuture<QString> TestObject::futureStringResult() const
 {
-    return QtFuture::makeReadyFuture<QString>("foo");
+    return QtFuture::makeReadyValueFuture<QString>("foo");
 }
 
 QFuture<int> TestObject::cancelledFuture() const
