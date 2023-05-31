@@ -3,35 +3,43 @@
 
 /*!
     \example chatclient-qml
-    \title Qt WebChannel ChatClient QML Example
+    \title Qt WebChannel ChatClient QML Application
     \ingroup qtwebchannel-examples
     \brief A QML client that communicates over a WebSocket with a QWebChannel server.
+    \examplecategory {Input/Output}
+    \meta tag {rpc,network}
 
     \image chatclient-qml.png
 
     \e{ChatClient QML} provides a simple QWebChannel client implemented using JavaScript and QML.
 
-    \section1 Running the Example
+    \section1 Implementing a Web Channel Client in QML
 
-    To run the example, enter the following command in the client source
-    directory:
+    This example shows how you can use the basic elements with the client JavaScript
+    implementation of QWebChannel, like connecting to signals (\c newMessage),
+    calling slots (\c sendMessage), and handling property changes (\c userList).
 
-    \c {path/to/qmlscene qmlchatclient.qml}
+    The client initializes a \l [QML] WebSocket connection to the chat server at port
+    12345 on localhost. When the WebSocket opens, a WebChannel object is created, taking
+    the WebSocket as first argument and a callback function as the second argument. When
+    the callback is called, the client receives an object named \c chatserver,
+    containing all the necessary signals, slots, and properties for implementing a chat
+    client. The callback function connects \c userListChanged, \c newMessage, and
+    \c keepAlive on the \c chatserver object with separate functions handling those
+    signals, and then it calls \c show on \c loginWindow.
 
-    \section1 Implementing a Web Channel Client
+    The \c Window with \c loginWindow as id handles the login procedure. It contains a
+    \c LoginForm defined in LoginForm.ui.qml. When you press the button, it calls
+    the \c login function on the \c chatserver object with the login name and and a
+    callback function as arguments. This callback function handles both if the login
+    succeeds or fails.
 
-    The client initializes a \l [QML] WebSocket connection to the chat server and receives an object
-    containing all the necessary signals, slots, and properties for implementing a chat client.
-
-    After login, the client can invoke the method \c sendMessage and receive the signal \c newMessage
-    to send and receive messages. Furthermore, a \c userList property provides the
-    names of all other connected clients. It is automatically updated when its contents change.
-    Also, the client responds to the server's keep alive signal which is needed to detect disconnected
-    clients and remove them from the \c userList property.
-
-    The example shows how basic elements can be used with the client JavaScript implementation of
-    QWebChannel, like connecting to signals (\c newMessage), calling slots (\c sendMessage), and handling
-    property changes (\c userList).
+    After login, the client uses a \c MainForm, defined in MainForm.ui.qml, with
+    \c mainUi as id, to post messages using the \c sendMessage slot, read messages
+    using the \c newMessage signal, and to view the names of all connected users
+    using the \c userList property. Also, the client responds to the server's
+    \c keepAlive signal in order for the server to detect disconnected clients
+    and remove them from the \c userList property.
 
     The client is able to work with the \l{Qt WebChannel ChatServer Example}.
 

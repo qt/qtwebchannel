@@ -16,13 +16,16 @@ Item {
         rows: 2
         columns: 2
 
-        Text {
-            id: chat
+        ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            Label {
+                id: chat
+            }
         }
 
-        Text {
+        Label {
             id: userlist
             width: 150
             Layout.fillHeight: true
@@ -33,6 +36,7 @@ Item {
             height: 50
             Layout.fillWidth: true
             Layout.columnSpan: 2
+            focus: true
         }
     }
 }
