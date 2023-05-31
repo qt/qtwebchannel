@@ -10,7 +10,7 @@
     \image chatserver-cpp.png
 
     \e{ChatServer} provides a chat service that the
-    \l{Qt WebChannel ChatClient QML Example} and
+    \l{Qt WebChannel ChatClient QML Application} and
     \l{Qt WebChannel ChatClient HTML Example} can connect to.
 
     \include examples-run.qdocinc
@@ -34,7 +34,7 @@
     (\c newMessage), slots (\c sendMessage), and properties (\c userList).
 
     Because this is a plain server application, separate clients are needed to
-    interact with it. \l{Qt WebChannel ChatClient QML Example} and
+    interact with it. \l{Qt WebChannel ChatClient QML Application} and
     \l{Qt WebChannel ChatClient HTML Example} are client implementations
     compatible with this server.
 

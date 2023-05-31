@@ -33,6 +33,6 @@
     The client is able to work with \l{Qt WebChannel ChatServer Example}.
 
 
-    \sa {Qt WebChannel ChatServer Example}, {Qt WebChannel ChatClient QML Example}
+    \sa {Qt WebChannel ChatServer Example}, {Qt WebChannel ChatClient QML Application}
 
 */
