@@ -17,6 +17,8 @@ Item {
 
         TextField {
             id: userName
+            focus: true
+            onEditingFinished: loginButton.clicked()
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
         }
 

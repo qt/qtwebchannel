@@ -5,16 +5,16 @@
 import QtQuick
 import QtQuick.Dialogs
 import QtQuick.Controls
-import QtQuick.Window
 import QtQuick.Layouts
 import QtWebSockets
-import "qwebchannel.js" as WebChannel
+import "../shared/qwebchannel.js" as WebChannel
 
 ApplicationWindow {
     id: root
 
     property var channel
     property string loginName: loginUi.userName.text
+    property bool loggedIn: false
 
     title: "Chat client"
     width: 640
@@ -70,7 +70,7 @@ ApplicationWindow {
 
                     //connect to the keep alive signal
                     ch.objects.chatserver.keepAlive.connect(function(args) {
-                        if (loginName !== '')
+                        if (loginName !== '' && root.loggedIn)
                             //and call the keep alive response method as an answer
                             ch.objects.chatserver.keepAliveResponse(loginName);
                     });
@@ -99,11 +99,12 @@ ApplicationWindow {
         }
     }
 
-    Window {
+    ApplicationWindow {
         id: loginWindow
 
         title: "Login"
         modality: Qt.ApplicationModal
+        flags: Qt.CustomizeWindowHint | Qt.WindowTitleHint
         width: 300
         height: 200
 
@@ -117,12 +118,15 @@ ApplicationWindow {
                 target: loginUi.loginButton
 
                 function onClicked() {
+                    if (loginName === '')
+                        return;
                     //call the login method
                     root.channel.objects.chatserver.login(loginName, function(arg) {
                         //check the return value for success
                         if (arg === true) {
                             loginUi.nameInUseError.visible = false;
                             loginWindow.close();
+                            root.loggedIn = true;
                         } else {
                             loginUi.nameInUseError.visible = true;
                         }
@@ -137,12 +141,11 @@ ApplicationWindow {
         property alias text: message.text
 
         anchors.centerIn: parent
-        // FIXME: icon!
-        //icon: StandardIcon.Critical
         standardButtons: Dialog.Close
         title: "Chat client"
+        width: parent.width / 2
 
-        Text {
+        Label {
             id: message
         }
 

@@ -1,9 +1,17 @@
-TEMPLATE = aux
+TEMPLATE = app
+TARGET = qmlchatclient
 
-exampleassets.files += \
+QT += quick widgets
+
+SOURCES += main.cpp
+
+RESOURCES += \
+    ../shared/shared.qrc \
     LoginForm.ui.qml \
     MainForm.ui.qml \
     qmlchatclient.qml
 
-exampleassets.path = $$[QT_INSTALL_EXAMPLES]/webchannel/chatclient-qml
-include(../exampleassets.pri)
+QML_IMPORT_PATH = $$PWD/../shared
+
+target.path = $$[QT_INSTALL_EXAMPLES]/webchannel/chatclient-qml
+INSTALLS += target
