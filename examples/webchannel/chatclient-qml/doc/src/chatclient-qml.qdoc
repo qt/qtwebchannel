@@ -6,7 +6,7 @@
     \title Qt WebChannel ChatClient QML Application
     \ingroup qtwebchannel-examples
     \brief A QML client that communicates over a WebSocket with a QWebChannel server.
-    \examplecategory {Input/Output}
+    \examplecategory {Web Technologies}
     \meta tag {rpc,network}
 
     \image chatclient-qml.png
