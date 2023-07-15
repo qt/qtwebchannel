@@ -9,6 +9,8 @@ qt_internal_add_module(WebChannel
         qwebchannelabstracttransport.cpp qwebchannelabstracttransport.h
         signalhandler_p.h
         qwebchannelglobal.h
+    DEFINES
+        QT_NO_CONTEXTLESS_CONNECT
     LIBRARIES
         Qt::CorePrivate
 )
