@@ -178,7 +178,7 @@ TestCase {
         testObj1.mySignal("foo", "bar");
 
         var msg1 = client1.awaitSignal();
-        compare(msg1.signal, 6);
+        compare(msg1.signal, 5);
 
         // look if there is a signal send to client2, which should not happen
         var msg2 = client2.skipToMessage(1, "server", 10);
