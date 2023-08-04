@@ -1,8 +1,8 @@
 // Copyright (C) 2019 Klarälvdalens Datakonsult AB, a KDAB Group company, info@kdab.com, author Milian Wolff <milian.wolff@kdab.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#ifndef SIGNALHANDLER_H
-#define SIGNALHANDLER_H
+#ifndef QTWEBCHANNEL_SIGNALHANDLER_P_H
+#define QTWEBCHANNEL_SIGNALHANDLER_P_H
 
 //
 //  W A R N I N G
@@ -274,4 +274,4 @@ void SignalHandler<Receiver>::remove(const QObject *object)
 
 QT_END_NAMESPACE
 
-#endif // SIGNALHANDLER_H
+#endif // QTWEBCHANNEL_SIGNALHANDLER_P_H
