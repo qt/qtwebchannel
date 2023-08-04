@@ -1465,9 +1465,8 @@ void TestWebChannel::benchClassInfo()
     const QHash<QString, QObject*> objects = createObjects(&parent);
 
     QBENCHMARK {
-        foreach (const QObject *object, objects) {
+        for (const QObject *object : objects)
             channel.d_func()->publisher->classInfoForObject(object, m_dummyTransport);
-        }
     }
 }
 
@@ -1498,17 +1497,15 @@ void TestWebChannel::benchPropertyUpdates()
     const QHash<QString, QObject*> objects = createObjects(&parent);
     QList<BenchObject *> objectList;
     objectList.reserve(objects.size());
-    foreach (QObject *obj, objects) {
+    for (QObject *obj : objects)
         objectList << qobject_cast<BenchObject*>(obj);
-    }
 
     channel.registerObjects(objects);
     channel.d_func()->publisher->initializeClient(m_dummyTransport);
 
     QBENCHMARK {
-        foreach (BenchObject *obj, objectList) {
+        for (BenchObject *obj : std::as_const(objectList))
             obj->change();
-        }
 
         channel.d_func()->publisher->setClientIsIdle(true, m_dummyTransport);
         channel.d_func()->publisher->sendPendingPropertyUpdates();

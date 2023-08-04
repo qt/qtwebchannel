@@ -2,6 +2,8 @@
 // Milian Wolff <milian.wolff@kdab.com>
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
+#undef QT_NO_FOREACH // this file contains unported legacy Q_FOREACH uses
+
 #include "qqmlwebchannel.h"
 #include <QtWebChannel/qwebchannelabstracttransport.h>
 #include <QtWebChannel/private/qwebchannel_p.h>

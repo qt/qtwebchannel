@@ -10,6 +10,8 @@ qt_internal_add_qml_module(WebChannelQuick
         qqmlwebchannel.h qqmlwebchannel.cpp
         qqmlwebchannelattached_p.h qqmlwebchannelattached.cpp
         qwebchannelquickglobal.h
+    NO_PCH_SOURCES
+        qqmlwebchannel.cpp # undef QT_NO_FOREACH
     DEFINES
         QT_NO_CONTEXTLESS_CONNECT
     LIBRARIES
