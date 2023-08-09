@@ -37,8 +37,8 @@
 **
 ****************************************************************************/
 
-#ifndef SIGNALHANDLER_H
-#define SIGNALHANDLER_H
+#ifndef QTWEBCHANNEL_SIGNALHANDLER_P_H
+#define QTWEBCHANNEL_SIGNALHANDLER_P_H
 
 //
 //  W A R N I N G
@@ -306,4 +306,4 @@ void SignalHandler<Receiver>::remove(const QObject *object)
 
 QT_END_NAMESPACE
 
-#endif // SIGNALHANDLER_H
+#endif // QTWEBCHANNEL_SIGNALHANDLER_P_H
