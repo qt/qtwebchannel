@@ -6,7 +6,7 @@
 #qt_internal_add_example(qwclient)
 #qt_internal_add_example(chatclient-html)
 
-if(TARGET Qt::WebSockets)
+if(TARGET Qt::WebSockets AND NOT ANDROID)
     qt_internal_add_example(chatserver-cpp)
 endif()
 if(TARGET Qt::WebSockets AND TARGET Qt::Widgets)
