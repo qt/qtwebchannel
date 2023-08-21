@@ -5,6 +5,7 @@
     \example chatserver-cpp
     \title Qt WebChannel ChatServer Example
     \ingroup qtwebchannel-examples
+    \examplecategory {Web Technologies}
     \brief A simple chat server implemented using the QWebChannel C++ API.
 
     \image chatserver-cpp.png
