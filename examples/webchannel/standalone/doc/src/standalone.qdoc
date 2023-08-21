@@ -6,6 +6,7 @@
     \title Qt WebChannel Standalone Example
     \ingroup qtwebchannel-examples
     \image standalone-screenshot.png
+    \examplecategory {Web Technologies}
     \brief A simple chat between a server and a remote client running in a
     browser.
 
