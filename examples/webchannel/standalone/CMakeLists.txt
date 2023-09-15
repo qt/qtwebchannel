@@ -41,8 +41,39 @@ target_link_libraries(standalone PUBLIC
     Qt::Widgets
 )
 
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/index.html
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/index.html
+            ${CMAKE_CURRENT_BINARY_DIR}/index.html
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/index.html
+    VERBATIM
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../shared/qwebchannel.js
+            ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../shared/qwebchannel.js
+    VERBATIM
+)
+
+add_custom_target(output_target ALL
+    DEPENDS
+    ${CMAKE_CURRENT_BINARY_DIR}/index.html
+    ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
+)
+
+add_dependencies(standalone output_target)
+
 install(TARGETS standalone
     RUNTIME DESTINATION "${INSTALL_EXAMPLEDIR}"
     BUNDLE DESTINATION "${INSTALL_EXAMPLEDIR}"
     LIBRARY DESTINATION "${INSTALL_EXAMPLEDIR}"
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/index.html ${CMAKE_CURRENT_BINARY_DIR}/qwebchannel.js
+    DESTINATION "${INSTALL_EXAMPLEDIR}"
 )
