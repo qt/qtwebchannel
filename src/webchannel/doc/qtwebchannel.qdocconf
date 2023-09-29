@@ -54,5 +54,7 @@ navigation.landingpage                              = "Qt WebChannel"
 navigation.cppclassespage                           = "Qt WebChannel C++ Classes"
 navigation.qmltypespage                             = "Qt WebChannel QML Types"
 
+manifestmeta.highlighted.names = "QtWebChannel/Qt WebChannel Standalone Example"
+
 # Enforce zero warnings for the documention build
 warninglimit = 0
