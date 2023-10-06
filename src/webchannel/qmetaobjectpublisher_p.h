@@ -310,6 +310,7 @@ private:
     friend class QQmlWebChannelPrivate;
     friend class QWebChannel;
     friend class TestWebChannel;
+    friend class tst_bench_QWebChannel;
 
     QWebChannel *webChannel;
     std::unordered_map<const QThread*, SignalHandler<QMetaObjectPublisher>> signalHandlers;

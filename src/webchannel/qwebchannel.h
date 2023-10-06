@@ -55,6 +55,7 @@ private:
     friend class QMetaObjectPublisher;
     friend class QQmlWebChannel;
     friend class TestWebChannel;
+    friend class tst_bench_QWebChannel;
 };
 
 QT_END_NAMESPACE
