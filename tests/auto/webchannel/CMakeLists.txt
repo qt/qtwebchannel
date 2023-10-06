@@ -15,6 +15,7 @@ qt_internal_add_test(tst_webchannel
     LIBRARIES
         Qt::CorePrivate
         Qt::WebChannelPrivate
+        Qt::TestPrivate
 )
 
 ## Scopes:
