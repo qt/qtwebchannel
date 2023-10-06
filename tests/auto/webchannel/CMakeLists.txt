@@ -7,6 +7,7 @@ qt_internal_add_test(tst_webchannel
     LIBRARIES
         Qt::CorePrivate
         Qt::WebChannelPrivate
+        Qt::TestPrivate
 )
 
 qt_internal_extend_target(tst_webchannel CONDITION TARGET Qt::Qml
