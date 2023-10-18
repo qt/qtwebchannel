@@ -354,6 +354,7 @@ private slots:
     void testPropertyUpdateInterval();
     void testPropertyMultipleTransports();
     void testQPropertyBlockUpdates();
+    void testBindings();
     void testDeletionDuringMethodInvocation_data();
     void testDeletionDuringMethodInvocation();
 

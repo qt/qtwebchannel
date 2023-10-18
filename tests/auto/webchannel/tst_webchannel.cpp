@@ -9,6 +9,7 @@
 #include <qmetaobjectpublisher_p.h>
 
 #include <QtTest>
+#include <QtTest/private/qpropertytesthelper_p.h>
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
 #include <QJSEngine>
 #endif
@@ -1242,6 +1243,25 @@ void TestWebChannel::testQPropertyBlockUpdates()
     blockUpdates = false;
     QCOMPARE(blockedSignalled, false);
     QCOMPARE(transport.messagesSent().size(), 1u);
+}
+
+void TestWebChannel::testBindings()
+{
+    QWebChannel channel;
+
+    QTestPrivate::testReadWritePropertyBasics(channel, true, false, "blockUpdates");
+    if (QTest::currentTestFailed()) {
+        qDebug("Failed property test for QWebChannel::blockUpdates");
+        return;
+    }
+
+    QVERIFY(!channel.blockUpdates());
+
+    QTestPrivate::testReadWritePropertyBasics(channel, 100, 200, "propertyUpdateInterval");
+    if (QTest::currentTestFailed()) {
+        qDebug("Failed property test for QWebChannel::propertyUpdateInterval");
+        return;
+    }
 }
 
 void TestWebChannel::testPropertyMultipleTransports()
