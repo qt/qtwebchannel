@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 qt_internal_add_module(WebChannel
-    GENERATE_CPP_EXPORTS
     SOURCES
         qmetaobjectpublisher.cpp qmetaobjectpublisher_p.h
         qwebchannel.cpp qwebchannel.h qwebchannel_p.h
