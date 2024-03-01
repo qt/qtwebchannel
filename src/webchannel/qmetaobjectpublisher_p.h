@@ -29,6 +29,8 @@
 
 #include <unordered_map>
 
+class tst_bench_QWebChannel;
+
 QT_BEGIN_NAMESPACE
 
 // NOTE: keep in sync with corresponding maps in qwebchannel.js and WebChannelTest.qml
@@ -310,7 +312,7 @@ private:
     friend class QQmlWebChannelPrivate;
     friend class QWebChannel;
     friend class TestWebChannel;
-    friend class tst_bench_QWebChannel;
+    friend class ::tst_bench_QWebChannel;
 
     QWebChannel *webChannel;
     std::unordered_map<const QThread*, SignalHandler<QMetaObjectPublisher>> signalHandlers;

@@ -12,10 +12,6 @@
 #include <QtWebChannel/private/qmetaobjectpublisher_p.h>
 #include <QtWebChannel/private/qwebchannel_p.h>
 
-QT_BEGIN_NAMESPACE
-
-// This class has to be in QT_{BEGIN,END}_NAMESPACE because it's a friend of
-// QWebChannel and QMetaObjectPublisher
 class tst_bench_QWebChannel : public QObject
 {
     Q_OBJECT
@@ -148,8 +144,6 @@ void tst_bench_QWebChannel::benchRemoveTransport()
             pub->transportRemoved(transport.get());
     }
 }
-
-QT_END_NAMESPACE
 
 QTEST_MAIN(tst_bench_QWebChannel)
 
