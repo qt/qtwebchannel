@@ -16,7 +16,7 @@ QT_BEGIN_NAMESPACE
 
 /*!
     \qmltype WebChannel
-    \instantiates QQmlWebChannel
+    \nativetype QQmlWebChannel
 
     \inqmlmodule QtWebChannel
     \ingroup webchannel-qml
@@ -30,7 +30,7 @@ QT_BEGIN_NAMESPACE
 */
 
 /*!
-  \qmlproperty QQmlListProperty<QObject> WebChannel::transports
+  \qmlproperty list<QtObject> WebChannel::transports
   A list of transport objects, which implement QWebChannelAbstractTransport. The transports
   are used to talk to the remote clients.
 
@@ -38,7 +38,7 @@ QT_BEGIN_NAMESPACE
 */
 
 /*!
-  \qmlproperty QQmlListProperty<QObject> WebChannel::registeredObjects
+  \qmlproperty list<QtObject> WebChannel::registeredObjects
 
   \brief A list of objects which should be accessible to remote clients.
 
@@ -95,15 +95,16 @@ QQmlWebChannel::QQmlWebChannel(QObject *parent) : QWebChannel(*(new QQmlWebChann
 QQmlWebChannel::~QQmlWebChannel() { }
 
 /*!
-    \qmlmethod void WebChannel::registerObjects(QVariantMap objects)
+    \qmlmethod void WebChannel::registerObjects(object objects)
     Registers the specified \a objects to make them accessible to HTML clients.
+    \a objects should be a JavaScript Map object.
     The key of the map is used as an identifier for the object on the client side.
 
     Once registered, all signals and property changes are automatically propagated to the clients.
     Public invokable methods, including slots, are also accessible to the clients.
 
     This imperative API can be used to register objects on the fly. For static objects, the
-   declarative registeredObjects property should be preferred.
+    declarative registeredObjects property should be preferred.
 
     \sa registeredObjects
 */
@@ -127,12 +128,12 @@ QQmlWebChannelAttached *QQmlWebChannel::qmlAttachedProperties(QObject *obj)
 }
 
 /*!
-    \qmlmethod void WebChannel::connectTo(QWebChannelAbstractTransport transport)
+    \qmlmethod void WebChannel::connectTo(QtObject transport)
 
     \brief Connects to the \a transport, which represents a communication
     channel to a single client.
 
-    The transport object must be an implementation of QWebChannelAbstractTransport.
+    The transport object must be an implementation of \l QWebChannelAbstractTransport.
 
     \sa transports, disconnectFrom()
 */
@@ -148,7 +149,7 @@ void QQmlWebChannel::connectTo(QObject *transport)
 }
 
 /*!
-    \qmlmethod void WebChannel::disconnectFrom(QWebChannelAbstractTransport transport)
+    \qmlmethod void WebChannel::disconnectFrom(QtObject transport)
 
     \brief Disconnects the \a transport from this WebChannel.
 
