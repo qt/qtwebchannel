@@ -144,13 +144,29 @@ QHash<QString, QObject *> QWebChannel::registeredObjects() const
 }
 
 /*!
+    \qmlmethod void WebChannel::registerObject(const string id, QtObject object)
+
+    Registers a single object to the WebChannel.
+
+    The properties, signals and public methods of the \a object are published to the remote clients.
+    There, an object with the identifier \a id is then constructed.
+
+    A property that is \c BINDABLE but does not have a \c NOTIFY signal will have working property
+    updates on the client side, but no mechanism to register a callback for the change notifications.
+
+    \note A current limitation is that objects must be registered before any client is initialized.
+
+    \sa registerObjects(), deregisterObject(), registeredObjects
+*/
+
+/*!
     Registers a single object to the QWebChannel.
 
     The properties, signals and public methods of the \a object are published to the remote clients.
     There, an object with the identifier \a id is then constructed.
 
-    \note A property that is \c BINDABLE but does not have a \c NOTIFY signal will have working property
-          updates on the client side, but no mechanism to register a callback for the change notifications.
+    A property that is \c BINDABLE but does not have a \c NOTIFY signal will have working property
+    updates on the client side, but no mechanism to register a callback for the change notifications.
 
     \note A current limitation is that objects must be registered before any client is initialized.
 
@@ -161,6 +177,16 @@ void QWebChannel::registerObject(const QString &id, QObject *object)
     Q_D(QWebChannel);
     d->publisher->registerObject(id, object);
 }
+
+/*!
+    \qmlmethod void WebChannel::deregisterObject(QtObject object)
+
+    Deregisters the given \a object from the WebChannel.
+
+    Remote clients will receive a \c destroyed signal for the given object.
+
+    \sa registerObjects(), registerObject(), registeredObjects
+*/
 
 /*!
     Deregisters the given \a object from the QWebChannel.
@@ -179,13 +205,20 @@ void QWebChannel::deregisterObject(QObject *object)
 /*!
     \property QWebChannel::blockUpdates
 
-    \brief When set to true, updates are blocked and remote clients will not be notified about property changes.
+    \brief When set to \c true, updates are blocked and remote clients will not be notified about property changes.
 
     The changes are recorded and sent to the clients once updates become unblocked again by setting
-    this property to false. By default, updates are not blocked.
+    this property to \c false. By default, updates are not blocked.
 */
 
+/*!
+    \qmlproperty bool WebChannel::blockUpdates
 
+    \brief When set to \c true, updates are blocked and remote clients will not be notified about property changes.
+
+    The changes are recorded and sent to the clients once updates become unblocked again by setting
+    this property to \c false. By default, updates are not blocked.
+*/
 bool QWebChannel::blockUpdates() const
 {
     Q_D(const QWebChannel);
@@ -206,6 +239,19 @@ QBindable<bool> QWebChannel::bindableBlockUpdates()
 
 /*!
     \property QWebChannel::propertyUpdateInterval
+
+    \brief The property update interval.
+
+    This interval can be changed to a different interval in milliseconds by
+    setting it to a positive value. Property updates are batched and sent out
+    after the interval expires. If set to zero, the updates occurring within a
+    single event loop run are batched and sent out on the next run.
+    If negative, updates will be sent immediately.
+    Default value is 50 milliseconds.
+*/
+
+/*!
+    \qmlproperty int WebChannel::propertyUpdateInterval
 
     \brief The property update interval.
 
