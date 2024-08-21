@@ -12,7 +12,7 @@ Module {
         name: "QQmlWebChannel"
         prototype: "QWebChannel"
         exports: ["QtWebChannel/WebChannel 1.0"]
-        exportMetaObjectRevisions: [0]
+        exportMetaObjectRevisions: [256]
         attachedType: "QQmlWebChannelAttached"
         Property { name: "transports"; type: "QObject"; isList: true; isReadonly: true }
         Property { name: "registeredObjects"; type: "QObject"; isList: true; isReadonly: true }
