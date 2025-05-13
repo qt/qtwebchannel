@@ -28,6 +28,8 @@
     socket's \c onopen handler. Take a look at the \l{Qt WebChannel Standalone Example} to see how
     this is done.
 
+    \note Only a single \c QWebChannel object per transport can be created in the same page.
+
     A converter wrapper function is either a string with the name of a built-in converter or a
     user supplied function that takes the object to process as an argument and returns the
     resultant type or undefined if the function does not apply. If undefined is returned the next
