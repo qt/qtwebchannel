@@ -75,4 +75,8 @@ void TestObject::setStringProperty(const QString &stringProperty)
     m_stringProperty = stringProperty;
 }
 
+QObject* TestObject::createQObject() {
+     return new QObject(this);
+}
+
 QT_END_NAMESPACE

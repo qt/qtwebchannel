@@ -83,6 +83,9 @@ TestCase {
         transports: [client.serverTransport]
         registeredObjects: [myObj, myOtherObj, myValueObj, myFactory, testObject]
     }
+    WebChannel {
+        id: nullTest
+    }
 
     function initChannel() {
         client.serverTransport.receiveMessage(JSON.stringify({type: JSClient.QWebChannelMessageTypes.idle}));
@@ -742,5 +745,17 @@ TestCase {
         value = channel.objects.myValueObj.value;
         verify(typeof value === "string"); // Not converted to Date
         compare(value, invalidDate);
+    }
+
+    function test_registerNull()
+    {
+        nullTest.registeredObjects = [null]
+        compare(nullTest.registeredObjects, [])
+    }
+
+    function test_noContext()
+    {
+        nullTest.registeredObjects = [testObject.createQObject()]
+        compare(nullTest.registeredObjects, [])
     }
 }

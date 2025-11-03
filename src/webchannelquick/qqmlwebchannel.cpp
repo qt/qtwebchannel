@@ -179,12 +179,20 @@ QQmlListProperty<QObject> QQmlWebChannel::registeredObjects()
 
 void QQmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, QObject *object)
 {
+    if (!object) {
+        qWarning() << "Cannot register null object to WebChannel";
+        return;
+    }
     const QQmlWebChannelAttached *const attached = qobject_cast<QQmlWebChannelAttached *>(
             qmlAttachedPropertiesObject<QQmlWebChannel>(object, false /* don't create */));
     if (!attached) {
         const QQmlContext *const context = qmlContext(object);
-        qWarning() << "Cannot register object" << context->nameForObject(object) << '(' << object
-                   << ") without attached WebChannel.id property. Did you forget to set it?";
+        if (context) {
+            qWarning() << "Cannot register object" << context->nameForObject(object) << '(' << object
+                       << ") without attached WebChannel.id property. Did you forget to set it?";
+        } else {
+            qWarning() << "Cannot register an object without WebChannel attached property.";
+        }
         return;
     }
     QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);

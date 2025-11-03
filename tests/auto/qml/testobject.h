@@ -24,6 +24,8 @@ public:
     QString stringProperty() const;
     QBindable<QString> bindableStringProperty() { return &m_stringProperty; }
 
+    Q_INVOKABLE QObject* createQObject();
+
 public slots:
     void triggerSignals();
 
