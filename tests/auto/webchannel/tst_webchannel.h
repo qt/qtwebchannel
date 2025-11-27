@@ -76,7 +76,6 @@ private:
 class TestObject : public QObject
 {
     Q_OBJECT
-    Q_ENUMS(Foo)
 
     Q_PROPERTY(Foo foo READ foo CONSTANT)
     Q_PROPERTY(int asdf READ asdf NOTIFY asdfChanged)
@@ -97,6 +96,7 @@ public:
         Bar,
         Asdf
     };
+    Q_ENUM(Foo)
 
     enum TestFlag : quint16 {
         FirstFlag = 0x1,
