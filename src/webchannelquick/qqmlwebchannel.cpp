@@ -28,31 +28,6 @@ QT_BEGIN_NAMESPACE
     \sa QWebChannel, {Qt WebChannel JavaScript API}{JavaScript API}
 */
 
-/*!
-  \qmlproperty list<QtObject> WebChannel::transports
-  A list of transport objects, which implement QWebChannelAbstractTransport. The transports
-  are used to talk to the remote clients.
-
-  \sa connectTo(), disconnectFrom()
-*/
-
-/*!
-  \qmlproperty list<QtObject> WebChannel::registeredObjects
-
-  \brief A list of objects which should be accessible to remote clients.
-
-  The objects must have the attached \l id property set to an identifier, under which the
-  object is then known on the HTML side.
-
-  Once registered, all signals and property changes are automatically propagated to the clients.
-  Public invokable methods, including slots, are also accessible to the clients.
-
-  If one needs to register objects which are not available when the component is created, use the
-  imperative registerObjects method.
-
-  \sa registerObjects(), id
-*/
-
 class QQmlWebChannelPrivate : public QWebChannelPrivate
 {
     Q_DECLARE_PUBLIC(QQmlWebChannel)
@@ -169,20 +144,20 @@ void QQmlWebChannel::disconnectFrom(QObject *transport)
 }
 
 /*!
-    \property QQmlWebChannel::registeredObjects
+  \qmlproperty list<QtObject> WebChannel::registeredObjects
 
-    This property holds the list of objects which should be accessible to remote clients.
+  \brief A list of objects that should be accessible to remote clients.
 
-    The objects must have the attached id property set to an identifier, under which the
-    object is then known on the HTML side.
+  The objects must have the attached \l id property set to an identifier, under which the
+  object is then known on the HTML side.
 
-    Once registered, all signals and property changes are automatically propagated to the clients.
-    Public invokable methods, including slots, are also accessible to the clients.
+  Once registered, all signals and property changes are automatically propagated to the clients.
+  Public invokable methods, including slots, are also accessible to the clients.
 
-    If one needs to register objects which are not available when the component is created, use the
-    imperative registerObjects method.
+  If you need to register objects that are not available when the component is created, use the
+  imperative registerObjects method.
 
-    \sa registerObjects(), id
+  \sa registerObjects(), id
 */
 QQmlListProperty<QObject> QQmlWebChannel::registeredObjects()
 {
@@ -237,13 +212,14 @@ void QQmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
 }
 
 /*!
-    \property QQmlWebChannel::transports
+  \qmlproperty list<QtObject> WebChannel::transports
 
-    This property holds a list of transport objects, which implement QWebChannelAbstractTransport.
-    The transports are used to talk to the remote clients.
+  A list of transport objects that implement QWebChannelAbstractTransport. The transports
+  are used to talk to the remote clients.
 
-    \sa connectTo(), disconnectFrom()
+  \sa connectTo(), disconnectFrom()
 */
+
 QQmlListProperty<QObject> QQmlWebChannel::transports()
 {
     return QQmlListProperty<QObject>(this, nullptr, transports_append, transports_count,
