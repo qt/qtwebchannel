@@ -264,11 +264,7 @@ void SignalHandler<Receiver>::clear()
 template<class Receiver>
 void SignalHandler<Receiver>::remove(const QObject *object)
 {
-    auto it = m_connectionsCounter.find(object);
-    Q_ASSERT(it != m_connectionsCounter.cend());
-    const SignalConnectionHash connections = std::move(it.value());
-    m_connectionsCounter.erase(it);
-    for (const ConnectionPair &connection : connections)
+    for (ConnectionPair &connection : m_connectionsCounter.take(object))
         QObject::disconnect(connection.first);
 }
 
