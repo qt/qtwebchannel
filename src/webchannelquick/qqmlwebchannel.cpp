@@ -233,10 +233,9 @@ QObject *QQmlWebChannel::registeredObjects_at(QQmlListProperty<QObject> *prop, q
 void QQmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
 {
     QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
-    foreach (QObject *object, channel->d_func()->registeredObjects) {
+    const auto moved = std::exchange(channel->d_func()->registeredObjects, {}); // precautionary
+    for (QObject *object : moved)
         channel->deregisterObject(object);
-    }
-    return channel->d_func()->registeredObjects.clear();
 }
 
 /*!
