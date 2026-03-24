@@ -156,7 +156,7 @@ void SignalHandler<Receiver>::connectTo(const QObject *object, const int signalI
         qWarning() << "SignalHandler: QMetaObject::connect returned false. Unable to connect to" << object << signal.name() << signal.methodSignature();
         return;
     }
-    connectionCounter.first = connection;
+    connectionCounter.first = std::move(connection);
     connectionCounter.second = 1;
 
     setupSignalArgumentTypes(metaObject, signal);
