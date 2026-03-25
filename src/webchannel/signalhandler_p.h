@@ -64,11 +64,6 @@ public:
     int qt_metacall(QMetaObject::Call call, int methodId, void **args) override;
 
     /**
-     * Reset all connections, useful for benchmarks.
-     */
-    void clear();
-
-    /**
      * Fully remove and disconnect an object from handler
      */
     void remove(const QObject *object);
@@ -245,20 +240,6 @@ int SignalHandler<Receiver>::qt_metacall(QMetaObject::Call call, int methodId, v
         return -1;
     }
     return methodId;
-}
-
-template<class Receiver>
-void SignalHandler<Receiver>::clear()
-{
-    // "consume loop": disconnectNotify() calls unknown code
-    const auto oldConnectionsCounter = std::exchange(m_connectionsCounter, {});
-    for (const SignalConnectionHash &connections : oldConnectionsCounter) {
-        for (const ConnectionPair &connection : connections)
-            QObject::disconnect(connection.first);
-    }
-    const SignalArgumentHash keep = m_signalArgumentTypes.take(&QObject::staticMetaObject);
-    m_signalArgumentTypes.clear();
-    m_signalArgumentTypes[&QObject::staticMetaObject] = keep;
 }
 
 template<class Receiver>
