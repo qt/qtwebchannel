@@ -6,6 +6,9 @@
     \title Qt WebChannel Standalone Example
     \ingroup qtwebchannel-examples
     \image standalone-screenshot.png
+           {Dialog window listing exchanged ping and pong messages with an
+           input field and Send button, over a terminal showing connection
+           log output}
     \examplecategory {Web Technologies}
     \brief A simple chat between a server and a remote client running in a
     browser.

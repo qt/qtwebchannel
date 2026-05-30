@@ -50,6 +50,9 @@ sourcedirs                                          += .. \
 
 imagedirs                                           += images
 
+# Report warnings for images without alt text
+reportmissingalttextforimages = true
+
 exampledirs                                         += ../../../examples/webchannel
 examples.fileextensions                             += "*.html *.json"
 

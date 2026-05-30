@@ -10,6 +10,8 @@
     \meta tag {rpc,network}
 
     \image chatclient-qml.png
+           {Small Login window with a Login button in front of a Hello World
+           window}
 
     \e{ChatClient QML} provides a simple QWebChannel client implemented using JavaScript and QML.
 
