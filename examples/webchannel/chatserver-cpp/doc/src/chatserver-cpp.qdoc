@@ -9,6 +9,7 @@
     \brief A simple chat server implemented using the QWebChannel C++ API.
 
     \image chatserver-cpp.png
+           {Console window printing repeated Keep Alive Check log lines}
 
     \e{ChatServer} provides a chat service that the
     \l{Qt WebChannel ChatClient QML Application} and

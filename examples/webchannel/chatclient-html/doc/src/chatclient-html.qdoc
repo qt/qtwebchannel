@@ -10,6 +10,8 @@
 
 
     \image chatclient-html.png
+           {Browser window with a Chat Login dialog containing a Name field
+           and Login button, beside a Users panel}
 
     \e{ChatClient HTML} provides a simple QWebChannel client implemented using JavaScript and HTML.
 
