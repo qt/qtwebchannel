@@ -3,8 +3,8 @@
 
 #include "chatserver.h"
 
-#include "../shared/websocketclientwrapper.h"
-#include "../shared/websockettransport.h"
+#include "websocketclientwrapper.h"
+#include "websockettransport.h"
 
 #include <QCoreApplication>
 #include <QWebChannel>

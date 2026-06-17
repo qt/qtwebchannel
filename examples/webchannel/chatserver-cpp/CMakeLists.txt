@@ -13,8 +13,8 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core WebChannel WebSockets)
 
 qt_add_executable(chatserver
-    ../shared/websocketclientwrapper.cpp ../shared/websocketclientwrapper.h
-    ../shared/websockettransport.cpp ../shared/websockettransport.h
+    websocketclientwrapper.cpp websocketclientwrapper.h
+    websockettransport.cpp websockettransport.h
     chatserver.cpp chatserver.h
     main.cpp
 )

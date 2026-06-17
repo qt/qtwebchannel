@@ -10,8 +10,8 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui WebChannel WebSockets Widgets)
 
 qt_add_executable(standalone
-    ../shared/websocketclientwrapper.cpp ../shared/websocketclientwrapper.h
-    ../shared/websockettransport.cpp ../shared/websockettransport.h
+    websocketclientwrapper.cpp websocketclientwrapper.h
+    websockettransport.cpp websockettransport.h
     core.h
     dialog.cpp dialog.h dialog.ui
     main.cpp
