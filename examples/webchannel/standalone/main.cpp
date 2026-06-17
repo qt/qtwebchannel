@@ -3,8 +3,8 @@
 
 #include "dialog.h"
 #include "core.h"
-#include "../shared/websocketclientwrapper.h"
-#include "../shared/websockettransport.h"
+#include "websocketclientwrapper.h"
+#include "websockettransport.h"
 
 #include <QApplication>
 #include <QDesktopServices>
