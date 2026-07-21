@@ -22,9 +22,9 @@
     \section1 Communicating with a Remote Client
 
     The C++ application sets up a QWebChannel instance and publishes a \c Core
-    object over it. For the remote client side, the \c {index.html} file
-    is opened. Both show a dialog with the list of received messages and an input
-    box to send messages to the other end.
+    object over it. On the remote client side, \c {index.html} runs in your
+    default browser. Both show a dialog with the list of received messages and
+    an input box to send messages to the other end.
 
     The \c Core emits the \c Core::sendText() signal when the user sends
     a message. The signal automatically gets propagated to the HTML client.
@@ -35,6 +35,19 @@
     over a WebSocket. The C++ side instantiates a QWebSocketServer and
     wraps incoming QWebSocket connections in QWebChannelAbstractTransport
     objects. These objects are then connected to the QWebChannel instance.
+
+    \section1 Serving the Client Page
+
+    The \c {index.html} page and the \c {qwebchannel.js} script it loads are
+    compiled into the application as Qt resources. The application serves them
+    over a minimal loopback HTTP server and opens the default browser at the
+    resulting \c http:// URL. A loopback URL works even when the browser and the
+    application do not share a filesystem, as on a sandboxed or cross-compiled
+    platform.
+
+    The example implements its own minimal HTTP server so that building it
+    does not require the Qt HTTP Server module. In a real application, you
+    would use \l QHttpServer instead.
 
     \sa {Qt WebChannel JavaScript API}
 */
