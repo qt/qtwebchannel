@@ -398,7 +398,8 @@ void QMetaObjectPublisher::initializePropertyUpdates(QObject *const object, cons
 {
     auto *metaObject = object->metaObject();
     auto *signalHandler = signalHandlerFor(object);
-    for (const auto propertyInfoVar : objectInfo[KEY_PROPERTIES].toArray()) {
+    const QJsonArray array = objectInfo[KEY_PROPERTIES].toArray();
+    for (const auto propertyInfoVar : array) {
         const QJsonArray &propertyInfo = propertyInfoVar.toArray();
         if (propertyInfo.size() < 2) {
             qWarning() << "Invalid property info encountered:" << propertyInfoVar;
@@ -480,7 +481,8 @@ void QMetaObjectPublisher::sendPendingPropertyUpdates()
 
         // if the object is auto registered, just send the update only to clients which know this object
         if (wrappedObjects.contains(objectId)) {
-            for (QWebChannelAbstractTransport *transport : wrappedObjects.value(objectId).transports) {
+            const auto transports = wrappedObjects.value(objectId).transports;
+            for (QWebChannelAbstractTransport *transport : transports) {
                 QJsonArray &arr = specificUpdates[transport];
                 arr.push_back(obj);
             }
@@ -672,7 +674,8 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
 
         // if the object is wrapped, just send the response to clients which know this object
         if (wrappedObjects.contains(objectName)) {
-            for (QWebChannelAbstractTransport *transport : wrappedObjects.value(objectName).transports) {
+            const auto transports = wrappedObjects.value(objectName).transports;
+            for (QWebChannelAbstractTransport *transport : transports) {
                 transport->sendMessage(message);
             }
         } else {
@@ -1020,7 +1023,7 @@ void QMetaObjectPublisher::broadcastMessage(const QJsonObject &message) const
         return;
     }
 
-    for (QWebChannelAbstractTransport *transport : webChannel->d_func()->transports) {
+    for (QWebChannelAbstractTransport *transport : std::as_const(webChannel->d_func()->transports)) {
         transport->sendMessage(message);
     }
 }
@@ -1031,7 +1034,7 @@ void QMetaObjectPublisher::enqueueBroadcastMessage(const QJsonObject &message)
         return;
     }
 
-    for (auto *transport : webChannel->d_func()->transports) {
+    for (auto *transport : std::as_const(webChannel->d_func()->transports)) {
         auto &state = transportState[transport];
         state.queuedMessages.append(message);
     }
