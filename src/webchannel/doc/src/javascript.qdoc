@@ -11,11 +11,13 @@
 
     To communicate with a QWebChannel or \l [QML] WebChannel, a client must use and set up the
     JavaScript API provided by \c qwebchannel.js. For clients run inside \l{Qt WebEngine}, you
-    can load the file via \c qrc:///qtwebchannel/qwebchannel.js. For external clients, you
-    need to copy the file to your web server. Then instantiate a QWebChannel object and pass
-    it a transport object and a callback function, which will be invoked once the
-    initialization of the channel finishes and the published objects become available. An optional
-    third argument contains an array of converter wrapper functions or a single one.
+    can load the file via \c qrc:///qtwebchannel/qwebchannel.js, if the you load the page locally,
+    or make \c qwebchannel.js accessible from a \c QWebEngineUrlSchemeHandler registered with
+    \c QWebEngineUrlScheme as \c QWebEngineUrlScheme::SecureScheme. For external clients, you need to
+    copy the file to your web server. Then instantiate a QWebChannel object and pass it a transport
+    object and a callback function, which will be invoked once the initialization of the channel
+    finishes and the published objects become available. An optional third argument contains an
+    array of converter wrapper functions or a single one.
 
     The transport object implements a minimal message passing interface. It should be an object
     with a \c send() function, which takes a stringified JSON message and transmits it to the
