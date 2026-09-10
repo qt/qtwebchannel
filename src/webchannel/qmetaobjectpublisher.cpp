@@ -866,6 +866,8 @@ int QMetaObjectPublisher::methodOverloadBadness(const QMetaMethod &method, const
 
 void QMetaObjectPublisher::transportRemoved(QWebChannelAbstractTransport *transport)
 {
+    transportState.remove(transport);
+
     auto it = transportedWrappedObjects.find(transport);
     // It is not allowed to modify a container while iterating over it. So save
     // objects which should be removed and call objectDestroyed() on them later.
