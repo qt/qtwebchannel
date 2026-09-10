@@ -291,6 +291,9 @@ private slots:
 
     void qtbug46548_overriddenProperties();
     void qtbug62388_wrapObjectMultipleTransports();
+    void qtbug150200_transportStateRemovedOnDestroy();
+    void qtbug150200_transportStateRemovedOnDisconnect();
+    void qtbug150200_newTransportDoesNotInheritState();
 
 private:
     DummyTransport *m_dummyTransport;

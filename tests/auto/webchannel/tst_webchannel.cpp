@@ -21,7 +21,9 @@
 #include <QtConcurrent>
 #endif
 
+#include <cstddef>
 #include <memory>
+#include <new>
 #include <optional>
 #include <vector>
 
@@ -1573,6 +1575,98 @@ void TestWebChannel::qtbug62388_wrapObjectMultipleTransports()
     QCOMPARE(queryObjectInfo(&obj, &transport2), objectInfo2);
 
     // don't crash when the transports are destroyed
+}
+
+// Scenario: A transport is destroyed while it is still connected.
+// Given a publisher that holds per-transport state for the transport,
+// when the transport is destroyed,
+// then the publisher erases the per-transport state.
+void TestWebChannel::qtbug150200_transportStateRemovedOnDestroy()
+{
+    // GIVEN: A publisher that holds per-transport state
+    QWebChannel channel;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+    auto transport = std::make_unique<DummyTransport>();
+
+    channel.connectTo(transport.get());
+    publisher->initializeClient(transport.get());
+    publisher->setClientIsIdle(true, transport.get());
+    QCOMPARE(publisher->transportState.size(), 1);
+
+    // WHEN: The transport is destroyed
+    transport.reset();
+
+    // THEN: The publisher erases the per-transport state
+    QCOMPARE(publisher->transportState.size(), 0);
+}
+
+// Scenario: A transport is disconnected from the channel.
+// Given a publisher that holds per-transport state for the transport,
+// when the transport is disconnected,
+// then the publisher erases the per-transport state.
+void TestWebChannel::qtbug150200_transportStateRemovedOnDisconnect()
+{
+    // GIVEN: A publisher that holds per-transport state
+    QWebChannel channel;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+    DummyTransport transport;
+
+    channel.connectTo(&transport);
+    publisher->initializeClient(&transport);
+    publisher->setClientIsIdle(true, &transport);
+    QCOMPARE(publisher->transportState.size(), 1);
+
+    // WHEN: The transport is disconnected
+    channel.disconnectFrom(&transport);
+
+    // THEN: The publisher erases the per-transport state
+    QCOMPARE(publisher->transportState.size(), 0);
+}
+
+// Scenario: A new transport reuses the address of a destroyed transport.
+// Given a destroyed transport that was idle and had a queued message,
+// when a new transport is constructed at the same address,
+// then the new client is not idle and gets no queued message.
+void TestWebChannel::qtbug150200_newTransportDoesNotInheritState()
+{
+    // Runs the destructor of a transport that was constructed in place,
+    // and leaves the storage itself alone.
+    struct InPlaceDeleter
+    {
+        void operator()(DummyTransport *transport) const
+        {
+            transport->~DummyTransport();
+        }
+    };
+    using InPlaceTransport = std::unique_ptr<DummyTransport, InPlaceDeleter>;
+
+    // GIVEN: A destroyed transport that was idle and had a queued message
+    QWebChannel channel;
+    QMetaObjectPublisher *publisher = channel.d_func()->publisher;
+
+    alignas(DummyTransport) std::byte storage[sizeof(DummyTransport)];
+    InPlaceTransport oldTransport(new (storage) DummyTransport);
+    const void *oldAddress = oldTransport.get();
+
+    channel.connectTo(oldTransport.get());
+    publisher->initializeClient(oldTransport.get());
+    publisher->setClientIsIdle(true, oldTransport.get());
+    publisher->enqueueMessage(QJsonObject{{"type", "stale"}},
+                              oldTransport.get());
+    QCOMPARE(publisher->isClientIdle(oldTransport.get()), true);
+
+    oldTransport.reset();
+
+    // WHEN: A new transport is constructed at the same address
+    InPlaceTransport newTransport(new (storage) DummyTransport);
+    QCOMPARE(static_cast<const void *>(newTransport.get()), oldAddress);
+    channel.connectTo(newTransport.get());
+    publisher->initializeClient(newTransport.get());
+
+    // THEN: The new client is not idle and gets no queued message
+    QCOMPARE(publisher->isClientIdle(newTransport.get()), false);
+    publisher->setClientIsIdle(true, newTransport.get());
+    QCOMPARE(newTransport->messagesSent().size(), 0);
 }
 
 QTEST_MAIN(TestWebChannel)
