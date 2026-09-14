@@ -138,6 +138,8 @@ public:
 #endif
     Q_INVOKABLE QFuture<void> futureVoidResult() const;
     Q_INVOKABLE QFuture<QString> futureStringResult() const;
+    Q_INVOKABLE QFuture<QVariant> futureVariantResult() const;
+    Q_INVOKABLE QFuture<QVariant> futureVariantListResult() const;
     Q_INVOKABLE QFuture<int> cancelledFuture() const;
     Q_INVOKABLE QFuture<int> failedFuture() const;
 #endif

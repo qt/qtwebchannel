@@ -211,6 +211,12 @@ void attachContinuationToFutureInVariant(const QVariant &result, QPointer<QObjec
         const auto data = iface.resultStoreBase().resultAt(0).pointer<char>();
         locker.unlock();
 
+        // Prevent double wrapping of QVariant
+        if (resultType == QMetaType::fromType<QVariant>()) {
+            continuation(*reinterpret_cast<const QVariant *>(data));
+            return;
+        }
+
         const QVariant result(resultType, data);
         continuation(result);
     }).onCanceled([continuation=safeContinuation] {

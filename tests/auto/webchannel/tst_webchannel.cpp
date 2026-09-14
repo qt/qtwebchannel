@@ -226,6 +226,16 @@ QFuture<QString> TestObject::futureStringResult() const
     return QtFuture::makeReadyValueFuture<QString>("foo");
 }
 
+QFuture<QVariant> TestObject::futureVariantResult() const
+{
+    return QtFuture::makeReadyValueFuture(QVariant(QStringLiteral("bar")));
+}
+
+QFuture<QVariant> TestObject::futureVariantListResult() const
+{
+    return QtFuture::makeReadyValueFuture(QVariant(QVariantList{ 1, 2, 3 }));
+}
+
 QFuture<int> TestObject::cancelledFuture() const
 {
     QPromise<int> p;
@@ -508,6 +518,8 @@ void TestWebChannel::testInfoForObject()
 #endif
         addMethod(QStringLiteral("futureVoidResult"), "futureVoidResult()");
         addMethod(QStringLiteral("futureStringResult"), "futureStringResult()");
+        addMethod(QStringLiteral("futureVariantResult"), "futureVariantResult()");
+        addMethod(QStringLiteral("futureVariantListResult"), "futureVariantListResult()");
         addMethod(QStringLiteral("cancelledFuture"), "cancelledFuture()");
         addMethod(QStringLiteral("failedFuture"), "failedFuture()");
 #endif
@@ -1701,6 +1713,10 @@ void TestWebChannel::testAsyncMethodReturningFuture_data()
 #endif
     QTest::addRow("void") << "futureVoidResult" << QJsonValue{};
     QTest::addRow("QString") << "futureStringResult" << QJsonValue{"foo"};
+
+    QTest::addRow("QVariant") << "futureVariantResult" << QJsonValue{"bar"};
+    QTest::addRow("QVariant-list") << "futureVariantListResult"
+                                   << QJsonValue{QJsonArray{ 1, 2, 3 }};
 
     QTest::addRow("cancelled") << "cancelledFuture" << QJsonValue{};
     QTest::addRow("failed")    << "failedFuture"    << QJsonValue{};
