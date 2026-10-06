@@ -285,6 +285,9 @@ private slots:
     void testDeletionDuringMethodInvocation_data();
     void testDeletionDuringMethodInvocation();
     void testRejectsMissingArguments();
+    void testRejectsUnresolvableObjectId();
+    void testRejectsUnresolvableObjectIdInMethodCall();
+    void testAcceptsExplicitNullForObjectPointer();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();

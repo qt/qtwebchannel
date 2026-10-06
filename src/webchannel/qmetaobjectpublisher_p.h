@@ -29,6 +29,7 @@
 #include <QSet>
 
 #include <unordered_map>
+#include <optional>
 
 class tst_bench_QWebChannel;
 
@@ -219,7 +220,15 @@ public:
     QVariant unwrapList(QVariantList list) const;
     QVariant unwrapVariant(const QVariant &value) const;
 
-    QVariant toVariant(const QJsonValue &value, int targetType) const;
+    /**
+     * Convert @p value to @p targetType.
+     *
+     * Returns std::nullopt if @p value cannot be represented as @p targetType.
+     * Callers must not invoke or write anything in that case.
+     * A returned, but invalid QVariant is distinct from nullopt and means the
+     * conversion succeeded with a null value.
+     */
+    std::optional<QVariant> toVariant(const QJsonValue &value, int targetType) const;
 
     /**
      * Assigns a score for the conversion from @p value to @p targetType.

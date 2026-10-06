@@ -27,6 +27,8 @@
 #include <optional>
 #include <vector>
 
+using namespace Qt::StringLiterals;
+
 QT_USE_NAMESPACE
 
 #ifdef WEBCHANNEL_TESTS_CAN_USE_JS_ENGINE
@@ -1073,8 +1075,10 @@ void TestWebChannel::testJsonToVariant()
     QFETCH(QJsonValue, json);
     QFETCH(QVariant, targetVariant);
 
-    QVariant convertedValue = channel.d_func()->publisher->toVariant(json, targetVariant.userType());
-    QCOMPARE(convertedValue, targetVariant);
+    const std::optional<QVariant> convertedValue =
+            channel.d_func()->publisher->toVariant(json, targetVariant.userType());
+    QVERIFY(convertedValue);
+    QCOMPARE(*convertedValue, targetVariant);
 }
 
 void TestWebChannel::testInfiniteRecursion()
@@ -1462,6 +1466,79 @@ void TestWebChannel::testRejectsMissingArguments()
     publisher->invokeMethod(this, index2, QJsonArray{1});
     QCOMPARE(m_lastInt, 7);
     QCOMPARE(m_lastDouble, 4.2);
+}
+
+void TestWebChannel::testRejectsUnresolvableObjectId()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    TestObject obj;
+    obj.setObjectProperty(&obj);
+    channel.registerObject(u"obj"_s, &obj);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    const int index = obj.metaObject()->indexOfProperty("objectProperty");
+    QVERIFY(index >= 0);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("No wrapped object"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot convert argument QJsonValue"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Conversion failed:"));
+    publisher->setProperty(&obj, index,
+                           QJsonObject{{ u"id"_s, u"nope"_s }});
+
+    // Must be left alone, not overwritten with nullptr.
+    QCOMPARE(obj.objectProperty(), &obj);
+}
+
+void TestWebChannel::testRejectsUnresolvableObjectIdInMethodCall()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    TestObject obj;
+    channel.registerObject(u"obj"_s, &obj);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+    obj.setObjectProperty(&obj);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("No wrapped object"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("No wrapped object"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot convert argument QJsonValue"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot invoke"));
+
+    // Same rejection, but through invokeMethod_helper rather than setProperty.
+    publisher->invokeMethod(&obj, "setObjectProperty"_ba,
+                            QJsonArray{ QJsonObject{{ u"id"_s, u"nope"_s }} });
+
+    // Must be left alone, not overwritten with nullptr.
+    QCOMPARE(obj.objectProperty(), &obj);
+}
+
+void TestWebChannel::testAcceptsExplicitNullForObjectPointer()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    TestObject obj;
+    obj.setObjectProperty(&obj);
+    channel.registerObject(u"obj"_s, &obj);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    const int index = obj.metaObject()->indexOfProperty("objectProperty");
+    publisher->setProperty(&obj, index, QJsonValue(QJsonValue::Null));
+
+    // Rejecting unresolvable ids must not break the legitimate null case.
+    QCOMPARE(obj.objectProperty(), nullptr);
 }
 
 #if QT_CONFIG(future)
