@@ -588,9 +588,15 @@ QVariant QMetaObjectPublisher::invokeMethod(QObject *const object, const QMetaMe
     } else if (method.methodType() != QMetaMethod::Method && method.methodType() != QMetaMethod::Slot) {
         qWarning() << "Cannot invoke non-public method" << method.name() << "on object" << object << '.';
         return QJsonValue();
+    } else if (args.size() < method.parameterCount()) {
+        qWarning() << "Cannot invoke" << method.methodSignature() << "on" << object << "object:"
+                   << args.size() << "arguments given, but method requires"
+                   << method.parameterCount() << '.';
+        return QJsonValue();
     } else if (args.size() > method.parameterCount()) {
-        qWarning() << "Ignoring additional arguments while invoking method" << method.name() << "on object" << object << ':'
-                   << args.size() << "arguments given, but method only takes" << method.parameterCount() << '.';
+        qWarning() << "Ignoring additional arguments while invoking method" << method.name()
+                   << "on object" << object << ':' << args.size()
+                   << "arguments given, but method only takes" << method.parameterCount() << '.';
     }
 
     return invokeMethod_helper(object, method, args);

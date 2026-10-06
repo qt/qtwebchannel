@@ -316,6 +316,14 @@ void TestWebChannel::setDouble(double d)
     emit lastDoubleChanged();
 }
 
+void TestWebChannel::setIntDouble(int i, double d)
+{
+    m_lastInt = i;
+    emit lastIntChanged();
+    m_lastDouble = d;
+    emit lastDoubleChanged();
+}
+
 QVariant TestWebChannel::readVariant() const
 {
     return m_lastVariant;
@@ -1423,6 +1431,37 @@ void TestWebChannel::testDeletionDuringMethodInvocation()
     QCOMPARE(deleteTransport, !transport);
     if (!deleteTransport)
         QCOMPARE(transport->messagesSent().size(), deleteChannel ? 0 : 1);
+}
+
+void TestWebChannel::testRejectsMissingArguments()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+    auto *publisher = channel.d_func()->publisher;
+
+    const int index = metaObject()->indexOfMethod("setInt(int)");
+    QVERIFY(index >= 0);
+
+    m_lastInt = 0;
+    publisher->invokeMethod(this, index, QJsonArray{42});
+    QCOMPARE(m_lastInt, 42);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("0 arguments given, but method requires 1"));
+    publisher->invokeMethod(this, index, QJsonArray());
+    QCOMPARE(m_lastInt, 42);
+
+    const int index2 = metaObject()->indexOfMethod("setIntDouble(int,double)");
+    QVERIFY(index2 >= 0);
+
+    m_lastInt = 7;
+    m_lastDouble = 4.2;
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("1 arguments given, but method requires 2"));
+    publisher->invokeMethod(this, index2, QJsonArray{1});
+    QCOMPARE(m_lastInt, 7);
+    QCOMPARE(m_lastDouble, 4.2);
 }
 
 #if QT_CONFIG(future)

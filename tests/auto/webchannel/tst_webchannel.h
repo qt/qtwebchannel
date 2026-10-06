@@ -228,6 +228,7 @@ public slots:
     void setBool(bool b);
     double readDouble() const;
     void setDouble(double d);
+    void setIntDouble(int i, double d);
     QVariant readVariant() const;
     void setVariant(const QVariant &v);
     QJsonValue readJsonValue() const;
@@ -283,6 +284,7 @@ private slots:
     void testBindings();
     void testDeletionDuringMethodInvocation_data();
     void testDeletionDuringMethodInvocation();
+    void testRejectsMissingArguments();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();
