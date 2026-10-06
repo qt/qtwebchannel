@@ -528,7 +528,13 @@ QVariant QMetaObjectPublisher::invokeMethod_helper(QObject *const object, const 
     // start with the formal parameters
     for (qsizetype i = 0; i < names.size() - 1; ++i) {
         QMetaType mt = method.parameterMetaType(i);
-        QVariant &v = variants.emplace_back(toVariant(args.at(i), mt.id()));
+        std::optional<QVariant> converted = toVariant(args.at(i), mt.id());
+        if (!converted) {
+            qWarning() << "Cannot invoke" << method.methodSignature() << "on object" << object
+                       << ". Parameter" << i << "could not be converted.";
+            return QJsonValue();
+        }
+        QVariant &v = variants.emplace_back(std::move(*converted));
         parameters[i + 1] = v.data();
         names[i + 1] = mt.name();
         metaTypes[i + 1] = mt.iface();
@@ -655,8 +661,15 @@ void QMetaObjectPublisher::setProperty(QObject *object, const int propertyIndex,
     QMetaProperty property = object->metaObject()->property(propertyIndex);
     if (!property.isValid()) {
         qWarning() << "Cannot set unknown property" << propertyIndex << "of object" << object;
-    } else if (!property.write(object, toVariant(value, property.userType()))) {
-        qWarning() << "Could not write value " << value << "to property" << property.name() << "of object" << object;
+        return;
+    }
+    const std::optional<QVariant> variant = toVariant(value, property.userType());
+    if (!variant) {
+        qWarning() << "Conversion failed: Could not write value " << value << "to property"
+                   << property.name() << "of object" << object;
+    } else if (!property.write(object, *variant)) {
+        qWarning() << "Could not write value " << value << "to property" << property.name()
+                   << "of object" << object;
     }
 }
 
@@ -789,15 +802,20 @@ QVariant QMetaObjectPublisher::unwrapVariant(const QVariant &value) const
     return value;
 }
 
-QVariant QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
+std::optional<QVariant>
+QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
 {
     QMetaType target(targetType);
 
     if (target.flags() & QMetaType::PointerToQObject) {
+        if (value.isNull())
+            return QVariant::fromValue<QObject *>(nullptr);
         const QJsonObject obj = value.toObject();
         QObject *unwrappedObject = unwrapObject(obj.value(KEY_ID).toString());
-        if (unwrappedObject == nullptr)
-            qWarning() << "Cannot not convert non-object argument" << value << "to QObject*.";
+        if (!unwrappedObject) {
+            qWarning() << "Cannot convert argument" << value << "to" << target.name();
+            return std::nullopt;
+        }
         return QVariant::fromValue(unwrappedObject);
     } else if (isQFlagsType(targetType)) {
         int flagsValue = value.toInt();
