@@ -1627,6 +1627,28 @@ void TestWebChannel::testRejectsMismatchedObjectClassByIndex()
     QCOMPARE(receiver.returnedObject(), nullptr);
 }
 
+void TestWebChannel::testRejectsUnconvertibleArgument()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+    auto *publisher = channel.d_func()->publisher;
+
+    const QUrl before(u"http://example.com"_s);
+    setUrl(before);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Could not convert argument QJsonValue"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot invoke"));
+
+    // A JSON object has no conversion to QUrl by either route.
+    publisher->invokeMethod(this, "setUrl"_ba,
+                            QJsonArray{ QJsonObject{ { u"not"_s,
+                                                       u"a url"_s } } });
+
+    QCOMPARE(readUrl(), before);
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {

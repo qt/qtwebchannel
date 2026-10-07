@@ -841,10 +841,13 @@ QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
     if (auto converted = variant; converted.convert(target)) {
         variant = std::move(converted);
     } else if (targetType != QMetaType::QVariant) {
-        if (QVariant converted = value; converted.convert(target))
+        if (QVariant converted = value; converted.convert(target)) {
             variant = std::move(converted);
-        else
-            qWarning() << "Could not convert argument" << value << "to target type" << target.name() << '.';
+        } else {
+            qWarning() << "Could not convert argument" << value
+                       << "to target type" << target.name() << '.';
+            return std::nullopt;
+        }
     }
     return unwrapVariant(variant);
 }
