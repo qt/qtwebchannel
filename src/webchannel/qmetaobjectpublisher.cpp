@@ -816,6 +816,19 @@ QMetaObjectPublisher::toVariant(const QJsonValue &value, int targetType) const
             qWarning() << "Cannot convert argument" << value << "to" << target.name();
             return std::nullopt;
         }
+
+        const QMetaObject *targetMeta = target.metaObject();
+        if (!targetMeta) {
+            qWarning() << "Cannot convert argument" << value << "to" << target.name()
+                       << "- no metaobject is available to verify the object's class";
+            return std::nullopt;
+        }
+        if (!unwrappedObject->metaObject()->inherits(targetMeta)) {
+            qWarning() << "Cannot convert argument" << value << "to" << target.name()
+                       << "- object is a" << unwrappedObject->metaObject()->className()
+                       << "which does not inherit" << targetMeta->className();
+            return std::nullopt;
+        }
         return QVariant::fromValue(unwrappedObject);
     } else if (isQFlagsType(targetType)) {
         int flagsValue = value.toInt();
@@ -856,7 +869,12 @@ int QMetaObjectPublisher::conversionScore(const QJsonValue &value, int targetTyp
             return IncompatibleScore;
 
         QObject *unwrappedObject = unwrapObject(object[KEY_ID].toString());
-        return unwrappedObject != nullptr ? PerfectMatchScore : IncompatibleScore;
+        if (!unwrappedObject)
+            return IncompatibleScore;
+        const QMetaObject *targetMeta = target.metaObject();
+        if (!targetMeta || !unwrappedObject->metaObject()->inherits(targetMeta))
+            return IncompatibleScore;
+        return PerfectMatchScore;
     } else if (targetType == QMetaType::QVariant) {
         return VariantScore;
     }
