@@ -288,6 +288,9 @@ private slots:
     void testRejectsUnresolvableObjectId();
     void testRejectsUnresolvableObjectIdInMethodCall();
     void testAcceptsExplicitNullForObjectPointer();
+    void testRejectsMismatchedObjectClass();
+    void testRejectsMismatchedObjectClassByName();
+    void testRejectsMismatchedObjectClassByIndex();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();

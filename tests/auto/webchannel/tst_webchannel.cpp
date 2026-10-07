@@ -1541,6 +1541,92 @@ void TestWebChannel::testAcceptsExplicitNullForObjectPointer()
     QCOMPARE(obj.objectProperty(), nullptr);
 }
 
+// Mismatched classes used to be caught by QMetaProperty::write().
+// toVariant() now rejects them itself, so the wrong class never
+// reaches the property. The variant is typed to match the property,
+// so write() no longer converts and no longer checks.
+void TestWebChannel::testRejectsMismatchedObjectClass()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    TestObject receiver;
+    QObject decoy;
+    channel.registerObject(u"receiver"_s, &receiver);
+    channel.registerObject(u"decoy"_s, &decoy);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    receiver.setReturnedObject(nullptr);
+
+    // returnedObject is declared TestObject*, so a plain QObject must be refused.
+    const int index = receiver.metaObject()->indexOfProperty("returnedObject");
+    QVERIFY(index >= 0);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot convert argument QJsonValue"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Conversion failed:"));
+
+    publisher->setProperty(&receiver, index,
+                           QJsonObject{ { u"id"_s, u"decoy"_s } });
+
+    QCOMPARE(receiver.returnedObject(), nullptr);
+}
+
+void TestWebChannel::testRejectsMismatchedObjectClassByName()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    TestObject receiver;
+    QObject decoy;
+    channel.registerObject(u"decoy"_s, &decoy);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    receiver.setReturnedObject(nullptr);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot convert argument QJsonValue"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot invoke"));
+
+    publisher->invokeMethod(&receiver, "setReturnedObject"_ba,
+                            QJsonArray{ QJsonObject{ { u"id"_s, u"decoy"_s } } });
+
+    QCOMPARE(receiver.returnedObject(), nullptr);
+}
+
+void TestWebChannel::testRejectsMismatchedObjectClassByIndex()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+
+    TestObject receiver;
+    QObject decoy;
+    channel.registerObject(u"decoy"_s, &decoy);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    const int index =
+            receiver.metaObject()->indexOfMethod("setReturnedObject(TestObject*)");
+    QVERIFY(index >= 0);
+
+    receiver.setReturnedObject(nullptr);
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot convert argument QJsonValue"));
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot invoke"));
+
+    publisher->invokeMethod(&receiver, index,
+                            QJsonArray{ QJsonObject{ { u"id"_s,
+                                                       u"decoy"_s } } });
+
+    QCOMPARE(receiver.returnedObject(), nullptr);
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {
