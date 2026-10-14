@@ -1649,6 +1649,45 @@ void TestWebChannel::testRejectsUnconvertibleArgument()
     QCOMPARE(readUrl(), before);
 }
 
+void TestWebChannel::testRejectsNonSignalIndex()
+{
+    QWebChannel channel;
+    TestObject obj;
+    channel.registerObject(u"obj"_s, &obj);
+    channel.connectTo(m_dummyTransport);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    const int slotIndex = obj.metaObject()->indexOfMethod("setObjectProperty(QObject*)");
+    QVERIFY(slotIndex >= 0);
+    QCOMPARE(obj.metaObject()->method(slotIndex).methodType(), QMetaMethod::Slot);
+
+    QJsonObject connectMessage;
+    connectMessage[u"type"_s] = TypeConnectToSignal;
+    connectMessage[u"object"_s] = u"obj"_s;
+    connectMessage[u"signal"_s] = slotIndex;
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression(u"Method with index %1 .* is not a signal."_s.arg(slotIndex)));
+    publisher->handleMessage(connectMessage, m_dummyTransport);
+
+    auto *handler = publisher->signalHandlerFor(&obj);
+    QVERIFY(!handler->m_connectionsCounter.value(&obj).contains(slotIndex));
+    QVERIFY(!handler->m_signalArgumentTypes.value(obj.metaObject()).contains(slotIndex));
+
+    // A real signal still connects
+    const int signalIndex = obj.metaObject()->indexOfSignal("replay()");
+    QVERIFY(signalIndex >= 0);
+    connectMessage[u"signal"_s] = signalIndex;
+    publisher->handleMessage(connectMessage, m_dummyTransport);
+
+    m_dummyTransport->clearMessages();
+    obj.fire();
+    QVERIFY(!m_dummyTransport->messagesSent().isEmpty());
+    QVERIFY(handler->m_connectionsCounter.value(&obj).contains(signalIndex));
+    QVERIFY(handler->m_signalArgumentTypes.value(obj.metaObject()).contains(signalIndex));
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {

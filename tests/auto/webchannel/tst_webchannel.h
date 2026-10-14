@@ -64,6 +64,8 @@ public:
 
     QList<QJsonObject> messagesSent() const { return mMessagesSent; }
 
+    void clearMessages() { mMessagesSent.clear(); }
+
 public slots:
     void sendMessage(const QJsonObject &message) override
     {
@@ -292,6 +294,7 @@ private slots:
     void testRejectsMismatchedObjectClassByName();
     void testRejectsMismatchedObjectClassByIndex();
     void testRejectsUnconvertibleArgument();
+    void testRejectsNonSignalIndex();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();

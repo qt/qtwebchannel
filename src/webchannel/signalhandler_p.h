@@ -79,6 +79,8 @@ private:
 
     void setupSignalArgumentTypes(const QMetaObject *metaObject, const QMetaMethod &signal);
 
+    friend class TestWebChannel;
+
     Receiver *m_receiver;
 
     // maps meta object -> signalIndex -> list of arguments
@@ -125,7 +127,11 @@ inline QMetaMethod findSignal(const QMetaObject *metaObject, const int signalInd
         qWarning("Cannot find signal with index %d of object %s", signalIndex, metaObject->className());
         return QMetaMethod();
     }
-    Q_ASSERT(signal.methodType() == QMetaMethod::Signal);
+    if (signal.methodType() != QMetaMethod::Signal) {
+        qWarning("Method with index %d of object %s is not a signal.",
+                 signalIndex, metaObject->className());
+        return QMetaMethod();
+    }
     return signal;
 }
 
