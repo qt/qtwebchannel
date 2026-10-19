@@ -187,11 +187,15 @@ void attachContinuationToFutureInVariant(const QVariant &result, QPointer<QObjec
         }
 
         auto iface = QFutureInterfaceBase::get(f);
-        // If we pass a context object to f.then() and the future originates in a
-        // different thread, this assertions fails. Why?
-        // For the time being, work around that with QMetaObject::invokeMethod()
-        // in safeSendResponse().
-        Q_ASSERT(iface.resultCount() > 0);
+        // A non-void QFuture that finishes without a result is nearly always a
+        // mistake in the invoked method. It is legal, so report it rather than
+        // read a result that is not there.
+        if (iface.resultCount() == 0) {
+            qWarning("A QFuture<%s> finished without a result. The client receives null.",
+                     resultType.name());
+            continuation(QVariant{});
+            return;
+        }
 
         QMutexLocker<QMutex> locker(&iface.mutex());
         if (iface.resultStoreBase().resultAt(0).isVector()) {
