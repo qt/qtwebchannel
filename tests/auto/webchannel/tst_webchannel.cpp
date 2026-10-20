@@ -1688,6 +1688,38 @@ void TestWebChannel::testRejectsNonSignalIndex()
     QVERIFY(handler->m_signalArgumentTypes.value(obj.metaObject()).contains(signalIndex));
 }
 
+void TestWebChannel::testIgnoresDisconnectFromUnconnectedSignal()
+{
+    QWebChannel channel;
+    TestObject obj;
+    channel.registerObject(u"obj"_s, &obj);
+    channel.connectTo(m_dummyTransport);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(m_dummyTransport);
+
+    const int signalIndex = obj.metaObject()->indexOfSignal("replay()");
+    QVERIFY(signalIndex >= 0);
+    auto *handler = publisher->signalHandlerFor(&obj);
+    QVERIFY(!handler->m_connectionsCounter.value(&obj).contains(signalIndex));
+
+    QJsonObject disconnectMessage;
+    disconnectMessage[u"type"_s] = TypeDisconnectFromSignal;
+    disconnectMessage[u"object"_s] = u"obj"_s;
+    disconnectMessage[u"signal"_s] = signalIndex;
+    publisher->handleMessage(disconnectMessage, m_dummyTransport);
+    // The lookup must not create the entry it failed to find.
+    QVERIFY(!handler->m_connectionsCounter.value(&obj).contains(signalIndex));
+
+    // The guard must not break a disconnect of a signal that is connected.
+    QJsonObject connectMessage = disconnectMessage;
+    connectMessage[u"type"_s] = TypeConnectToSignal;
+    publisher->handleMessage(connectMessage, m_dummyTransport);
+    QVERIFY(handler->m_connectionsCounter.value(&obj).value(signalIndex).first);
+    QCOMPARE(handler->m_connectionsCounter.value(&obj).value(signalIndex).second, 1);
+    publisher->handleMessage(disconnectMessage, m_dummyTransport);
+    QVERIFY(!handler->m_connectionsCounter.value(&obj).contains(signalIndex));
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {

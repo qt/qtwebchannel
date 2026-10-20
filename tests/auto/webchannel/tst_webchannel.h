@@ -295,6 +295,7 @@ private slots:
     void testRejectsMismatchedObjectClassByIndex();
     void testRejectsUnconvertibleArgument();
     void testRejectsNonSignalIndex();
+    void testIgnoresDisconnectFromUnconnectedSignal();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();

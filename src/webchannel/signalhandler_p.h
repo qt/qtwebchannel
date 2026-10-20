@@ -53,6 +53,7 @@ public:
      * Decrease the connection counter for the connection to the given signal.
      *
      * When the counter drops to zero, the connection is disconnected.
+     * Does nothing when the signal is not connected.
      */
     void disconnectFrom(const QObject *object, const int signalIndex);
 
@@ -214,15 +215,20 @@ void SignalHandler<Receiver>::dispatch(const QObject *object, const int signalId
 template<class Receiver>
 void SignalHandler<Receiver>::disconnectFrom(const QObject *object, const int signalIndex)
 {
-    Q_ASSERT(m_connectionsCounter.value(object).contains(signalIndex));
-    ConnectionPair &connection = m_connectionsCounter[object][signalIndex];
+    auto objectIt = m_connectionsCounter.find(object);
+    if (objectIt == m_connectionsCounter.end())
+        return;
+    auto signalIt = objectIt->find(signalIndex);
+    if (signalIt == objectIt->end())
+        return;
+
+    ConnectionPair &connection = *signalIt;
     --connection.second;
     if (!connection.second || !connection.first) {
         QObject::disconnect(connection.first);
-        m_connectionsCounter[object].remove(signalIndex);
-        if (m_connectionsCounter[object].isEmpty()) {
-            m_connectionsCounter.remove(object);
-        }
+        objectIt->erase(signalIt);
+        if (objectIt->isEmpty())
+            m_connectionsCounter.erase(objectIt);
     }
 }
 
