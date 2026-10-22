@@ -938,6 +938,15 @@ void QMetaObjectPublisher::transportRemoved(QWebChannelAbstractTransport *transp
         objectDestroyed(obj);
 }
 
+bool QMetaObjectPublisher::isInternalSubscription(const QObject *object, int signalIndex) const
+{
+    if (signalIndex == s_destroyedSignalIndex || signalIndex == s_destroyedCloneSignalIndex)
+        return true;
+
+    const auto it = signalToPropertyMap.constFind(object);
+    return it != signalToPropertyMap.constEnd() && it->contains(signalIndex);
+}
+
 // NOTE: transport can be a nullptr
 //       in such a case, we need to ensure that the property is registered to
 //       the target transports of the parentObjectId
@@ -1204,9 +1213,21 @@ void QMetaObjectPublisher::handleMessage(const QJsonObject &message, QWebChannel
             sendResponse(result);
 #endif
         } else if (type == TypeConnectToSignal) {
-            signalHandlerFor(object)->connectTo(object, message.value(KEY_SIGNAL).toInt(-1));
+            const int signalIndex = message.value(KEY_SIGNAL).toInt(-1);
+            if (isInternalSubscription(object, signalIndex)) {
+                qWarning() << "Ignoring request to subscribe to signal" << signalIndex
+                           << "of object" << objectName << ": QWebChannel manages this subscription.";
+            } else {
+                signalHandlerFor(object)->connectTo(object, signalIndex);
+            }
         } else if (type == TypeDisconnectFromSignal) {
-            signalHandlerFor(object)->disconnectFrom(object, message.value(KEY_SIGNAL).toInt(-1));
+            const int signalIndex = message.value(KEY_SIGNAL).toInt(-1);
+            if (isInternalSubscription(object, signalIndex)){
+                qWarning() << "Ignoring request to disconnect from signal" << signalIndex
+                           << "of object" << objectName << ": QWebChannel requires this subscription.";
+            } else {
+                signalHandlerFor(object)->disconnectFrom(object, signalIndex);
+            }
         } else if (type == TypeSetProperty) {
             setProperty(object, message.value(KEY_PROPERTY).toInt(-1),
                         message.value(KEY_VALUE));

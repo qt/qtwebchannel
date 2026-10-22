@@ -26,6 +26,7 @@
 QT_BEGIN_NAMESPACE
 
 static const int s_destroyedSignalIndex = QObject::staticMetaObject.indexOfMethod("destroyed(QObject*)");
+static const int s_destroyedCloneSignalIndex = QObject::staticMetaObject.indexOfMethod("destroyed()");
 
 /**
  * The signal handler is similar to QSignalSpy, but geared towards the usecase of the web channel.
