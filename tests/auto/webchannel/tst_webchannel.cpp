@@ -1732,6 +1732,90 @@ void TestWebChannel::testIgnoresDisconnectFromUnconnectedSignal()
     QVERIFY(!handler->m_connectionsCounter.value(&obj).contains(signalIndex));
 }
 
+void TestWebChannel::testRefusesDisconnectFromDestroyed()
+{
+    QWebChannel channel;
+    channel.connectTo(m_dummyTransport);
+    auto *publisher = channel.d_func()->publisher;
+
+    auto *obj = new TestObject;
+    channel.registerObject(u"obj"_s, obj);
+    publisher->initializeClient(m_dummyTransport);
+    auto *handler = publisher->signalHandlerFor(obj);
+    QVERIFY(handler->m_connectionsCounter.value(obj).value(s_destroyedSignalIndex).first);
+    QCOMPARE(handler->m_connectionsCounter.value(obj).value(s_destroyedSignalIndex).second, 1);
+
+    QJsonObject disconnectMessage;
+    disconnectMessage[u"type"_s] = TypeDisconnectFromSignal;
+    disconnectMessage[u"object"_s] = u"obj"_s;
+    disconnectMessage[u"signal"_s] = s_destroyedSignalIndex;
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression(u"Ignoring request to disconnect from signal"_s));
+    publisher->handleMessage(disconnectMessage, m_dummyTransport);
+    QVERIFY(handler->m_connectionsCounter.value(obj).value(s_destroyedSignalIndex).first);
+    QCOMPARE(handler->m_connectionsCounter.value(obj).value(s_destroyedSignalIndex).second, 1);
+
+    m_dummyTransport->clearMessages();
+    delete obj;
+
+    QVERIFY(!publisher->registeredObjects.contains(u"obj"_s));
+    QCOMPARE(m_dummyTransport->messagesSent().size(), 1);
+    const QJsonObject msg = m_dummyTransport->messagesSent().constFirst();
+    QCOMPARE(msg[u"type"_s].toInt(), int(TypeSignal));
+    QCOMPARE(msg[u"signal"_s].toInt(), s_destroyedSignalIndex);
+}
+
+void TestWebChannel::testRefusesDisconnectFromNotifySignal()
+{
+    QWebChannel channel;
+    DummyTransport transport1;
+    DummyTransport transport2;
+    channel.connectTo(&transport1);
+    channel.connectTo(&transport2);
+
+    TestObject obj;
+    channel.registerObject(u"myObj"_s, &obj);
+    auto *publisher = channel.d_func()->publisher;
+    publisher->initializeClient(&transport1);
+    publisher->initializeClient(&transport2);
+    auto *handler = publisher->signalHandlerFor(&obj);
+
+    const int notifyIndex =
+            obj.metaObject()->property(obj.metaObject()->indexOfProperty("prop")).notifySignalIndex();
+    QVERIFY(notifyIndex >= 0);
+    QCOMPARE(handler->m_connectionsCounter.value(&obj).value(notifyIndex).second, 1);
+
+    publisher->setClientIsIdle(true, &transport1);
+    publisher->setClientIsIdle(true, &transport2);
+    transport1.clearMessages();
+    transport2.clearMessages();
+    obj.setProp(u"first"_s);
+    publisher->sendPendingPropertyUpdates();
+    QVERIFY(!transport1.messagesSent().isEmpty());
+    QVERIFY(!transport2.messagesSent().isEmpty());
+
+    // The first client tries to cancel the subscription every client shares.
+    QJsonObject disconnectMessage;
+    disconnectMessage[u"type"_s] = TypeDisconnectFromSignal;
+    disconnectMessage[u"object"_s] = u"myObj"_s;
+    disconnectMessage[u"signal"_s] = notifyIndex;
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression(u"Ignoring request to disconnect from signal"_s));
+    publisher->handleMessage(disconnectMessage, &transport1);
+    QCOMPARE(handler->m_connectionsCounter.value(&obj).value(notifyIndex).second, 1);
+
+    publisher->setClientIsIdle(true, &transport1);
+    publisher->setClientIsIdle(true, &transport2);
+    transport1.clearMessages();
+    transport2.clearMessages();
+    obj.setProp(u"second"_s);
+    publisher->sendPendingPropertyUpdates();
+    QVERIFY(!transport1.messagesSent().isEmpty());
+    QVERIFY(!transport2.messagesSent().isEmpty());
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {

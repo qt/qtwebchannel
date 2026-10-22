@@ -256,6 +256,16 @@ public:
     void transportRemoved(QWebChannelAbstractTransport *transport);
 
     /**
+     * Returns true if the connection to @p signalIndex of @p object is one this
+     * publisher established for its own bookkeeping.
+     *
+     * The SignalHandler reference count is shared between this publisher and
+     * every client, so such subscription must not be torn down on a client's
+     * request.
+     */
+    bool isInternalSubscription(const QObject *object, int signalIndex) const;
+
+    /**
      * Given a QVariant containing a QObject*, wrap the object and register for property updates
      * return the objects class information.
      *
