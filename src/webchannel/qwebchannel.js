@@ -286,6 +286,12 @@ function QObject(name, data, webChannel)
                 object.__objectSignals__[signalIndex] = (object.__objectSignals__[signalIndex] || []).filter(function(c) {
                   return c != callback;
                 });
+
+                // we are always notified about the destroyed signal, so we never
+                // subscribed to it and must not unsubscribe from it either
+                if (signalName === "destroyed" || signalName === "destroyed()" || signalName === "destroyed(QObject*)")
+                    return;
+
                 if (!isPropertyNotifySignal && object.__objectSignals__[signalIndex].length === 0) {
                     // only required for "pure" signals, handled separately for properties in propertyUpdate
                     webChannel.exec({
