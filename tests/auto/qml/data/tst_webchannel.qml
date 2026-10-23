@@ -571,6 +571,25 @@ TestCase {
         compare(cb3, 1);
     }
 
+    function test_destroyedConnectAndDisconnectSendNothing()
+    {
+        var channel = client.createChannel(function(channel) {});
+        client.awaitInit();
+        client.awaitResponse();
+        client.awaitIdle();
+
+        var obj = channel.objects.myObj;
+        function handler() {}
+
+        var before = client.clientMessages.length;
+        // connect() sends nothing
+        obj.destroyed.connect(handler);
+        compare(client.clientMessages.length, before);
+        // disconnect() must not release a subscription
+        obj.destroyed.disconnect(handler);
+        compare(client.clientMessages.length, before);
+    }
+
     function test_overloading()
     {
         var signalArgs_implicit = [];
