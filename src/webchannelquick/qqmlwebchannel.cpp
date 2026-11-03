@@ -191,6 +191,9 @@ void QQmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, Q
     }
     channel->d_func()->registeredObjects.append(object);
     connect(attached, SIGNAL(idChanged(QString)), channel, SLOT(_q_objectIdChanged(QString)));
+    connect(object, &QObject::destroyed, channel, [channel](QObject *obj) {
+        channel->d_func()->registeredObjects.removeAll(obj);
+    });
 }
 
 qsizetype QQmlWebChannel::registeredObjects_count(QQmlListProperty<QObject> *prop)
@@ -207,8 +210,16 @@ void QQmlWebChannel::registeredObjects_clear(QQmlListProperty<QObject> *prop)
 {
     QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
     const auto moved = std::exchange(channel->d_func()->registeredObjects, {}); // precautionary
-    for (QObject *object : moved)
+    for (QObject *object : moved) {
+        QObject *const attached = qobject_cast<QQmlWebChannelAttached *>(
+                qmlAttachedPropertiesObject<QQmlWebChannel>(object, false /* don't create */));
+        if (attached) {
+            QObject::disconnect(attached, SIGNAL(idChanged(QString)),
+                                channel, SLOT(_q_objectIdChanged(QString)));
+        }
+        QObject::disconnect(object, &QObject::destroyed, channel, nullptr);
         channel->deregisterObject(object);
+    }
 }
 
 /*!
