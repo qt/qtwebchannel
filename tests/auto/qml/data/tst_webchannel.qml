@@ -72,6 +72,12 @@ TestCase {
             signal mySignal(var arg1, var arg2)
         }
     }
+    Component {
+        id: transientObject
+        QtObject {
+            WebChannel.id: "transientObject"
+        }
+    }
 
     TestObject {
         id: testObject
@@ -589,6 +595,17 @@ TestCase {
         obj.destroyed.disconnect(handler);
         compare(client.clientMessages.length, before);
     }
+
+    function test_destroyedObjectIsRemovedFromRegisteredObjects()
+     {
+         var obj = transientObject.createObject(nullTest);
+         verify(obj);
+         nullTest.registeredObjects = [obj];
+         compare(nullTest.registeredObjects.length, 1);
+
+         obj.destroy();
+         tryCompare(nullTest.registeredObjects, "length", 0);
+     }
 
     function test_overloading()
     {
