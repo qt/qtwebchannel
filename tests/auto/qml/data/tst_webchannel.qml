@@ -794,4 +794,16 @@ TestCase {
         nullTest.registeredObjects = [testObject.createQObject()]
         compare(nullTest.registeredObjects, [])
     }
+
+    function test_duplicateRegistrationIsRejected()
+    {
+        var obj = transientObject.createObject(nullTest);
+        verify(obj);
+
+        nullTest.registeredObjects = [obj, obj];
+        compare(nullTest.registeredObjects.length, 1);
+
+        nullTest.registeredObjects = [];
+        obj.destroy();
+    }
 }

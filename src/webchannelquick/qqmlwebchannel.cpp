@@ -185,6 +185,10 @@ void QQmlWebChannel::registeredObjects_append(QQmlListProperty<QObject> *prop, Q
         return;
     }
     QQmlWebChannel *channel = static_cast<QQmlWebChannel *>(prop->object);
+    if (channel->d_func()->registeredObjects.contains(object)){
+        qWarning() << "Object" << object << "is already registered to this WebChannel.";
+        return;
+    }
     if (!attached->id().isEmpty()) {
         // TODO: warning in such cases?
         channel->registerObject(attached->id(), object);
