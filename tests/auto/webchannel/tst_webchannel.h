@@ -302,6 +302,7 @@ private slots:
     void testRefusesDisconnectFromNotifySignal();
     void testDeregisterUnknownObject();
     void testObjectDestroyedBeforeFirstClient();
+    void testRefusesRegistrationsThatBreakIdentity();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();
