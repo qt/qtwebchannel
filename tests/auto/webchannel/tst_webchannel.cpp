@@ -1851,6 +1851,32 @@ void TestWebChannel::testObjectDestroyedBeforeFirstClient()
     QVERIFY(!publisher->initializeClient(m_dummyTransport).contains(u"obj"_s));
 }
 
+void TestWebChannel::testRefusesRegistrationsThatBreakIdentity()
+{
+    QWebChannel channel;
+    auto *publisher = channel.d_func()->publisher;
+
+    TestObject obj;
+    channel.registerObject(u"first"_s, &obj);
+
+    // A second name for an already registered object:
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Object .* is already registered"));
+    channel.registerObject(u"second"_s, &obj);
+
+    QVERIFY(!publisher->registeredObjects.contains(u"second"_s));
+    QCOMPARE(publisher->registeredObjects.value(u"first"_s), &obj);
+    QCOMPARE(publisher->registeredObjectIds.value(&obj), u"first"_s);
+
+    // A second object under a name that is already taken:
+    TestObject secondObj;
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot register .* id already in use."));
+    channel.registerObject(u"first"_s, &secondObj);
+    QCOMPARE(publisher->registeredObjects.value(u"first"_s), &obj);
+    QVERIFY(!publisher->registeredObjectIds.contains(&secondObj));
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {

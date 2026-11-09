@@ -267,6 +267,16 @@ QMetaObjectPublisher::~QMetaObjectPublisher()
 
 void QMetaObjectPublisher::registerObject(const QString &id, QObject *object)
 {
+    const QString &existingId = registeredObjectIds.value(object);
+    if (!existingId.isEmpty() && existingId != id) {
+        qWarning() << "Object" << object << "is already registered as" << existingId;
+        return;
+    }
+    QObject* const existingObj = registeredObjects.value(id);
+    if (existingObj && existingObj != object) {
+        qWarning() << "Cannot register" << object << "as" << id << ": id already in use.";
+        return;
+    }
     registeredObjects[id] = object;
     registeredObjectIds[object] = id;
     signalHandlerFor(object)->connectTo(object, s_destroyedSignalIndex);
