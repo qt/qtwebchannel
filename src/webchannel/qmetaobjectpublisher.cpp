@@ -687,7 +687,11 @@ void QMetaObjectPublisher::signalEmitted(const QObject *object, const int signal
     if (!signalToPropertyMap.value(object).contains(signalIndex)) {
         QJsonObject message;
         const QString &objectName = registeredObjectIds.value(object);
-        Q_ASSERT(!objectName.isEmpty());
+        if (objectName.isEmpty()) {
+            if (signalIndex == s_destroyedSignalIndex)
+                objectDestroyed(object);
+            return;
+        }
         message[KEY_OBJECT] = objectName;
         message[KEY_SIGNAL] = signalIndex;
         if (!arguments.isEmpty()) {
@@ -737,11 +741,16 @@ void QMetaObjectPublisher::startPropertyUpdateTimer(bool forceRestart)
 void QMetaObjectPublisher::objectDestroyed(const QObject *object)
 {
     const QString &id = registeredObjectIds.take(object);
-    Q_ASSERT(!id.isEmpty());
-    bool removed = registeredObjects.remove(id)
-            || wrappedObjects.remove(id);
-    Q_ASSERT(removed);
-    Q_UNUSED(removed);
+
+    if (id.isEmpty()) {
+        qWarning() << "Cannot deregister object" << object
+                   << ": it is not registered to this channel.";
+        return;
+    }
+    if (!registeredObjects.remove(id) && !wrappedObjects.remove(id)) {
+        qWarning() << "Inconsistent state: object" << object << "was registered as"
+                   << id << "but nothing is published under that name.";
+    }
 
     // only remove from handler when we initialized the property updates
     // cf: https://bugreports.qt.io/browse/QTBUG-60250

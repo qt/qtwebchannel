@@ -1804,6 +1804,37 @@ void TestWebChannel::testRefusesDisconnectFromNotifySignal()
     QVERIFY(!transport2.messagesSent().isEmpty());
 }
 
+void TestWebChannel::testDeregisterUnknownObject()
+{
+    // No client attached
+    QWebChannel channel;
+    auto *publisher = channel.d_func()->publisher;
+
+    TestObject registered;
+    channel.registerObject(u"registered"_s, &registered);
+    TestObject unknown;
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot deregister object .* : it is not registered"));
+    channel.deregisterObject(&unknown);
+
+    QCOMPARE(publisher->registeredObjects.size(), 1);
+    QCOMPARE(publisher->registeredObjects.value(u"registered"_s), &registered);
+
+    // With a client attached
+    DummyTransport transport;
+    channel.connectTo(&transport);
+    publisher->initializeClient(&transport);
+    transport.clearMessages();
+
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression("Cannot deregister object .* : it is not registered"));
+    channel.deregisterObject(&unknown);
+
+    QVERIFY(transport.messagesSent().isEmpty());
+    QCOMPARE(publisher->registeredObjects.size(), 1);
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {
