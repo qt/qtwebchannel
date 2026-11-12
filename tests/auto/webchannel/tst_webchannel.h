@@ -299,6 +299,7 @@ private slots:
     void testRefusesDisconnectFromDestroyed();
     void testRefusesDisconnectFromNotifySignal();
     void testDeregisterUnknownObject();
+    void testObjectDestroyedBeforeFirstClient();
 
 #if QT_CONFIG(future)
     void testAsyncMethodReturningFuture_data();
