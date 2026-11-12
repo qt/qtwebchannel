@@ -275,6 +275,7 @@ void QMetaObjectPublisher::registerObject(const QString &id, QObject *object)
 {
     registeredObjects[id] = object;
     registeredObjectIds[object] = id;
+    signalHandlerFor(object)->connectTo(object, s_destroyedSignalIndex);
     if (propertyUpdatesInitialized) {
         if (!webChannel->d_func()->transports.isEmpty()) {
             qWarning("Registered new object after initialization, existing clients won't be notified!");
@@ -444,9 +445,6 @@ void QMetaObjectPublisher::initializePropertyUpdates(QObject *const object, cons
             }
         }
     }
-
-    // also always connect to destroyed signal
-    signalHandler->connectTo(object, s_destroyedSignalIndex);
 }
 
 void QMetaObjectPublisher::sendPendingPropertyUpdates()
@@ -758,12 +756,8 @@ void QMetaObjectPublisher::objectDestroyed(const QObject *object)
                    << id << "but nothing is published under that name.";
     }
 
-    // only remove from handler when we initialized the property updates
-    // cf: https://bugreports.qt.io/browse/QTBUG-60250
-    if (propertyUpdatesInitialized) {
-        signalHandlerFor(object)->remove(object);
-        signalToPropertyMap.remove(object);
-    }
+    signalHandlerFor(object)->remove(object);
+    signalToPropertyMap.remove(object);
     pendingPropertyUpdates.remove(object);
     propertyObservers.erase(object);
 }
@@ -998,6 +992,7 @@ QJsonValue QMetaObjectPublisher::wrapResult(const QVariant &result, QWebChannelA
                 }
             }
             wrappedObjects.insert(id, oi);
+            signalHandlerFor(object)->connectTo(object, s_destroyedSignalIndex);
 
             initializePropertyUpdates(object, classInfo);
         } else {

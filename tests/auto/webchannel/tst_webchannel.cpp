@@ -1847,6 +1847,22 @@ void TestWebChannel::testDeregisterUnknownObject()
     QCOMPARE(publisher->registeredObjects.size(), 1);
 }
 
+void TestWebChannel::testObjectDestroyedBeforeFirstClient()
+{
+    QWebChannel channel;
+    auto *obj = new TestObject;
+    channel.registerObject(u"obj"_s, obj);
+    auto *publisher = channel.d_func()->publisher;
+
+    delete obj;
+    QVERIFY(!publisher->registeredObjects.contains(u"obj"_s));
+    QVERIFY(publisher->registeredObjectIds.isEmpty());
+
+    // Building the init payload must not touch the dead object
+    channel.connectTo(m_dummyTransport);
+    QVERIFY(!publisher->initializeClient(m_dummyTransport).contains(u"obj"_s));
+}
+
 #if QT_CONFIG(future)
 void TestWebChannel::testAsyncMethodReturningFuture_data()
 {
